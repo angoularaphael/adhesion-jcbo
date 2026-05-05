@@ -1,0 +1,59 @@
+﻿---
+import AdherentLayout from "../../layouts/AdherentLayout.astro";
+import Card from "../../components/ui/Card.astro";
+import Badge from "../../components/ui/Badge.astro";
+import { mockAdherent } from "../../data/mock";
+
+const champs = [
+  { label: "Prénom", valeur: mockAdherent.prenom },
+  { label: "Nom", valeur: mockAdherent.nom },
+  { label: "E-mail", valeur: mockAdherent.email },
+  { label: "Téléphone", valeur: mockAdherent.telephone },
+  { label: "Entreprise", valeur: mockAdherent.entreprise },
+  { label: "Secteur d'activité", valeur: mockAdherent.secteur },
+];
+---
+
+<AdherentLayout titre="Mon profil">
+
+  <div class="mb-8">
+    <h2 class="text-2xl font-bold" style="color: #0D1B2A;">Mon profil</h2>
+    <p class="text-sm text-gray-500 mt-1">Informations liées à votre adhésion.</p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Carte identité -->
+    <Card class="flex flex-col items-center text-center gap-3">
+      <div
+        class="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-bold"
+        style="background-color: #0D1B2A;"
+      >
+        {mockAdherent.prenom[0]}{mockAdherent.nom[0]}
+      </div>
+      <div>
+        <p class="font-semibold" style="color: #0D1B2A;">{mockAdherent.prenom} {mockAdherent.nom}</p>
+        <p class="text-xs text-gray-400 mt-0.5">{mockAdherent.entreprise}</p>
+      </div>
+      <Badge variant="or">{mockAdherent.statut}</Badge>
+      <p class="text-xs text-gray-400">N° {mockAdherent.numeroAdherent}</p>
+    </Card>
+
+    <!-- Informations détaillées -->
+    <div class="lg:col-span-2">
+      <Card>
+        <h3 class="text-sm font-semibold mb-5" style="color: #0D1B2A;">Informations personnelles</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {champs.map((c) => (
+            <div>
+              <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">{c.label}</p>
+              <p class="text-sm font-medium" style="color: #0D1B2A;">{c.valeur}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+
+  </div>
+
+</AdherentLayout>

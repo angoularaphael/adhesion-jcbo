@@ -1,0 +1,32 @@
+---
+import { mockAdherent } from "../../data/mock";
+---
+
+<header class="h-16 flex items-center justify-between px-8 border-b bg-white" style="border-color: #e5e7eb;">
+  <!-- Titre de la page -->
+  <div>
+    <h1 class="text-lg font-semibold" style="color: #0D1B2A;">
+      Bonjour, {mockAdherent.prenom} 👋
+    </h1>
+    <p class="text-xs text-gray-400">N° adhérent : {mockAdherent.numeroAdherent}</p>
+  </div>
+
+  <!-- Infos adhérent -->
+  <div class="flex items-center gap-4">
+    <!-- Statut -->
+    <span
+      class="text-xs font-semibold px-3 py-1 rounded-full"
+      style="background-color: rgba(201,168,76,0.15); color: #C9A84C;"
+    >
+      {mockAdherent.statut}
+    </span>
+
+    <!-- Avatar -->
+    <div
+      class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold"
+      style="background-color: #0D1B2A;"
+    >
+      {mockAdherent.prenom[0]}{mockAdherent.nom[0]}
+    </div>
+  </div>
+</header>

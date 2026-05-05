@@ -1,0 +1,52 @@
+---
+const navLinks = [
+  { label: "Tableau de bord", href: "/dashboard", icon: "🏠" },
+  { label: "Mon profil", href: "/dashboard/profil", icon: "👤" },
+  { label: "Ressources", href: "/dashboard/ressources", icon: "📁" },
+  { label: "Contact", href: "/dashboard/contact", icon: "✉️" },
+];
+
+const currentPath = Astro.url.pathname;
+---
+
+<aside class="w-64 min-h-screen flex flex-col" style="background-color: #0D1B2A;">
+  <!-- Logo -->
+  <div class="px-6 py-6" style="border-bottom: 1px solid rgba(201,168,76,0.2);">
+    <span class="text-xl font-bold tracking-wide text-white">JCBO Conseil</span>
+    <p class="text-xs mt-1" style="color: #C9A84C;">Espace Adhérent</p>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="flex-1 px-4 py-6 flex flex-col gap-1">
+    {navLinks.map((link) => (
+      <a
+        href={link.href}
+        class={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+          currentPath === link.href
+            ? "text-white"
+            : "hover:text-white"
+        }`}
+        style={
+          currentPath === link.href
+            ? "background-color: rgba(201,168,76,0.15); color: #C9A84C;"
+            : "color: rgba(255,255,255,0.6);"
+        }
+      >
+        <span>{link.icon}</span>
+        <span>{link.label}</span>
+      </a>
+    ))}
+  </nav>
+
+  <!-- Déconnexion -->
+  <div class="px-4 py-6" style="border-top: 1px solid rgba(201,168,76,0.2);">
+    <a
+      href="/login"
+      class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors hover:text-white"
+      style="color: rgba(255,255,255,0.5);"
+    >
+      <span>🚪</span>
+      <span>Déconnexion</span>
+    </a>
+  </div>
+</aside>

@@ -1,0 +1,92 @@
+﻿---
+import AdherentLayout from "../../layouts/AdherentLayout.astro";
+import Card from "../../components/ui/Card.astro";
+---
+
+<AdherentLayout titre="Contact">
+
+  <div class="mb-8">
+    <h2 class="text-2xl font-bold" style="color: #0D1B2A;">Contact</h2>
+    <p class="text-sm text-gray-500 mt-1">Une question ? L'équipe JCBO Conseil vous répond.</p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Formulaire -->
+    <div class="lg:col-span-2">
+      <Card>
+        <h3 class="text-sm font-semibold mb-5" style="color: #0D1B2A;">Envoyer un message</h3>
+
+        <form class="flex flex-col gap-5">
+
+          <div class="flex flex-col gap-1.5">
+            <label for="sujet" class="text-xs font-medium text-gray-500 uppercase tracking-wide">Sujet</label>
+            <input
+              id="sujet"
+              name="sujet"
+              type="text"
+              placeholder="Objet de votre message"
+              class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-[#C9A84C] transition"
+              style="color: #0D1B2A;"
+            />
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label for="message" class="text-xs font-medium text-gray-500 uppercase tracking-wide">Message</label>
+            <textarea
+              id="message"
+              name="message"
+              rows="6"
+              placeholder="Décrivez votre demande..."
+              class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-[#C9A84C] transition resize-none"
+              style="color: #0D1B2A;"
+            ></textarea>
+          </div>
+
+          <button
+            type="submit"
+            class="self-start px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition hover:opacity-90 active:scale-[0.98]"
+            style="background-color: #0D1B2A;"
+          >
+            Envoyer le message
+          </button>
+
+        </form>
+      </Card>
+    </div>
+
+    <!-- Infos contact -->
+    <div class="flex flex-col gap-4">
+      <Card>
+        <h3 class="text-sm font-semibold mb-4" style="color: #0D1B2A;">Coordonnées</h3>
+        <div class="flex flex-col gap-4">
+          <div class="flex items-start gap-3">
+            <span class="text-base mt-0.5">✉️</span>
+            <div>
+              <p class="text-xs text-gray-400 mb-0.5">E-mail</p>
+              <a href="mailto:contact@jcbo-conseil.fr" class="text-sm font-medium hover:underline" style="color: #0D1B2A;">
+                contact@jcbo-conseil.fr
+              </a>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="text-base mt-0.5">📞</span>
+            <div>
+              <p class="text-xs text-gray-400 mb-0.5">Téléphone</p>
+              <p class="text-sm font-medium" style="color: #0D1B2A;">01 23 45 67 89</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="text-base mt-0.5">🕐</span>
+            <div>
+              <p class="text-xs text-gray-400 mb-0.5">Disponibilité</p>
+              <p class="text-sm font-medium" style="color: #0D1B2A;">Lun – Ven, 9h – 18h</p>
+            </div>
+          </div>
+        </div>
+      </Card>
+    </div>
+
+  </div>
+
+</AdherentLayout>

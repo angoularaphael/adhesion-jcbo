@@ -1,0 +1,64 @@
+﻿---
+import AdherentLayout from "../../layouts/AdherentLayout.astro";
+import Card from "../../components/ui/Card.astro";
+import Badge from "../../components/ui/Badge.astro";
+import { mockAdherent, mockRessources } from "../../data/mock";
+
+const dernieresRessources = mockRessources.slice(0, 3);
+---
+
+<AdherentLayout titre="Tableau de bord">
+
+  <!-- Bienvenue -->
+  <div class="mb-8">
+    <h2 class="text-2xl font-bold" style="color: #0D1B2A;">Tableau de bord</h2>
+    <p class="text-sm text-gray-500 mt-1">Bienvenue dans votre espace adhérent JCBO Conseil.</p>
+  </div>
+
+  <!-- Cartes stats -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+
+    <Card>
+      <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Statut</p>
+      <Badge variant="or">{mockAdherent.statut}</Badge>
+    </Card>
+
+    <Card>
+      <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">N° Adhérent</p>
+      <p class="text-sm font-semibold" style="color: #0D1B2A;">{mockAdherent.numeroAdherent}</p>
+    </Card>
+
+    <Card>
+      <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Membre depuis</p>
+      <p class="text-sm font-semibold" style="color: #0D1B2A;">
+        {new Date(mockAdherent.dateAdhesion).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+      </p>
+    </Card>
+
+  </div>
+
+  <!-- Ressources récentes -->
+  <Card>
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="text-sm font-semibold" style="color: #0D1B2A;">Ressources récentes</h3>
+      <a href="/dashboard/ressources" class="text-xs font-medium hover:underline" style="color: #C9A84C;">
+        Voir tout →
+      </a>
+    </div>
+
+    <div class="flex flex-col gap-3">
+      {dernieresRessources.map((r) => (
+        <div class="flex items-center justify-between py-3" style="border-top: 1px solid #f3f4f6;">
+          <div>
+            <p class="text-sm font-medium" style="color: #0D1B2A;">{r.titre}</p>
+            <p class="text-xs text-gray-400 mt-0.5">
+              {new Date(r.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}
+            </p>
+          </div>
+          <Badge variant="gris">{r.categorie}</Badge>
+        </div>
+      ))}
+    </div>
+  </Card>
+
+</AdherentLayout>
