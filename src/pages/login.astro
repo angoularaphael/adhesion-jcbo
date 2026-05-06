@@ -1,5 +1,8 @@
 ﻿---
 import "../styles/global.css";
+import { mockAdherent } from "../data/mock";
+
+const { email, motDePasse } = mockAdherent;
 ---
 
 <html lang="fr">
@@ -49,6 +52,10 @@ import "../styles/global.css";
             />
           </div>
 
+          <p id="login-error" class="hidden text-xs text-red-500 -mt-2">
+            Identifiants incorrects.
+          </p>
+
           <button
             type="submit"
             class="w-full py-2.5 rounded-lg text-sm font-semibold text-white transition hover:opacity-90 active:scale-[0.98]"
@@ -66,10 +73,17 @@ import "../styles/global.css";
 
     </div>
 
-    <script>
+    <script define:vars={{ credEmail: email, credPassword: motDePasse }}>
       document.getElementById("login-form").addEventListener("submit", (e) => {
         e.preventDefault();
-        window.location.href = "/dashboard";
+        const inputEmail = document.getElementById("email").value;
+        const inputPassword = document.getElementById("password").value;
+
+        if (inputEmail === credEmail && inputPassword === credPassword) {
+          window.location.href = "/dashboard";
+        } else {
+          document.getElementById("login-error").classList.remove("hidden");
+        }
       });
     </script>
 

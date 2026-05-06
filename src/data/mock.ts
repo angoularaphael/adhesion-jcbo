@@ -9,6 +9,7 @@ export const mockAdherent = {
   statut: "Actif",
   dateAdhesion: "2025-01-15",
   numeroAdherent: "JCBO-2025-001",
+  motDePasse: "Jcbo2025!",
 };
 
 export const mockRessources = [
