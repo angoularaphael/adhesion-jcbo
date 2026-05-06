@@ -13,17 +13,15 @@ import "../styles/global.css";
 
     <div class="w-full max-w-md px-6">
 
-      <!-- Logo -->
       <div class="text-center mb-10">
         <h1 class="text-2xl font-bold tracking-wide text-white">JCBO Conseil</h1>
         <p class="text-sm mt-1" style="color: #C9A84C;">Espace Adhérent</p>
       </div>
 
-      <!-- Carte formulaire -->
       <div class="bg-white rounded-2xl shadow-xl p-8">
         <h2 class="text-lg font-semibold mb-6" style="color: #0D1B2A;">Connexion</h2>
 
-        <form method="POST" class="flex flex-col gap-5">
+        <form id="login-form" class="flex flex-col gap-5">
 
           <div class="flex flex-col gap-1.5">
             <label for="email" class="text-sm font-medium text-gray-700">Adresse e-mail</label>
@@ -33,9 +31,8 @@ import "../styles/global.css";
               type="email"
               required
               placeholder="vous@exemple.fr"
-              class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 transition"
+              class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none transition"
               style="color: #0D1B2A;"
-              onfocus="this.style.ringColor='#C9A84C'"
             />
           </div>
 
@@ -47,7 +44,7 @@ import "../styles/global.css";
               type="password"
               required
               placeholder="••••••••"
-              class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 transition"
+              class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none transition"
               style="color: #0D1B2A;"
             />
           </div>
@@ -68,6 +65,13 @@ import "../styles/global.css";
       </div>
 
     </div>
+
+    <script>
+      document.getElementById("login-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        window.location.href = "/dashboard";
+      });
+    </script>
 
   </body>
 </html>

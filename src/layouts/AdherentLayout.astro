@@ -1,4 +1,4 @@
----
+﻿---
 import Sidebar from "../components/navigation/Sidebar.astro";
 import Header from "../components/navigation/Header.astro";
 import "../styles/global.css";
@@ -18,22 +18,12 @@ const { titre } = Astro.props;
   </head>
 
   <body class="flex" style="background-color: #F4F6F8; min-height: 100vh;">
-
-    <!-- Menu latéral -->
     <Sidebar />
-
-    <!-- Zone principale : header + contenu -->
     <div class="flex flex-col flex-1">
-
-      <!-- Barre du haut -->
       <Header />
-
-      <!-- Contenu de la page (injecté ici) -->
       <main class="p-8">
         <slot />
       </main>
-
     </div>
-
   </body>
 </html>
