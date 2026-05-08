@@ -1,0 +1,103 @@
+---
+import AdherentMemberLayout from "../../layouts/AdherentMemberLayout.astro";
+import Card from "../../components/ui/Card.astro";
+import Badge from "../../components/ui/Badge.astro";
+import { mockAdhesion } from "../../data/mock";
+
+const dateDebutFormatee = new Date(mockAdhesion.dateDebut).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+const dateFinFormatee = new Date(mockAdhesion.dateFin).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+const joursRestants = Math.ceil((new Date(mockAdhesion.dateFin).getTime() - Date.now()) / 86400000);
+const totalPaye = mockAdhesion.paiements.reduce((acc, p) => acc + p.montant, 0);
+---
+
+<AdherentMemberLayout titre="Mon adhésion">
+
+  <div class="mb-8">
+    <h2 class="text-2xl font-bold" style="color: #0b1f3a;">Mon adhésion</h2>
+    <p class="text-sm text-gray-500 mt-1">Suivi de votre adhésion et historique des paiements.</p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+
+    <!-- Statut principal -->
+    <div class="lg:col-span-2">
+      <Card>
+        <div class="flex items-start justify-between mb-6">
+          <div>
+            <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Programme</p>
+            <h3 class="text-lg font-bold" style="color: #0b1f3a;">{mockAdhesion.programme}</h3>
+            <p class="text-xs text-gray-400 mt-1">N° {mockAdhesion.numero}</p>
+          </div>
+          <Badge variant="vert">Active</Badge>
+        </div>
+
+        <div class="grid grid-cols-2 gap-6 pt-5" style="border-top: 1px solid #f1f3f5;">
+          <div>
+            <p class="text-xs text-gray-400 mb-1">Date de début</p>
+            <p class="text-sm font-semibold" style="color: #0b1f3a;">{dateDebutFormatee}</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 mb-1">Date de fin</p>
+            <p class="text-sm font-semibold" style="color: #0b1f3a;">{dateFinFormatee}</p>
+          </div>
+        </div>
+
+        {joursRestants > 0 && joursRestants <= 90 && (
+          <div class="mt-5 rounded-xl px-4 py-3 flex items-center gap-3" style="background-color: rgba(212,167,98,0.08); border: 1px solid rgba(212,167,98,0.2);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#d4a762" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12" stroke-linecap="round"/><circle cx="12" cy="16" r="0.5" fill="#d4a762"/>
+            </svg>
+            <p class="text-xs" style="color: #d4a762;">Votre adhésion expire dans <strong>{joursRestants} jours</strong>. Contactez JCBO Conseil pour le renouvellement.</p>
+          </div>
+        )}
+      </Card>
+    </div>
+
+    <!-- Total payé -->
+    <Card class="flex flex-col justify-between">
+      <div>
+        <p class="text-xs text-gray-400 uppercase tracking-wide mb-3">Total réglé</p>
+        <p class="text-3xl font-bold" style="color: #0b1f3a;">{totalPaye} €</p>
+        <p class="text-xs text-gray-400 mt-1">{mockAdhesion.paiements.length} paiement{mockAdhesion.paiements.length > 1 ? "s" : ""}</p>
+      </div>
+      <a href="/adherent/contact" class="mt-6 flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold transition hover:opacity-90" style="background-color: rgba(212,167,98,0.1); color: #d4a762;">
+        Contacter JCBO
+      </a>
+    </Card>
+
+  </div>
+
+  <!-- Historique des paiements -->
+  <Card>
+    <h3 class="text-sm font-semibold mb-5" style="color: #0b1f3a;">Historique des paiements</h3>
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead>
+          <tr style="border-bottom: 1px solid #f1f3f5;">
+            <th class="text-left text-xs font-medium text-gray-400 uppercase tracking-widest pb-3">Référence</th>
+            <th class="text-left text-xs font-medium text-gray-400 uppercase tracking-widest pb-3">Date</th>
+            <th class="text-left text-xs font-medium text-gray-400 uppercase tracking-widest pb-3">Méthode</th>
+            <th class="text-right text-xs font-medium text-gray-400 uppercase tracking-widest pb-3">Montant</th>
+            <th class="text-center text-xs font-medium text-gray-400 uppercase tracking-widest pb-3">Statut</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50">
+          {mockAdhesion.paiements.map((p) => (
+            <tr class="hover:bg-gray-50 transition-colors">
+              <td class="py-3.5 font-mono text-xs text-gray-400">{p.reference}</td>
+              <td class="py-3.5 text-sm" style="color: #0b1f3a;">
+                {new Date(p.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}
+              </td>
+              <td class="py-3.5 text-sm text-gray-500">{p.methode}</td>
+              <td class="py-3.5 text-sm font-semibold text-right" style="color: #0b1f3a;">{p.montant} €</td>
+              <td class="py-3.5 text-center">
+                <Badge variant="vert">Réglé</Badge>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </Card>
+
+</AdherentMemberLayout>

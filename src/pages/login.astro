@@ -1,9 +1,11 @@
 ﻿---
 import "../styles/global.css";
 import LogoJCBO from "../components/ui/LogoJCBO.astro";
-import { mockAdmin } from "../data/mock";
+import { mockAdmin, mockAdherent } from "../data/mock";
 
 const { email, motDePasse } = mockAdmin;
+const adherentEmail = mockAdherent.email;
+const adherentPassword = mockAdherent.motDePasse;
 ---
 
 <html lang="fr">
@@ -104,13 +106,15 @@ const { email, motDePasse } = mockAdmin;
       </div>
     </div>
 
-    <script define:vars={{ credEmail: email, credPassword: motDePasse }}>
+    <script is:inline define:vars={{ credEmail: email, credPassword: motDePasse, adherentEmail, adherentPassword }}>
       document.getElementById("login-form").addEventListener("submit", (e) => {
         e.preventDefault();
         const inputEmail = document.getElementById("email").value;
         const inputPassword = document.getElementById("password").value;
         if (inputEmail === credEmail && inputPassword === credPassword) {
           window.location.href = "/dashboard";
+        } else if (inputEmail === adherentEmail && inputPassword === adherentPassword) {
+          window.location.href = "/adherent/tableau-de-bord";
         } else {
           document.getElementById("login-error").classList.remove("hidden");
         }

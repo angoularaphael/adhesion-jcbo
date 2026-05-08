@@ -1,0 +1,64 @@
+---
+import SidebarAdherent from "../components/navigation/SidebarAdherent.astro";
+import "../styles/global.css";
+import { mockAdherent } from "../data/mock";
+
+interface Props {
+  titre: string;
+}
+const { titre } = Astro.props;
+const initiales = mockAdherent.prenom[0] + mockAdherent.nom[0];
+---
+
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{titre} — Espace Adhérent JCBO</title>
+  </head>
+
+  <body class="flex" style="background-color: #f8f6f2; min-height: 100vh;">
+
+    <SidebarAdherent />
+
+    <div class="flex flex-col flex-1 min-w-0">
+
+      <header class="h-16 flex items-center justify-between px-6 lg:px-8 bg-white border-b border-gray-100 flex-shrink-0">
+        <div class="flex items-center gap-3">
+          <button id="menu-toggle" class="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition" style="color: #0b1f3a;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+          </button>
+          <h1 class="text-lg font-semibold font-heading" style="color: #0b1f3a;">{titre}</h1>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="text-right hidden sm:block">
+            <p class="text-sm font-semibold" style="color: #0b1f3a;">{mockAdherent.prenom} {mockAdherent.nom}</p>
+            <p class="text-xs text-gray-400">{mockAdherent.entreprise}</p>
+          </div>
+          <div class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0" style="background-color: rgba(212,167,98,0.15); color: #d4a762;">
+            {initiales}
+          </div>
+        </div>
+      </header>
+
+      <main class="p-4 lg:p-8 flex-1">
+        <slot />
+      </main>
+
+    </div>
+
+    <script>
+      const toggle = document.getElementById("menu-toggle");
+      const sidebar = document.getElementById("sidebar-adherent");
+      const overlay = document.getElementById("sidebar-overlay-adherent");
+      toggle?.addEventListener("click", () => {
+        sidebar?.classList.toggle("-translate-x-full");
+        overlay?.classList.toggle("hidden");
+      });
+    </script>
+
+  </body>
+</html>

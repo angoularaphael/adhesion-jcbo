@@ -88,12 +88,41 @@ export const mockAdherent = {
   prenom: "Marie",
   nom: "Dupont",
   email: "m.dupont@dupont-associes.fr",
+  motDePasse: "Marie2025!",
   telephone: "06 12 34 56 78",
   entreprise: "Dupont & Associés",
   secteur: "Conseil juridique",
   numeroAdherent: "ADH-2024-0042",
   statut: "Actif",
   dateAdhesion: "2024-03-15",
+};
+
+export const mockAdhesion = {
+  numero: "ADH-2024-0042",
+  statut: "active",
+  dateDebut: "2024-03-15",
+  dateFin: "2025-03-15",
+  programme: "MINDSET ENTREPRENEURIAL™",
+  paiements: [
+    { id: "PAY-001", date: "2024-03-15", montant: 490, methode: "Virement", reference: "VIR-2024-042" },
+    { id: "PAY-002", date: "2024-09-15", montant: 490, methode: "Virement", reference: "VIR-2024-089" },
+  ],
+};
+
+export const mockCertificat = {
+  nom: "Marie Dupont",
+  programme: "MINDSET ENTREPRENEURIAL™",
+  numero: "JCBO-ME-240042",
+  dateDelivrance: "2024-09-20",
+  competences: [
+    "Développement du mindset entrepreneurial",
+    "Renforcement de la posture professionnelle",
+    "Structuration stratégique de l'activité",
+    "Prise de décision et pilotage",
+    "Leadership et discipline opérationnelle",
+    "Vision business et performance",
+    "Communication d'impact et crédibilité professionnelle",
+  ],
 };
 
 export const mockRessources = [

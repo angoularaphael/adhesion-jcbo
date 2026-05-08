@@ -1,0 +1,90 @@
+---
+import AdherentMemberLayout from "../../layouts/AdherentMemberLayout.astro";
+import Card from "../../components/ui/Card.astro";
+import Badge from "../../components/ui/Badge.astro";
+import { mockAdherent } from "../../data/mock";
+
+const champs = [
+  { label: "Prénom", valeur: mockAdherent.prenom },
+  { label: "Nom", valeur: mockAdherent.nom },
+  { label: "E-mail", valeur: mockAdherent.email },
+  { label: "Téléphone", valeur: mockAdherent.telephone },
+  { label: "Entreprise", valeur: mockAdherent.entreprise },
+  { label: "Secteur d'activité", valeur: mockAdherent.secteur },
+];
+---
+
+<AdherentMemberLayout titre="Mon profil">
+
+  <div class="mb-8">
+    <h2 class="text-2xl font-bold" style="color: #0b1f3a;">Mon profil</h2>
+    <p class="text-sm text-gray-500 mt-1">Informations liées à votre adhésion JCBO Conseil.</p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Carte identité -->
+    <Card class="flex flex-col items-center text-center gap-4">
+      <div class="w-20 h-20 rounded-full flex items-center justify-center text-xl font-bold" style="background: linear-gradient(135deg, #0b1f3a 0%, #162d4f 100%); color: #d4a762;">
+        {mockAdherent.prenom[0]}{mockAdherent.nom[0]}
+      </div>
+      <div>
+        <p class="font-semibold text-lg" style="color: #0b1f3a;">{mockAdherent.prenom} {mockAdherent.nom}</p>
+        <p class="text-xs text-gray-400 mt-0.5">{mockAdherent.entreprise}</p>
+      </div>
+      <Badge variant="vert">{mockAdherent.statut}</Badge>
+      <div class="w-full pt-3" style="border-top: 1px solid #f1f3f5;">
+        <p class="text-xs text-gray-400 mb-1">N° adhérent</p>
+        <p class="text-sm font-mono font-semibold" style="color: #d4a762;">{mockAdherent.numeroAdherent}</p>
+      </div>
+      <div class="w-full">
+        <p class="text-xs text-gray-400 mb-1">Membre depuis</p>
+        <p class="text-sm font-medium" style="color: #0b1f3a;">
+          {new Date(mockAdherent.dateAdhesion).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+        </p>
+      </div>
+    </Card>
+
+    <!-- Informations détaillées -->
+    <div class="lg:col-span-2 flex flex-col gap-6">
+      <Card>
+        <h3 class="text-sm font-semibold mb-5" style="color: #0b1f3a;">Informations personnelles</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {champs.map((c) => (
+            <div>
+              <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">{c.label}</p>
+              <p class="text-sm font-medium" style="color: #0b1f3a;">{c.valeur}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card>
+        <h3 class="text-sm font-semibold mb-5" style="color: #0b1f3a;">Changer le mot de passe</h3>
+        <form id="form-mdp" class="flex flex-col gap-4">
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-medium text-gray-400 uppercase tracking-wide">Mot de passe actuel</label>
+            <input type="password" placeholder="••••••••" class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none transition focus:border-[#d4a762]" style="color: #0b1f3a;" />
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-medium text-gray-400 uppercase tracking-wide">Nouveau mot de passe</label>
+            <input type="password" placeholder="••••••••" class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none transition focus:border-[#d4a762]" style="color: #0b1f3a;" />
+          </div>
+          <button type="submit" class="self-start px-6 py-2.5 rounded-full text-sm font-semibold text-white transition hover:opacity-90" style="background-color: #0b1f3a;">
+            Mettre à jour
+          </button>
+          <p id="mdp-success" class="hidden text-xs" style="color: #d4a762;">Mot de passe mis à jour avec succès.</p>
+        </form>
+      </Card>
+    </div>
+
+  </div>
+
+  <script>
+    document.getElementById("form-mdp").addEventListener("submit", (e) => {
+      e.preventDefault();
+      document.getElementById("mdp-success").classList.remove("hidden");
+    });
+  </script>
+
+</AdherentMemberLayout>
