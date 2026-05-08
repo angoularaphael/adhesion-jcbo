@@ -1,43 +1,91 @@
-# Astro Starter Kit: Minimal
+# JCBO Conseil — Espace Administration
 
-```sh
-npm create astro@latest -- --template minimal
+Interface d'administration pour la gestion des adhérents de **JCBO Conseil**, cabinet de conseil aux entreprises.
+
+## Stack technique
+
+- [Astro 6](https://astro.build/) — framework web statique/SSR
+- [Tailwind CSS v4](https://tailwindcss.com/) — styles utilitaires
+- Données mock (MySQL local prévu)
+
+## Fonctionnalités
+
+| Page | Description |
+|---|---|
+| `/login` | Authentification administrateur |
+| `/dashboard` | Tableau de bord — stats, actualités récentes, messages |
+| `/dashboard/actualites` | Gestion et publication des actualités |
+| `/dashboard/statistiques` | Indicateurs clés et progression des adhésions |
+| `/dashboard/messagerie` | Messagerie style WhatsApp avec les adhérents (IDs uniques) |
+| `/dashboard/identifiants` | Génération d'accès pour les nouveaux adhérents |
+
+## Identifiants de démo
+
+```
+Email    : jc.boyang@jcbo-conseil.fr
+Mot de passe : Jcbo2025!
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## Structure du projet
 
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+```
+src/
+├── components/
+│   ├── navigation/
+│   │   ├── Sidebar.astro     # Navigation latérale super admin
+│   │   └── Header.astro      # Barre supérieure
+│   └── ui/
+│       ├── Card.astro        # Conteneur réutilisable
+│       ├── Badge.astro       # Étiquette colorée (statuts)
+│       └── LogoJCBO.astro    # Logo officiel JCBO Conseil
+├── data/
+│   └── mock.ts               # Données de démonstration
+├── layouts/
+│   └── AdherentLayout.astro  # Shell commun (sidebar + header)
+├── pages/
+│   ├── index.astro           # Redirection → /login
+│   ├── login.astro           # Page de connexion
+│   └── dashboard/
+│       ├── index.astro       # Tableau de bord
+│       ├── actualites.astro  # Actualités
+│       ├── statistiques.astro
+│       ├── messagerie.astro
+│       └── identifiants.astro
+└── styles/
+    └── global.css            # Tailwind + Google Fonts
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+## Charte graphique
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+Alignée sur [jcboyang-conseil-1.onrender.com](https://jcboyang-conseil-1.onrender.com/)
 
-Any static assets, like images, can be placed in the `public/` directory.
+| Rôle | Valeur |
+|---|---|
+| Marine (primaire) | `#0b1f3a` |
+| Or (accent) | `#d4a762` |
+| Fond clair | `#f8f6f2` |
+| Police titres | Playfair Display |
+| Police corps | Inter |
 
-## 🧞 Commands
+## Démarrage
 
-All commands are run from the root of the project, from a terminal:
+```bash
+npm install
+npm run dev
+# → http://localhost:4321
+```
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+```bash
+npm run build    # Build de production
+npm run preview  # Prévisualisation du build
+```
 
-## 👀 Want to learn more?
+## Variables d'environnement
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+```env
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=adhesion_jcbo
+DB_USER=root
+DB_PASSWORD=root
+```

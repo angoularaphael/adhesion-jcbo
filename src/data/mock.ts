@@ -1,0 +1,86 @@
+﻿export const mockAdmin = {
+  prenom: "Jean-Christophe",
+  nom: "Boyang",
+  email: "jc.boyang@jcbo-conseil.fr",
+  motDePasse: "Jcbo2025!",
+};
+
+export const mockStats = {
+  totalAdherents: 47,
+  adherentsActifs: 42,
+  nouveauxCeMois: 5,
+  tauxRenouvellement: 89,
+};
+
+export const mockActualites = [
+  {
+    id: "1",
+    titre: "Lancement du programme d'accompagnement 2025",
+    contenu: "JCBO Conseil lance son nouveau programme d'accompagnement stratégique pour les entreprises en croissance.",
+    date: "2025-04-28",
+    statut: "Publié",
+  },
+  {
+    id: "2",
+    titre: "Atelier fiscal — Juin 2025",
+    contenu: "Inscriptions ouvertes pour l'atelier sur les optimisations fiscales pour les TPE/PME.",
+    date: "2025-04-15",
+    statut: "Publié",
+  },
+  {
+    id: "3",
+    titre: "Partenariat avec CCI Paris Île-de-France",
+    contenu: "JCBO Conseil officialise un partenariat avec la CCI pour élargir son réseau d'adhérents.",
+    date: "2025-03-20",
+    statut: "Brouillon",
+  },
+];
+
+export const mockConversations = [
+  {
+    id: "MSG-001",
+    adherent: "Marie Dupont",
+    entreprise: "Dupont & Associés",
+    sujet: "Question sur mon adhésion",
+    dernier_message: "Bonjour, je souhaite renouveler mon adhésion pour l'année prochaine.",
+    date: "2025-05-04",
+    non_lu: 2,
+    messages: [
+      { de: "adherent", texte: "Bonjour, je souhaite renouveler mon adhésion pour l'année prochaine.", heure: "09:14" },
+      { de: "admin", texte: "Bonjour Marie, bien sûr ! Je vous envoie les modalités par e-mail.", heure: "09:32" },
+      { de: "adherent", texte: "Merci beaucoup. Et est-il possible de payer en plusieurs fois ?", heure: "09:45" },
+    ],
+  },
+  {
+    id: "MSG-002",
+    adherent: "Thomas Renard",
+    entreprise: "Renard Consulting",
+    sujet: "Accès aux ressources",
+    dernier_message: "Je n'arrive pas à télécharger le guide de création d'entreprise.",
+    date: "2025-05-03",
+    non_lu: 0,
+    messages: [
+      { de: "adherent", texte: "Je n'arrive pas à télécharger le guide de création d'entreprise.", heure: "14:02" },
+      { de: "admin", texte: "Nous avons résolu le problème, le fichier est à nouveau disponible.", heure: "15:20" },
+    ],
+  },
+  {
+    id: "MSG-003",
+    adherent: "Sophie Laurent",
+    entreprise: "Laurent & Co",
+    sujet: "Demande de renseignements",
+    dernier_message: "Quels sont les avantages de l'adhésion premium ?",
+    date: "2025-05-02",
+    non_lu: 1,
+    messages: [
+      { de: "adherent", texte: "Quels sont les avantages de l'adhésion premium ?", heure: "11:30" },
+    ],
+  },
+];
+
+export const mockIdentifiants = [
+  { id: "ID-001", nom: "Paul Morin", email: "p.morin@example.fr", cree_le: "2025-04-30", statut: "Actif" },
+  { id: "ID-002", nom: "Clara Petit", email: "c.petit@example.fr", cree_le: "2025-04-22", statut: "Actif" },
+  { id: "ID-003", nom: "Marc Leblanc", email: "m.leblanc@example.fr", cree_le: "2025-04-10", statut: "Inactif" },
+];
+

@@ -1,0 +1,109 @@
+﻿---
+import AdherentLayout from "../../layouts/AdherentLayout.astro";
+import Badge from "../../components/ui/Badge.astro";
+import { mockStats, mockActualites, mockConversations } from "../../data/mock";
+
+const nonLuTotal = mockConversations.reduce((acc, c) => acc + c.non_lu, 0);
+
+const statCards = [
+  { label: "Total adhérents", value: mockStats.totalAdherents, note: "Tous statuts confondus",
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path stroke-linecap="round" stroke-linejoin="round" d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>` },
+  { label: "Adhérents actifs", value: mockStats.adherentsActifs, note: `${Math.round((mockStats.adherentsActifs / mockStats.totalAdherents) * 100)}% du total`,
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>` },
+  { label: "Nouveaux ce mois", value: `+${mockStats.nouveauxCeMois}`, note: "Depuis le 1er mai", gold: true,
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>` },
+  { label: "Taux renouvellement", value: `${mockStats.tauxRenouvellement}%`, note: "Sur les 12 derniers mois",
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>` },
+];
+---
+
+<AdherentLayout titre="Tableau de bord">
+
+  <!-- Bannière bienvenue -->
+  <div class="rounded-2xl px-8 py-7 mb-8 flex items-center justify-between overflow-hidden relative"
+    style="background: linear-gradient(135deg, #0b1f3a 0%, #122b50 100%);">
+    <div class="absolute -right-8 -top-8 w-40 h-40 rounded-full opacity-10" style="background-color: #d4a762;"></div>
+    <div class="absolute -right-2 bottom-0 w-24 h-24 rounded-full opacity-5" style="background-color: #d4a762;"></div>
+    <div class="relative">
+      <p class="text-xs font-medium uppercase tracking-widest mb-1" style="color: rgba(212,167,98,0.7);">Super Admin</p>
+      <h2 class="text-2xl font-bold text-white mb-1">Bonjour, Jean-Christophe</h2>
+      <p class="text-sm" style="color: rgba(255,255,255,0.45);">Voici un apercu de votre activite.</p>
+    </div>
+    <div class="hidden sm:flex flex-col items-end relative">
+      <p class="text-3xl font-bold" style="color: #d4a762;">{mockStats.totalAdherents}</p>
+      <p class="text-xs mt-1" style="color: rgba(255,255,255,0.4);">adherents au total</p>
+    </div>
+  </div>
+  <!-- Cartes statistiques -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+    {statCards.map((s) => (
+      <div class="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200" style="border: 1px solid #f1f3f5;">
+        <div class="flex items-start justify-between mb-4">
+          <p class="text-xs font-medium text-gray-400 uppercase tracking-widest leading-relaxed">{s.label}</p>
+          <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={s.gold ? "background-color: rgba(212,167,98,0.12); color: #d4a762;" : "background-color: rgba(11,31,58,0.06); color: #0b1f3a;"} set:html={s.icon}></div>
+        </div>
+        <p class="text-3xl font-bold mb-1" style={s.gold ? "color: #d4a762;" : "color: #0b1f3a;"}>{s.value}</p>
+        <p class="text-xs text-gray-400">{s.note}</p>
+      </div>
+    ))}
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- Actualités récentes -->
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden" style="border: 1px solid #f1f3f5;">
+      <div class="flex items-center justify-between px-6 py-4" style="border-bottom: 1px solid #f1f3f5;">
+        <h2 class="text-sm font-semibold" style="color: #0b1f3a;">Actualités récentes</h2>
+        <a href="/dashboard/actualites" class="text-xs font-medium transition-opacity hover:opacity-70" style="color: #d4a762;">Voir tout →</a>
+      </div>
+      <div class="divide-y divide-gray-50">
+        {mockActualites.map((a) => (
+          <div class="px-6 py-4 hover:bg-gray-50 transition-colors duration-150">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-sm font-medium leading-snug truncate" style="color: #0b1f3a;">{a.titre}</p>
+                <p class="text-xs text-gray-400 mt-1">
+                  {new Date(a.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+                </p>
+              </div>
+              <Badge variant={a.statut === "Publié" ? "vert" : "gris"}>{a.statut}</Badge>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <!-- Messagerie -->
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden" style="border: 1px solid #f1f3f5;">
+      <div class="flex items-center justify-between px-6 py-4" style="border-bottom: 1px solid #f1f3f5;">
+        <div class="flex items-center gap-2">
+          <h2 class="text-sm font-semibold" style="color: #0b1f3a;">Messagerie</h2>
+          {nonLuTotal > 0 && (
+            <span class="text-xs font-bold px-2 py-0.5 rounded-full text-white" style="background-color: #d4a762;">{nonLuTotal}</span>
+          )}
+        </div>
+        <a href="/dashboard/messagerie" class="text-xs font-medium transition-opacity hover:opacity-70" style="color: #d4a762;">Voir tout →</a>
+      </div>
+      <div class="divide-y divide-gray-50">
+        {mockConversations.map((c) => (
+          <a href="/dashboard/messagerie" class="flex items-start gap-4 px-6 py-4 hover:bg-gray-50 transition-colors duration-150">
+            <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style="background-color: #0b1f3a;">
+              {c.adherent.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium" style="color: #0b1f3a;">{c.adherent}</p>
+              <p class="text-xs text-gray-400 truncate mt-0.5">{c.dernier_message}</p>
+            </div>
+            {c.non_lu > 0 && (
+              <span class="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 mt-1" style="background-color: #d4a762;">{c.non_lu}</span>
+            )}
+          </a>
+        ))}
+      </div>
+    </div>
+
+  </div>
+
+</AdherentLayout>
+
+
