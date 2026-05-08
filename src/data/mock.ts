@@ -84,3 +84,39 @@ export const mockIdentifiants = [
   { id: "ID-003", nom: "Marc Leblanc", email: "m.leblanc@example.fr", cree_le: "2025-04-10", statut: "Inactif" },
 ];
 
+export const mockAdherent = {
+  prenom: "Marie",
+  nom: "Dupont",
+  email: "m.dupont@dupont-associes.fr",
+  telephone: "06 12 34 56 78",
+  entreprise: "Dupont & Associés",
+  secteur: "Conseil juridique",
+  numeroAdherent: "ADH-2024-0042",
+  statut: "Actif",
+  dateAdhesion: "2024-03-15",
+};
+
+export const mockRessources = [
+  {
+    id: "RES-001",
+    titre: "Guide de création d'entreprise 2025",
+    categorie: "Guide",
+    date: "2025-01-15",
+    fichier: "#",
+  },
+  {
+    id: "RES-002",
+    titre: "Modèle de statuts SAS",
+    categorie: "Modèle",
+    date: "2025-02-10",
+    fichier: "#",
+  },
+  {
+    id: "RES-003",
+    titre: "Calculateur de charges sociales",
+    categorie: "Outil",
+    date: "2025-03-05",
+    fichier: "#",
+  },
+];
+
