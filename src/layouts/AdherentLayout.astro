@@ -13,7 +13,18 @@ const { titre } = Astro.props;
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="description" content="Espace d'administration JCBO Conseil — gestion des adhérents, actualités et messagerie." />
     <title>{titre} — JCBO Conseil</title>
+    <script is:inline type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "JCBO Conseil",
+      "description": "Cabinet de conseil aux entreprises spécialisé en accompagnement stratégique, fiscal et organisationnel.",
+      "url": "https://jcboyang-conseil-1.onrender.com"
+    }
+    </script>
   </head>
 
   <body class="flex" style="background-color: #f8f6f2; min-height: 100vh;">

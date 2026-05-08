@@ -10,7 +10,28 @@ const { email, motDePasse } = mockAdmin;
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="index, follow" />
+    <meta name="description" content="Connectez-vous à l'espace d'administration JCBO Conseil pour gérer vos adhérents, publier des actualités et suivre vos statistiques." />
+    <meta property="og:title" content="Connexion — JCBO Conseil" />
+    <meta property="og:description" content="Accédez à l'espace d'administration JCBO Conseil, cabinet de conseil aux entreprises." />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="fr_FR" />
     <title>Connexion — JCBO Conseil</title>
+    <script is:inline type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "JCBO Conseil",
+      "description": "Cabinet de conseil aux entreprises spécialisé en accompagnement stratégique, fiscal et organisationnel pour les TPE/PME.",
+      "url": "https://jcboyang-conseil-1.onrender.com",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "email": "contact@jcbo-conseil.fr",
+        "contactType": "customer support",
+        "availableLanguage": "French"
+      }
+    }
+    </script>
   </head>
 
   <body class="min-h-screen flex items-center justify-center relative overflow-hidden" style="background-color: #0b1f3a;">
