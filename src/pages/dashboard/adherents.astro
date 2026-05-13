@@ -1,0 +1,429 @@
+---
+import AdherentLayout from "../../layouts/AdherentLayout.astro";
+import Card from "../../components/ui/Card.astro";
+import Badge from "../../components/ui/Badge.astro";
+import { getAdherents, getCours } from "../../lib/store";
+
+const adherents = getAdherents();
+const cours = getCours().filter(c => c.statut === "Publié");
+
+const RAPPEL_PAIEMENT = "Bonjour,\n\nNous vous rappelons que votre cotisation annuelle est arrivée à échéance. Merci de procéder au règlement dans les meilleurs délais.\n\nCordialement,\nJCBO Conseil";
+---
+
+<AdherentLayout titre="Adhérents">
+
+  <div class="mb-6 flex items-center justify-between">
+    <div>
+      <h2 class="text-2xl font-bold" style="color: #0b1f3a;">Adhérents</h2>
+      <p class="text-sm text-gray-500 mt-1">Gérez les adhérents, leurs cours et leurs accès.</p>
+    </div>
+    <button
+      id="btn-ajouter"
+      class="px-4 py-2 rounded-lg text-sm font-semibold text-white"
+      style="background-color: #d4a762;"
+    >+ Ajouter un adhérent</button>
+  </div>
+
+  <Card>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm" id="table-adherents">
+        <thead>
+          <tr style="border-bottom: 2px solid #f1f3f5;">
+            <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide pb-3 pr-4">Adhérent</th>
+            <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide pb-3 pr-4">E-mail</th>
+            <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide pb-3 pr-4">Entreprise</th>
+            <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide pb-3 pr-4">Statut</th>
+            <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide pb-3 pr-4">Cours</th>
+            <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide pb-3">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50" id="tbody-adherents">
+          {adherents.map((a) => (
+            <tr data-id={a.id}>
+              <td class="py-3 pr-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 text-white" style="background-color: #0b1f3a;">
+                    {(a.prenom[0] + a.nom[0]).toUpperCase()}
+                  </div>
+                  <div>
+                    <div class="font-medium" style="color: #0b1f3a;">{a.prenom} {a.nom}</div>
+                    <div class="text-xs text-gray-400">{a.numeroAdherent}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="py-3 pr-4 text-gray-500">{a.email}</td>
+              <td class="py-3 pr-4 text-gray-500">{a.entreprise || "—"}</td>
+              <td class="py-3 pr-4">
+                <Badge variant={a.statut === "Actif" ? "vert" : "gris"}>{a.statut}</Badge>
+              </td>
+              <td class="py-3 pr-4 text-gray-500 text-xs">{a.coursInscrits.length} cours</td>
+              <td class="py-3">
+                <div class="flex items-center gap-2">
+                  <button
+                    class="btn-edit text-xs px-2 py-1 rounded font-medium"
+                    style="background-color: #f1f3f5; color: #0b1f3a;"
+                    data-adherent={JSON.stringify(a)}
+                  >Modifier</button>
+                  <button
+                    class="btn-cours text-xs px-2 py-1 rounded font-medium"
+                    style="background-color: #eff6ff; color: #1d4ed8;"
+                    data-id={a.id}
+                    data-nom={`${a.prenom} ${a.nom}`}
+                    data-cours={JSON.stringify(a.coursInscrits)}
+                  >Cours</button>
+                  <button
+                    class="btn-message text-xs px-2 py-1 rounded font-medium"
+                    style="background-color: #fef9ec; color: #92400e;"
+                    data-id={a.id}
+                    data-nom={`${a.prenom} ${a.nom}`}
+                  >Rappel</button>
+                  <button
+                    class="btn-delete text-xs px-2 py-1 rounded font-medium"
+                    style="background-color: #fef2f2; color: #dc2626;"
+                    data-id={a.id}
+                    data-nom={`${a.prenom} ${a.nom}`}
+                  >Supprimer</button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {adherents.length === 0 && (
+        <p class="text-center text-sm text-gray-400 py-8">Aucun adhérent enregistré.</p>
+      )}
+    </div>
+  </Card>
+
+</AdherentLayout>
+
+<!-- MODAL AJOUTER / MODIFIER -->
+<div id="modal-adherent" class="fixed inset-0 z-50 hidden items-center justify-center" style="background: rgba(0,0,0,0.4);">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between px-6 pt-6 pb-4" style="border-bottom: 1px solid #f1f3f5;">
+      <h3 id="modal-titre" class="text-lg font-bold" style="color: #0b1f3a;">Ajouter un adhérent</h3>
+      <button id="modal-close" class="text-gray-400 hover:text-gray-600 text-xl font-bold leading-none">×</button>
+    </div>
+    <form id="form-adherent" class="px-6 py-5 space-y-4">
+      <input type="hidden" id="f-id" />
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Prénom *</label>
+          <input id="f-prenom" type="text" required class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Nom *</label>
+          <input id="f-nom" type="text" required class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400" />
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1">E-mail *</label>
+        <input id="f-email" type="email" required class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400" />
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1">Mot de passe <span id="f-pwd-hint" class="text-gray-400">(laisser vide pour ne pas changer)</span></label>
+        <input id="f-motdepasse" type="password" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400" placeholder="min. 6 caractères" />
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Téléphone</label>
+          <input id="f-telephone" type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Statut</label>
+          <select id="f-statut" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400">
+            <option value="Actif">Actif</option>
+            <option value="Inactif">Inactif</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1">Entreprise</label>
+        <input id="f-entreprise" type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400" />
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1">Secteur</label>
+        <input id="f-secteur" type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400" />
+      </div>
+      <div id="f-error" class="text-red-500 text-sm hidden"></div>
+      <div class="flex justify-end gap-3 pt-2">
+        <button type="button" id="modal-cancel" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50">Annuler</button>
+        <button type="submit" id="modal-submit" class="px-5 py-2 rounded-lg text-sm font-semibold text-white" style="background-color: #d4a762;">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL ATTRIBUTION COURS -->
+<div id="modal-cours" class="fixed inset-0 z-50 hidden items-center justify-center" style="background: rgba(0,0,0,0.4);">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4">
+    <div class="flex items-center justify-between px-6 pt-6 pb-4" style="border-bottom: 1px solid #f1f3f5;">
+      <h3 id="modal-cours-titre" class="text-lg font-bold" style="color: #0b1f3a;">Cours de l'adhérent</h3>
+      <button id="modal-cours-close" class="text-gray-400 hover:text-gray-600 text-xl font-bold leading-none">×</button>
+    </div>
+    <div class="px-6 py-5">
+      <p class="text-sm text-gray-500 mb-4">Sélectionnez les cours à attribuer à cet adhérent.</p>
+      <div id="cours-checkboxes" class="space-y-3">
+        {cours.map(c => (
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" class="cours-checkbox w-4 h-4 accent-yellow-500" value={c.id} />
+            <span class="text-sm font-medium" style="color: #0b1f3a;">{c.titre}</span>
+          </label>
+        ))}
+        {cours.length === 0 && <p class="text-sm text-gray-400">Aucun cours publié disponible.</p>}
+      </div>
+      <div id="cours-error" class="text-red-500 text-sm hidden mt-3"></div>
+      <div class="flex justify-end gap-3 pt-5">
+        <button id="modal-cours-cancel" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50">Annuler</button>
+        <button id="modal-cours-submit" class="px-5 py-2 rounded-lg text-sm font-semibold text-white" style="background-color: #1d4ed8;">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MESSAGE RAPPEL -->
+<div id="modal-message" class="fixed inset-0 z-50 hidden items-center justify-center" style="background: rgba(0,0,0,0.4);">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4">
+    <div class="flex items-center justify-between px-6 pt-6 pb-4" style="border-bottom: 1px solid #f1f3f5;">
+      <h3 id="modal-msg-titre" class="text-lg font-bold" style="color: #0b1f3a;">Envoyer un rappel</h3>
+      <button id="modal-msg-close" class="text-gray-400 hover:text-gray-600 text-xl font-bold leading-none">×</button>
+    </div>
+    <div class="px-6 py-5">
+      <label class="block text-xs font-medium text-gray-500 mb-2">Message</label>
+      <textarea
+        id="msg-texte"
+        rows="6"
+        class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 resize-none"
+      ></textarea>
+      <div id="msg-error" class="text-red-500 text-sm hidden mt-2"></div>
+      <div class="flex justify-end gap-3 pt-4">
+        <button id="modal-msg-cancel" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50">Annuler</button>
+        <button id="modal-msg-submit" class="px-5 py-2 rounded-lg text-sm font-semibold text-white" style="background-color: #d4a762;">Envoyer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMER SUPPRESSION -->
+<div id="modal-delete" class="fixed inset-0 z-50 hidden items-center justify-center" style="background: rgba(0,0,0,0.4);">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
+    <h3 class="text-lg font-bold mb-2" style="color: #0b1f3a;">Confirmer la suppression</h3>
+    <p class="text-sm text-gray-500 mb-6">Supprimer <strong id="delete-nom"></strong> ? Cette action est irréversible.</p>
+    <div class="flex justify-end gap-3">
+      <button id="modal-delete-cancel" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50">Annuler</button>
+      <button id="modal-delete-confirm" class="px-5 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<script is:inline define:vars={{ RAPPEL_PAIEMENT }}>
+(function () {
+  // --- helpers ---
+  function show(el) { el.classList.remove("hidden"); el.classList.add("flex"); }
+  function hide(el) { el.classList.add("hidden"); el.classList.remove("flex"); }
+  function showErr(el, msg) { el.textContent = msg; el.classList.remove("hidden"); }
+  function hideErr(el) { el.classList.add("hidden"); el.textContent = ""; }
+
+  function reloadPage() { location.reload(); }
+
+  // --- MODAL AJOUTER/MODIFIER ---
+  const modal = document.getElementById("modal-adherent");
+  const formAdherent = document.getElementById("form-adherent");
+  const modalTitre = document.getElementById("modal-titre");
+  const fId = document.getElementById("f-id");
+  const fPrenom = document.getElementById("f-prenom");
+  const fNom = document.getElementById("f-nom");
+  const fEmail = document.getElementById("f-email");
+  const fPwd = document.getElementById("f-motdepasse");
+  const fPwdHint = document.getElementById("f-pwd-hint");
+  const fTelephone = document.getElementById("f-telephone");
+  const fStatut = document.getElementById("f-statut");
+  const fEntreprise = document.getElementById("f-entreprise");
+  const fSecteur = document.getElementById("f-secteur");
+  const fError = document.getElementById("f-error");
+
+  function openAddModal() {
+    modalTitre.textContent = "Ajouter un adhérent";
+    fId.value = "";
+    fPrenom.value = ""; fNom.value = ""; fEmail.value = "";
+    fPwd.value = ""; fPwd.required = true;
+    fPwdHint.textContent = "(obligatoire)";
+    fTelephone.value = ""; fStatut.value = "Actif";
+    fEntreprise.value = ""; fSecteur.value = "";
+    fEmail.readOnly = false;
+    hideErr(fError);
+    show(modal);
+  }
+
+  function openEditModal(data) {
+    modalTitre.textContent = "Modifier l'adhérent";
+    fId.value = data.id;
+    fPrenom.value = data.prenom; fNom.value = data.nom;
+    fEmail.value = data.email; fEmail.readOnly = true;
+    fPwd.value = ""; fPwd.required = false;
+    fPwdHint.textContent = "(laisser vide pour ne pas changer)";
+    fTelephone.value = data.telephone || "";
+    fStatut.value = data.statut;
+    fEntreprise.value = data.entreprise || "";
+    fSecteur.value = data.secteur || "";
+    hideErr(fError);
+    show(modal);
+  }
+
+  document.getElementById("btn-ajouter").addEventListener("click", openAddModal);
+  document.getElementById("modal-close").addEventListener("click", () => hide(modal));
+  document.getElementById("modal-cancel").addEventListener("click", () => hide(modal));
+
+  formAdherent.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    hideErr(fError);
+    const id = fId.value;
+    const isEdit = !!id;
+
+    const body = {
+      prenom: fPrenom.value.trim(),
+      nom: fNom.value.trim(),
+      email: fEmail.value.trim(),
+      telephone: fTelephone.value.trim(),
+      statut: fStatut.value,
+      entreprise: fEntreprise.value.trim(),
+      secteur: fSecteur.value.trim(),
+    };
+    if (fPwd.value) body.motDePasse = fPwd.value;
+
+    const url = isEdit ? `/api/admin/adherents/${id}` : "/api/admin/adherents";
+    const method = isEdit ? "PUT" : "POST";
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) { showErr(fError, data.error || "Erreur"); return; }
+      hide(modal);
+      reloadPage();
+    } catch {
+      showErr(fError, "Erreur réseau");
+    }
+  });
+
+  // --- MODAL COURS ---
+  const modalCours = document.getElementById("modal-cours");
+  const coursError = document.getElementById("cours-error");
+  let currentCoursId = null;
+
+  document.getElementById("modal-cours-close").addEventListener("click", () => hide(modalCours));
+  document.getElementById("modal-cours-cancel").addEventListener("click", () => hide(modalCours));
+
+  document.querySelectorAll(".btn-cours").forEach(btn => {
+    btn.addEventListener("click", () => {
+      currentCoursId = btn.dataset.id;
+      document.getElementById("modal-cours-titre").textContent =
+        "Cours de " + btn.dataset.nom;
+      const inscrits = JSON.parse(btn.dataset.cours || "[]");
+      document.querySelectorAll(".cours-checkbox").forEach(cb => {
+        cb.checked = inscrits.includes(cb.value);
+      });
+      hideErr(coursError);
+      show(modalCours);
+    });
+  });
+
+  document.getElementById("modal-cours-submit").addEventListener("click", async () => {
+    if (!currentCoursId) return;
+    hideErr(coursError);
+    const checked = Array.from(document.querySelectorAll(".cours-checkbox:checked")).map(cb => cb.value);
+    try {
+      const res = await fetch(`/api/admin/adherents/${currentCoursId}/cours`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ coursInscrits: checked }),
+      });
+      const data = await res.json();
+      if (!res.ok) { showErr(coursError, data.error || "Erreur"); return; }
+      hide(modalCours);
+      reloadPage();
+    } catch {
+      showErr(coursError, "Erreur réseau");
+    }
+  });
+
+  // --- MODAL MESSAGE ---
+  const modalMsg = document.getElementById("modal-message");
+  const msgTexte = document.getElementById("msg-texte");
+  const msgError = document.getElementById("msg-error");
+  let currentMsgId = null;
+
+  document.getElementById("modal-msg-close").addEventListener("click", () => hide(modalMsg));
+  document.getElementById("modal-msg-cancel").addEventListener("click", () => hide(modalMsg));
+
+  document.querySelectorAll(".btn-message").forEach(btn => {
+    btn.addEventListener("click", () => {
+      currentMsgId = btn.dataset.id;
+      document.getElementById("modal-msg-titre").textContent =
+        "Rappel à " + btn.dataset.nom;
+      msgTexte.value = RAPPEL_PAIEMENT;
+      hideErr(msgError);
+      show(modalMsg);
+    });
+  });
+
+  document.getElementById("modal-msg-submit").addEventListener("click", async () => {
+    if (!currentMsgId) return;
+    hideErr(msgError);
+    const texte = msgTexte.value.trim();
+    if (!texte) { showErr(msgError, "Le message ne peut pas être vide."); return; }
+    try {
+      const res = await fetch(`/api/admin/adherents/${currentMsgId}/message`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ texte }),
+      });
+      const data = await res.json();
+      if (!res.ok) { showErr(msgError, data.error || "Erreur"); return; }
+      hide(modalMsg);
+      alert("Message envoyé avec succès.");
+    } catch {
+      showErr(msgError, "Erreur réseau");
+    }
+  });
+
+  // --- MODAL SUPPRESSION ---
+  const modalDelete = document.getElementById("modal-delete");
+  let currentDeleteId = null;
+
+  document.getElementById("modal-delete-cancel").addEventListener("click", () => hide(modalDelete));
+  document.getElementById("modal-delete-close") && document.getElementById("modal-delete-close").addEventListener("click", () => hide(modalDelete));
+
+  document.querySelectorAll(".btn-delete").forEach(btn => {
+    btn.addEventListener("click", () => {
+      currentDeleteId = btn.dataset.id;
+      document.getElementById("delete-nom").textContent = btn.dataset.nom;
+      show(modalDelete);
+    });
+  });
+
+  document.getElementById("modal-delete-confirm").addEventListener("click", async () => {
+    if (!currentDeleteId) return;
+    try {
+      const res = await fetch(`/api/admin/adherents/${currentDeleteId}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) { alert(data.error || "Erreur"); return; }
+      hide(modalDelete);
+      reloadPage();
+    } catch {
+      alert("Erreur réseau");
+    }
+  });
+
+  // Boutons modifier
+  document.querySelectorAll(".btn-edit").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const data = JSON.parse(btn.dataset.adherent);
+      openEditModal(data);
+    });
+  });
+})();
+</script>

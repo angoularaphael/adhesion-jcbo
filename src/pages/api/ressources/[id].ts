@@ -1,0 +1,63 @@
+import type { APIRoute } from "astro";
+import { ressourceSchema } from "../../../lib/validation";
+import { getRessource, updateRessource, deleteRessource } from "../../../lib/store";
+
+export const GET: APIRoute = async ({ locals, params }) => {
+  if (!locals.session) {
+    return new Response(JSON.stringify({ error: "Non autorisé" }), { status: 401 });
+  }
+
+  const { id } = params;
+  if (!id) return new Response(JSON.stringify({ error: "ID manquant" }), { status: 400 });
+
+  const item = getRessource(id);
+  if (!item) return new Response(JSON.stringify({ error: "Introuvable" }), { status: 404 });
+
+  return new Response(JSON.stringify(item), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+};
+
+export const PUT: APIRoute = async ({ request, locals, params }) => {
+  if (!locals.session || locals.session.role !== "admin") {
+    return new Response(JSON.stringify({ error: "Non autorisé" }), { status: 401 });
+  }
+
+  const { id } = params;
+  if (!id) return new Response(JSON.stringify({ error: "ID manquant" }), { status: 400 });
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return new Response(JSON.stringify({ error: "Corps invalide" }), { status: 400 });
+  }
+
+  const result = ressourceSchema.partial().safeParse(body);
+  if (!result.success) {
+    return new Response(JSON.stringify({ error: result.error.errors[0].message }), { status: 400 });
+  }
+
+  const updated = updateRessource(id, result.data as Parameters<typeof updateRessource>[1]);
+  if (!updated) return new Response(JSON.stringify({ error: "Introuvable" }), { status: 404 });
+
+  return new Response(JSON.stringify(updated), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+};
+
+export const DELETE: APIRoute = async ({ locals, params }) => {
+  if (!locals.session || locals.session.role !== "admin") {
+    return new Response(JSON.stringify({ error: "Non autorisé" }), { status: 401 });
+  }
+
+  const { id } = params;
+  if (!id) return new Response(JSON.stringify({ error: "ID manquant" }), { status: 400 });
+
+  const deleted = deleteRessource(id);
+  if (!deleted) return new Response(JSON.stringify({ error: "Introuvable" }), { status: 404 });
+
+  return new Response(JSON.stringify({ success: true }), { status: 200 });
+};

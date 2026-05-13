@@ -4,14 +4,17 @@ import Card from "../../components/ui/Card.astro";
 import Badge from "../../components/ui/Badge.astro";
 import { getRessources } from "../../lib/store";
 
-const mockRessources = getRessources();
+const ressources = getRessources();
 const variantByCategorie: Record<string, "or" | "vert" | "gris"> = {
   Guide: "or",
   Modèle: "vert",
   Outil: "gris",
+  Vidéo: "vert",
+  Autre: "gris",
 };
 
-const categories = ["Tous", ...new Set(mockRessources.map(r => r.categorie))];
+const categories = ["Tous", ...Array.from(new Set(ressources.map(r => r.categorie)))];
+const ressourcesJson = JSON.stringify(ressources.map(r => ({ id: r.id, nom_fichier: r.nom_fichier ?? "", fichier: r.fichier })));
 ---
 
 <AdherentMemberLayout titre="Ressources">
@@ -36,7 +39,7 @@ const categories = ["Tous", ...new Set(mockRessources.map(r => r.categorie))];
 
   <Card>
     <div id="ressources-list" class="flex flex-col divide-y divide-gray-100">
-      {mockRessources.map((r) => (
+      {ressources.map((r) => (
         <div class="ressource-item flex items-center justify-between py-4 first:pt-0 last:pb-0" data-cat={r.categorie}>
           <div class="flex items-center gap-4">
             <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style="background-color: rgba(212,167,98,0.1);">
@@ -48,46 +51,94 @@ const categories = ["Tous", ...new Set(mockRessources.map(r => r.categorie))];
               <p class="text-sm font-medium" style="color: #0b1f3a;">{r.titre}</p>
               <p class="text-xs text-gray-400 mt-0.5">
                 {new Date(r.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+                {r.nom_fichier && <span> · {r.nom_fichier}</span>}
               </p>
             </div>
           </div>
           <div class="flex items-center gap-3 flex-shrink-0">
             <Badge variant={variantByCategorie[r.categorie] ?? "gris"}>{r.categorie}</Badge>
-            <a href={r.fichier} class="text-xs font-semibold px-3 py-1.5 rounded-lg transition hover:opacity-80 flex items-center gap-1.5" style="background-color: #0b1f3a; color: white;">
+            <button
+              class="btn-telecharger text-xs font-semibold px-3 py-1.5 rounded-lg transition hover:opacity-80 flex items-center gap-1.5"
+              style={r.fichier && r.fichier !== "#" ? "background-color: #0b1f3a; color: white;" : "background-color: #f1f3f5; color: #9ca3af; cursor: not-allowed;"}
+              data-id={r.id}
+              disabled={!r.fichier || r.fichier === "#"}
+            >
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"/>
               </svg>
-              Télécharger
-            </a>
+              {r.fichier && r.fichier !== "#" ? "Télécharger" : "Indisponible"}
+            </button>
           </div>
         </div>
       ))}
     </div>
+    {ressources.length === 0 && (
+      <p class="text-center text-sm text-gray-400 py-8">Aucune ressource disponible.</p>
+    )}
   </Card>
 
-  <script>
-    document.querySelectorAll(".filtre-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll(".filtre-btn").forEach((b) => {
-          b.classList.remove("text-white");
-          b.classList.add("text-gray-500", "bg-white", "border", "border-gray-200");
-          (b as HTMLElement).style.backgroundColor = "";
-        });
-        btn.classList.add("text-white");
-        btn.classList.remove("text-gray-500", "bg-white", "border", "border-gray-200");
-        (btn as HTMLElement).style.backgroundColor = "#0b1f3a";
+</AdherentMemberLayout>
 
-        const cat = (btn as HTMLElement).dataset.cat;
-        document.querySelectorAll(".ressource-item").forEach((item) => {
-          const el = item as HTMLElement;
-          if (cat === "Tous" || el.dataset.cat === cat) {
-            el.style.display = "";
-          } else {
-            el.style.display = "none";
-          }
-        });
+<script is:inline define:vars={{ ressourcesJson }}>
+  const ressourcesData = JSON.parse(ressourcesJson);
+
+  // Filtre catégories
+  document.querySelectorAll(".filtre-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".filtre-btn").forEach((b) => {
+        b.classList.remove("text-white");
+        b.classList.add("text-gray-500", "bg-white", "border", "border-gray-200");
+        b.style.backgroundColor = "";
+      });
+      btn.classList.add("text-white");
+      btn.classList.remove("text-gray-500", "bg-white", "border", "border-gray-200");
+      btn.style.backgroundColor = "#0b1f3a";
+      const cat = btn.dataset.cat;
+      document.querySelectorAll(".ressource-item").forEach((item) => {
+        item.style.display = (cat === "Tous" || item.dataset.cat === cat) ? "" : "none";
       });
     });
-  </script>
+  });
 
-</AdherentMemberLayout>
+  // Téléchargement via Blob URL
+  document.querySelectorAll(".btn-telecharger").forEach((btn) => {
+    btn.addEventListener("click", async function () {
+      const id = this.dataset.id;
+      this.disabled = true;
+      this.textContent = "...";
+
+      try {
+        const res = await fetch("/api/ressources/" + id);
+        if (!res.ok) throw new Error("Fichier indisponible");
+        const data = await res.json();
+
+        if (!data.fichier || data.fichier === "#") throw new Error("Fichier indisponible");
+
+        const dataUrl = data.fichier;
+        const nom = data.nom_fichier || "fichier";
+
+        // Blob URL pour download propre
+        const parts = dataUrl.split(",");
+        const mime = parts[0].split(":")[1].split(";")[0];
+        const binaryStr = atob(parts[1]);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+        const blob = new Blob([bytes], { type: mime });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = nom;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        alert(err.message || "Impossible de télécharger ce fichier.");
+      } finally {
+        this.disabled = false;
+        this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"/></svg> Télécharger';
+      }
+    });
+  });
+</script>

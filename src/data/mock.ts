@@ -5,6 +5,61 @@
   motDePasse: "Jcbo2025!",
 };
 
+export const mockAdherents = [
+  {
+    id: "ADH-001",
+    prenom: "Marie", nom: "Dupont",
+    email: "m.dupont@dupont-associes.fr",
+    motDePasse: "Marie2025!",
+    telephone: "06 12 34 56 78",
+    entreprise: "Dupont & Associés",
+    secteur: "Conseil juridique",
+    statut: "Actif" as const,
+    dateAdhesion: "2024-03-15",
+    numeroAdherent: "ADH-2024-0042",
+    coursInscrits: ["COURS-001"] as string[],
+  },
+  {
+    id: "ADH-002",
+    prenom: "Paul", nom: "Morin",
+    email: "p.morin@example.fr",
+    motDePasse: "Paul2025!",
+    telephone: "06 23 45 67 89",
+    entreprise: "Morin Solutions",
+    secteur: "Technologie",
+    statut: "Actif" as const,
+    dateAdhesion: "2025-04-30",
+    numeroAdherent: "ADH-2025-0001",
+    coursInscrits: [] as string[],
+  },
+  {
+    id: "ADH-003",
+    prenom: "Clara", nom: "Petit",
+    email: "c.petit@example.fr",
+    motDePasse: "Clara2025!",
+    telephone: "",
+    entreprise: "Petit Design",
+    secteur: "Design & Communication",
+    statut: "Actif" as const,
+    dateAdhesion: "2025-04-22",
+    numeroAdherent: "ADH-2025-0002",
+    coursInscrits: [] as string[],
+  },
+  {
+    id: "ADH-004",
+    prenom: "Marc", nom: "Leblanc",
+    email: "m.leblanc@example.fr",
+    motDePasse: "Marc2025!",
+    telephone: "",
+    entreprise: "Leblanc & Co",
+    secteur: "Commerce",
+    statut: "Inactif" as const,
+    dateAdhesion: "2025-04-10",
+    numeroAdherent: "ADH-2025-0003",
+    coursInscrits: [] as string[],
+  },
+];
+
 export const mockStats = {
   totalAdherents: 47,
   adherentsActifs: 42,
@@ -127,6 +182,51 @@ export const mockCertificat = {
     "Communication d'impact et crédibilité professionnelle",
   ],
 };
+
+export const mockCours = [
+  {
+    id: "COURS-001",
+    titre: "MINDSET ENTREPRENEURIAL™",
+    description: "Programme complet d'accompagnement stratégique pour développer votre posture d'entrepreneur et structurer votre activité vers la haute performance.",
+    duree: "14h",
+    niveau: "Intermédiaire" as const,
+    statut: "Publié" as const,
+    date: "2024-01-15",
+    modules: [
+      { id: "M01", titre: "Développement du mindset entrepreneurial", duree: "2h", type: "Vidéo" as const, ordre: 1 },
+      { id: "M02", titre: "Renforcement de la posture professionnelle", duree: "2h", type: "Vidéo" as const, ordre: 2 },
+      { id: "M03", titre: "Structuration stratégique de l'activité", duree: "2h", type: "Document" as const, ordre: 3 },
+      { id: "M04", titre: "Prise de décision et pilotage", duree: "2h", type: "Vidéo" as const, ordre: 4 },
+      { id: "M05", titre: "Leadership et discipline opérationnelle", duree: "2h", type: "Vidéo" as const, ordre: 5 },
+      { id: "M06", titre: "Vision business et performance", duree: "2h", type: "Document" as const, ordre: 6 },
+      { id: "M07", titre: "Communication d'impact et crédibilité professionnelle", duree: "2h", type: "Quiz" as const, ordre: 7 },
+    ],
+  },
+  {
+    id: "COURS-002",
+    titre: "Optimisation fiscale pour TPE/PME",
+    description: "Maîtrisez les leviers fiscaux et comptables pour optimiser la rentabilité de votre entreprise et sécuriser votre trésorerie.",
+    duree: "6h",
+    niveau: "Débutant" as const,
+    statut: "Brouillon" as const,
+    date: "2025-03-01",
+    modules: [
+      { id: "M08", titre: "Introduction à la comptabilité d'entreprise", duree: "1h30", type: "Vidéo" as const, ordre: 1 },
+      { id: "M09", titre: "Lire et interpréter un bilan", duree: "1h30", type: "Document" as const, ordre: 2 },
+      { id: "M10", titre: "Stratégies d'optimisation fiscale", duree: "2h", type: "Vidéo" as const, ordre: 3 },
+      { id: "M11", titre: "Évaluation finale", duree: "1h", type: "Quiz" as const, ordre: 4 },
+    ],
+  },
+];
+
+export const mockProgressions = [
+  {
+    adherentEmail: "m.dupont@dupont-associes.fr",
+    coursId: "COURS-001",
+    modulesTermines: ["M01", "M02", "M03"],
+    dateDebut: "2024-09-15",
+  },
+];
 
 export const mockRessources = [
   {

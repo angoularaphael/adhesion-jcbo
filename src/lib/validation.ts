@@ -76,8 +76,36 @@ export const messageSchema = z.object({
   conversationId: z.string().min(1),
 });
 
+export const ressourceSchema = z.object({
+  titre: z.string().min(2, "Titre trop court").max(200).trim(),
+  categorie: z.enum(["Guide", "Modèle", "Outil", "Vidéo", "Autre"], {
+    errorMap: () => ({ message: "Catégorie invalide" }),
+  }),
+  fichier: z.string().min(1, "Fichier requis"),
+  nom_fichier: z.string().optional(),
+});
+
+export const coursSchema = z.object({
+  titre: z.string().min(3, "Titre trop court").max(200, "Titre trop long").trim(),
+  description: z.string().min(10, "Description trop courte").max(2000).trim(),
+  duree: z.string().min(1, "Durée requise").max(20).trim(),
+  niveau: z.enum(["Débutant", "Intermédiaire", "Avancé"], {
+    errorMap: () => ({ message: "Niveau invalide" }),
+  }),
+  statut: z.enum(["Publié", "Brouillon"], {
+    errorMap: () => ({ message: "Statut invalide" }),
+  }),
+});
+
+export const progressionSchema = z.object({
+  coursId: z.string().min(1),
+  moduleId: z.string().min(1),
+});
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ContactInput = z.infer<typeof contactSchema>;
 export type ActualiteInput = z.infer<typeof actualiteSchema>;
 export type IdentifiantInput = z.infer<typeof identifiantSchema>;
 export type ProfilInput = z.infer<typeof profilSchema>;
+export type CoursInput = z.infer<typeof coursSchema>;
+export type ProgressionInput = z.infer<typeof progressionSchema>;

@@ -2,9 +2,10 @@
 import AdherentMemberLayout from "../../layouts/AdherentMemberLayout.astro";
 import Card from "../../components/ui/Card.astro";
 import Badge from "../../components/ui/Badge.astro";
-import { getProfil, getAdhesion, getActualites, getRessources } from "../../lib/store";
+import { getAdherentByEmail, getAdhesion, getActualites, getRessources } from "../../lib/store";
 
-const mockAdherent = getProfil();
+const mockAdherent = getAdherentByEmail(Astro.locals.session?.email ?? "");
+if (!mockAdherent) return Astro.redirect("/login");
 const mockAdhesion = getAdhesion();
 const mockActualites = getActualites();
 const mockRessources = getRessources();

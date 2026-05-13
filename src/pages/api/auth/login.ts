@@ -2,7 +2,8 @@ import type { APIRoute } from "astro";
 import { loginSchema } from "../../../lib/validation";
 import { checkRateLimit, resetRateLimit, isBlacklisted } from "../../../lib/rateLimit";
 import { createSession } from "../../../lib/session";
-import { mockAdmin, mockAdherent } from "../../../data/mock";
+import { mockAdmin } from "../../../data/mock";
+import { getAdminMotDePasse, getAdherentByEmail } from "../../../lib/store";
 
 export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
   const ip = clientAddress || "unknown";
@@ -65,10 +66,13 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
   // Vérification des identifiants
   let role: "admin" | "adherent" | null = null;
 
-  if (email === mockAdmin.email.toLowerCase() && password === mockAdmin.motDePasse) {
+  if (email === mockAdmin.email.toLowerCase() && password === getAdminMotDePasse()) {
     role = "admin";
-  } else if (email === mockAdherent.email.toLowerCase() && password === mockAdherent.motDePasse) {
-    role = "adherent";
+  } else {
+    const adherent = getAdherentByEmail(email);
+    if (adherent && adherent.statut === "Actif" && password === adherent.motDePasse) {
+      role = "adherent";
+    }
   }
 
   if (!role) {

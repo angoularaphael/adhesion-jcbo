@@ -2,9 +2,10 @@
 import AdherentMemberLayout from "../../layouts/AdherentMemberLayout.astro";
 import Card from "../../components/ui/Card.astro";
 import Badge from "../../components/ui/Badge.astro";
-import { getProfil } from "../../lib/store";
+import { getAdherentByEmail } from "../../lib/store";
 
-const profil = getProfil();
+const profil = getAdherentByEmail(Astro.locals.session?.email ?? "");
+if (!profil) return Astro.redirect("/login");
 ---
 
 <AdherentMemberLayout titre="Mon profil">
@@ -117,22 +118,27 @@ const profil = getProfil();
         </form>
       </Card>
 
-      <!-- Changer le mot de passe (non connecté au backend pour l'instant) -->
+      <!-- Changer le mot de passe -->
       <Card>
         <h3 class="text-sm font-semibold mb-5" style="color: #0b1f3a;">Changer le mot de passe</h3>
         <form id="form-mdp" class="flex flex-col gap-4">
           <div class="flex flex-col gap-1.5">
             <label class="text-xs font-medium text-gray-400 uppercase tracking-wide">Mot de passe actuel</label>
-            <input type="password" placeholder="••••••••" class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none transition focus:border-[#d4a762]" style="color: #0b1f3a;" />
+            <input id="mdp-ancien" type="password" placeholder="••••••••"
+              class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none transition focus:border-[#d4a762]" style="color: #0b1f3a;" />
           </div>
           <div class="flex flex-col gap-1.5">
             <label class="text-xs font-medium text-gray-400 uppercase tracking-wide">Nouveau mot de passe</label>
-            <input type="password" placeholder="••••••••" class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none transition focus:border-[#d4a762]" style="color: #0b1f3a;" />
+            <input id="mdp-nouveau" type="password" placeholder="Min. 8 caractères, 1 majuscule, 1 chiffre"
+              class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none transition focus:border-[#d4a762]" style="color: #0b1f3a;" />
           </div>
-          <button type="submit" class="self-start px-6 py-2.5 rounded-full text-sm font-semibold text-white transition hover:opacity-90" style="background-color: #0b1f3a;">
+          <p id="mdp-error" class="hidden text-xs text-red-400"></p>
+          <p id="mdp-success" class="hidden text-xs font-medium" style="color: #16a34a;">Mot de passe mis à jour. Reconnectez-vous avec le nouveau mot de passe.</p>
+          <button type="submit" id="btn-mdp"
+            class="self-start px-6 py-2.5 rounded-full text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+            style="background-color: #0b1f3a;">
             Mettre à jour
           </button>
-          <p id="mdp-success" class="hidden text-xs" style="color: #d4a762;">Mot de passe mis à jour avec succès.</p>
         </form>
       </Card>
 
@@ -196,9 +202,36 @@ const profil = getProfil();
       btn.textContent = "Enregistrer";
     });
 
-    document.getElementById("form-mdp")!.addEventListener("submit", (e) => {
+    document.getElementById("form-mdp")!.addEventListener("submit", async (e) => {
       e.preventDefault();
-      document.getElementById("mdp-success")!.classList.remove("hidden");
+      const btn = document.getElementById("btn-mdp") as HTMLButtonElement;
+      const errEl = document.getElementById("mdp-error") as HTMLParagraphElement;
+      const okEl = document.getElementById("mdp-success") as HTMLParagraphElement;
+      errEl.classList.add("hidden");
+      okEl.classList.add("hidden");
+      btn.disabled = true;
+      btn.textContent = "Mise à jour…";
+
+      const ancienMotDePasse = (document.getElementById("mdp-ancien") as HTMLInputElement).value;
+      const nouveauMotDePasse = (document.getElementById("mdp-nouveau") as HTMLInputElement).value;
+
+      const res = await fetch("/api/auth/password", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ancienMotDePasse, nouveauMotDePasse }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        okEl.classList.remove("hidden");
+        (document.getElementById("mdp-ancien") as HTMLInputElement).value = "";
+        (document.getElementById("mdp-nouveau") as HTMLInputElement).value = "";
+      } else {
+        errEl.textContent = data.error || "Erreur.";
+        errEl.classList.remove("hidden");
+      }
+      btn.disabled = false;
+      btn.textContent = "Mettre à jour";
     });
   </script>
 

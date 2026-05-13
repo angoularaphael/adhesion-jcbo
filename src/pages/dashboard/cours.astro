@@ -1,0 +1,244 @@
+---
+import AdherentLayout from "../../layouts/AdherentLayout.astro";
+import Card from "../../components/ui/Card.astro";
+import Badge from "../../components/ui/Badge.astro";
+import { getCours } from "../../lib/store";
+
+const cours = getCours();
+---
+
+<AdherentLayout titre="Cours">
+
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h2 class="text-2xl font-bold" style="color: #0b1f3a;">Cours</h2>
+      <p class="text-sm text-gray-500 mt-1">Gérez les formations disponibles pour les adhérents.</p>
+    </div>
+    <button id="btn-nouveau-cours"
+      class="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white transition hover:opacity-90"
+      style="background-color: #0b1f3a;"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nouveau cours
+    </button>
+  </div>
+
+  <!-- Liste -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-5" id="liste-cours">
+    {cours.map((c) => (
+      <Card>
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-2">
+              <Badge variant={c.statut === "Publié" ? "vert" : "gris"}>{c.statut}</Badge>
+              <Badge variant={c.niveau === "Débutant" ? "or" : c.niveau === "Intermédiaire" ? "vert" : "gris"}>{c.niveau}</Badge>
+            </div>
+            <h3 class="text-sm font-semibold truncate" style="color: #0b1f3a;">{c.titre}</h3>
+            <p class="text-xs text-gray-400 mt-1 line-clamp-2">{c.description}</p>
+            <div class="flex items-center gap-4 mt-3 text-xs text-gray-400">
+              <span>
+                <svg class="inline-block mr-1" xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                {c.duree}
+              </span>
+              <span>{c.modules.length} module{c.modules.length > 1 ? "s" : ""}</span>
+            </div>
+          </div>
+          <div class="flex flex-col gap-2 flex-shrink-0">
+            <button
+              class="btn-edit-cours text-xs px-3 py-1.5 rounded-lg font-medium border transition hover:opacity-80"
+              style="border-color: #0b1f3a; color: #0b1f3a;"
+              data-id={c.id}
+              data-titre={c.titre}
+              data-description={c.description}
+              data-duree={c.duree}
+              data-niveau={c.niveau}
+              data-statut={c.statut}
+            >Modifier</button>
+            <button
+              class="btn-delete-cours text-xs px-3 py-1.5 rounded-lg font-medium border transition hover:bg-red-50"
+              style="border-color: #fee2e2; color: #ef4444;"
+              data-id={c.id}
+              data-titre={c.titre}
+            >Supprimer</button>
+          </div>
+        </div>
+      </Card>
+    ))}
+  </div>
+
+  {cours.length === 0 && (
+    <Card>
+      <p class="text-center text-sm text-gray-400 py-8">Aucun cours pour le moment.</p>
+    </Card>
+  )}
+
+  <!-- Modal créer/modifier -->
+  <div id="modal-cours" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4" style="background:rgba(0,0,0,0.5);">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 md:p-8">
+      <h3 id="modal-cours-titre" class="text-lg font-bold mb-6" style="color: #0b1f3a;">Nouveau cours</h3>
+      <form id="form-cours" class="flex flex-col gap-4">
+        <input type="hidden" id="cours-id" />
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1.5">Titre</label>
+          <input id="cours-titre" type="text" required
+            class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
+            style="border-color: #e5e7eb; focus-ring-color: #d4a762;"
+            placeholder="Titre du cours"
+          />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1.5">Description</label>
+          <textarea id="cours-description" required rows="3"
+            class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 resize-none"
+            style="border-color: #e5e7eb;"
+            placeholder="Description du cours"
+          ></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1.5">Durée</label>
+            <input id="cours-duree" type="text" required
+              class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none"
+              style="border-color: #e5e7eb;"
+              placeholder="ex: 6h"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1.5">Niveau</label>
+            <select id="cours-niveau"
+              class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none"
+              style="border-color: #e5e7eb;"
+            >
+              <option value="Débutant">Débutant</option>
+              <option value="Intermédiaire">Intermédiaire</option>
+              <option value="Avancé">Avancé</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1.5">Statut</label>
+          <select id="cours-statut"
+            class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none"
+            style="border-color: #e5e7eb;"
+          >
+            <option value="Brouillon">Brouillon</option>
+            <option value="Publié">Publié</option>
+          </select>
+        </div>
+        <p id="cours-erreur" class="text-xs text-red-500 hidden"></p>
+        <div class="flex gap-3 pt-2">
+          <button type="button" id="btn-annuler-cours"
+            class="flex-1 py-2.5 rounded-lg text-sm font-medium border transition hover:bg-gray-50"
+            style="border-color: #e5e7eb; color: #6b7280;"
+          >Annuler</button>
+          <button type="submit"
+            class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white transition hover:opacity-90"
+            style="background-color: #0b1f3a;"
+          >Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal confirmation suppression -->
+  <div id="modal-delete-cours" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4" style="background:rgba(0,0,0,0.5);">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 text-center">
+      <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4" style="background-color: #fee2e2;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#ef4444" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path stroke-linecap="round" stroke-linejoin="round" d="M19 6l-1 14H6L5 6"/><path stroke-linecap="round" stroke-linejoin="round" d="M10 11v6M14 11v6"/><path stroke-linecap="round" stroke-linejoin="round" d="M9 6V4h6v2"/></svg>
+      </div>
+      <h3 class="font-bold text-base mb-2" style="color: #0b1f3a;">Supprimer le cours ?</h3>
+      <p id="delete-cours-nom" class="text-sm text-gray-500 mb-6"></p>
+      <div class="flex gap-3">
+        <button id="btn-annuler-delete-cours"
+          class="flex-1 py-2.5 rounded-lg text-sm font-medium border transition hover:bg-gray-50"
+          style="border-color: #e5e7eb; color: #6b7280;"
+        >Annuler</button>
+        <button id="btn-confirmer-delete-cours"
+          class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white bg-red-500 transition hover:bg-red-600"
+        >Supprimer</button>
+      </div>
+    </div>
+  </div>
+
+</AdherentLayout>
+
+<script is:inline>
+  const modal = document.getElementById("modal-cours");
+  const modalDelete = document.getElementById("modal-delete-cours");
+  const form = document.getElementById("form-cours");
+  let deletingId = null;
+
+  function openModal(mode, data) {
+    document.getElementById("modal-cours-titre").textContent = mode === "create" ? "Nouveau cours" : "Modifier le cours";
+    document.getElementById("cours-id").value = data?.id ?? "";
+    document.getElementById("cours-titre").value = data?.titre ?? "";
+    document.getElementById("cours-description").value = data?.description ?? "";
+    document.getElementById("cours-duree").value = data?.duree ?? "";
+    document.getElementById("cours-niveau").value = data?.niveau ?? "Débutant";
+    document.getElementById("cours-statut").value = data?.statut ?? "Brouillon";
+    document.getElementById("cours-erreur").classList.add("hidden");
+    modal.classList.remove("hidden");
+  }
+
+  document.getElementById("btn-nouveau-cours").addEventListener("click", () => openModal("create"));
+  document.getElementById("btn-annuler-cours").addEventListener("click", () => modal.classList.add("hidden"));
+  modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.add("hidden"); });
+
+  document.querySelectorAll(".btn-edit-cours").forEach(btn => {
+    btn.addEventListener("click", () => {
+      openModal("edit", {
+        id: btn.dataset.id,
+        titre: btn.dataset.titre,
+        description: btn.dataset.description,
+        duree: btn.dataset.duree,
+        niveau: btn.dataset.niveau,
+        statut: btn.dataset.statut,
+      });
+    });
+  });
+
+  document.querySelectorAll(".btn-delete-cours").forEach(btn => {
+    btn.addEventListener("click", () => {
+      deletingId = btn.dataset.id;
+      document.getElementById("delete-cours-nom").textContent = btn.dataset.titre;
+      modalDelete.classList.remove("hidden");
+    });
+  });
+
+  document.getElementById("btn-annuler-delete-cours").addEventListener("click", () => modalDelete.classList.add("hidden"));
+  modalDelete.addEventListener("click", (e) => { if (e.target === modalDelete) modalDelete.classList.add("hidden"); });
+
+  document.getElementById("btn-confirmer-delete-cours").addEventListener("click", async () => {
+    if (!deletingId) return;
+    const res = await fetch("/api/cours/" + deletingId, { method: "DELETE" });
+    if (res.ok) { window.location.reload(); }
+    else { modalDelete.classList.add("hidden"); alert("Erreur lors de la suppression."); }
+  });
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const id = document.getElementById("cours-id").value;
+    const body = {
+      titre: document.getElementById("cours-titre").value.trim(),
+      description: document.getElementById("cours-description").value.trim(),
+      duree: document.getElementById("cours-duree").value.trim(),
+      niveau: document.getElementById("cours-niveau").value,
+      statut: document.getElementById("cours-statut").value,
+    };
+    const url = id ? "/api/cours/" + id : "/api/cours";
+    const method = id ? "PUT" : "POST";
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      const errEl = document.getElementById("cours-erreur");
+      errEl.textContent = data.error || "Erreur";
+      errEl.classList.remove("hidden");
+    } else {
+      window.location.reload();
+    }
+  });
+</script>

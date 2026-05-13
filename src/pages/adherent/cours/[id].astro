@@ -1,0 +1,312 @@
+---
+import AdherentMemberLayout from "../../../layouts/AdherentMemberLayout.astro";
+import Badge from "../../../components/ui/Badge.astro";
+import { getCours, getProgressions, getAdherentByEmail } from "../../../lib/store";
+
+const { id } = Astro.params;
+const cours = getCours().find(c => c.id === id && c.statut === "Publié");
+
+if (!cours) return Astro.redirect("/adherent/cours");
+
+const profil = getAdherentByEmail(Astro.locals.session?.email ?? "");
+if (!profil) return Astro.redirect("/login");
+const progressions = getProgressions(profil.email);
+const prog = progressions.find(p => p.coursId === cours.id);
+const modulesTermines: string[] = prog?.modulesTermines ?? [];
+const pourcentage = cours.modules.length > 0
+  ? Math.round((modulesTermines.length / cours.modules.length) * 100)
+  : 0;
+
+// Contenu par module (demo)
+const contenuParModule: Record<string, string> = {
+  M01: `Le mindset entrepreneurial est avant tout une façon d'appréhender la réalité avec exigence et discernement. Il ne s'agit pas d'optimisme naïf, mais d'une capacité à maintenir une vision claire tout en naviguant dans l'incertitude.
+
+Un entrepreneur performant développe trois attitudes fondamentales : la responsabilité totale (ne jamais se poser en victime des circonstances), la pensée en termes de solutions plutôt que de problèmes, et la discipline de l'action quotidienne même en l'absence de motivation.
+
+Cette première leçon pose les bases de votre transformation. Prenez le temps de noter dans votre journal les domaines où vous avez tendance à subir plutôt qu'à agir. C'est le premier pas vers un mindset de haute performance.`,
+
+  M02: `La posture professionnelle se construit dans les détails : comment vous vous présentez, comment vous communiquez, comment vous gérez votre temps et votre énergie. Elle précède et conditionne toute relation commerciale ou partenariale.
+
+Trois piliers à développer immédiatement : (1) La cohérence entre votre discours et vos actes — vos clients et partenaires observent tout. (2) La maîtrise émotionnelle — réagir avec mesure dans toutes les situations. (3) L'image professionnelle numérique — votre présence en ligne doit refléter le niveau d'excellence que vous incarnez.
+
+Exercice pratique : Faites auditer votre profil LinkedIn par un pair ou un mentor. Identifiez 3 points d'amélioration concrets et appliquez-les avant la prochaine session.`,
+
+  M03: `Structurer son activité, c'est passer d'une logique de réaction permanente à une logique de pilotage. Sans structure, vous êtes condamné à travailler dans votre activité plutôt que sur votre activité.
+
+Les trois outils essentiels de structuration : (1) Un modèle économique formalisé — qui paie quoi, pourquoi et comment. (2) Un plan stratégique à 90 jours — des objectifs précis, mesurables et réalistes. (3) Un tableau de bord de pilotage — 5 à 7 indicateurs clés que vous suivez chaque semaine.
+
+Livrable de cette leçon : rédigez votre modèle économique en une page. Identifiez vos 3 offres principales, leur prix, leur valeur perçue et leur canal de distribution.`,
+
+  M04: `La prise de décision est une compétence qui se développe. Les décisions lentes ou incomplètes coûtent autant que les mauvaises décisions. Un entrepreneur performant décide vite, agit, mesure, ajuste.
+
+Le cadre OODA (Observe, Orient, Decide, Act) est particulièrement adapté à l'environnement entrepreneurial. Il permet de sortir d'une posture d'analyse paralysante pour entrer dans une dynamique d'action apprenante.
+
+Principe clé du pilotage : distinguez les indicateurs avancés (qui prédisent vos résultats futurs) des indicateurs retardés (qui constatent vos résultats passés). Pilotez sur les indicateurs avancés.`,
+
+  M05: `Le leadership n'est pas un titre, c'est un comportement quotidien. Il se manifeste dans la façon dont vous tenez vos engagements, dont vous gérez les tensions, dont vous créez les conditions pour que les autres progressent.
+
+La discipline opérationnelle, c'est la capacité à exécuter vos priorités même quand ce n'est pas confortable. Elle repose sur trois pratiques : la planification hebdomadaire (le dimanche soir ou le lundi matin), les rituels quotidiens d'exécution, et la revue de performance régulière.
+
+Point d'attention : le perfectionnisme est l'ennemi de l'exécution. Apprenez à distinguer ce qui mérite l'excellence de ce qui mérite juste d'être fait.`,
+
+  M06: `La vision business est la capacité à voir votre activité à 3-5 ans et à prendre des décisions aujourd'hui qui vous rapprochent de cette vision. Sans vision, vous optimisez le court terme au détriment du long terme.
+
+La performance se mesure sur trois niveaux : financier (rentabilité, trésorerie, valeur de l'entreprise), opérationnel (qualité, efficacité, scalabilité) et stratégique (positionnement, avantage concurrentiel, croissance).
+
+Exercice final : rédigez votre "Big Picture" — une description en 300 mots de votre activité dans 3 ans. Qui sont vos clients ? Quelle est votre équipe ? Quel chiffre d'affaires réalisez-vous ? Quelle est votre valeur sur le marché ?`,
+};
+
+const typeIcon: Record<string, string> = {
+  "Vidéo": `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>`,
+  "Document": `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5l5 5v14a2 2 0 01-2 2z"/></svg>`,
+  "Quiz": `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+};
+
+const modulesIds = cours.modules.map(m => m.id);
+const firstUndonIndex = modulesIds.findIndex(mid => !modulesTermines.includes(mid));
+const defaultOpenId = firstUndonIndex >= 0 ? modulesIds[firstUndonIndex] : modulesIds[modulesIds.length - 1];
+---
+
+<AdherentMemberLayout titre={cours.titre}>
+
+  <!-- Fil d'Ariane -->
+  <div class="flex items-center gap-2 mb-6 text-xs text-gray-400">
+    <a href="/adherent/cours" class="hover:underline" style="color: #d4a762;">Mes cours</a>
+    <span>/</span>
+    <span style="color: #0b1f3a;">{cours.titre}</span>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+
+    <!-- Modules accordéon -->
+    <div class="lg:col-span-2 flex flex-col gap-2" id="modules-container">
+      {cours.modules.map((mod) => {
+        const termine = modulesTermines.includes(mod.id);
+        const isOpen = mod.id === defaultOpenId;
+        const contenu = contenuParModule[mod.id];
+        return (
+          <div
+            class="module-item rounded-2xl overflow-hidden transition-all"
+            style={termine ? "border: 1px solid rgba(22,163,74,0.2);" : isOpen ? "border: 1px solid #d4a762; box-shadow: 0 2px 12px rgba(212,167,98,0.15);" : "border: 1px solid #f1f3f5;"}
+            data-module-id={mod.id}
+          >
+            <!-- En-tête cliquable -->
+            <button
+              class="module-header w-full flex items-center gap-4 p-4 text-left transition hover:bg-gray-50/50"
+              data-target={mod.id}
+            >
+              <div
+                class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold"
+                style={termine ? "background-color: #16a34a; color: white;" : isOpen ? "background-color: #0b1f3a; color: white;" : "background-color: #f1f3f5; color: #9ca3af;"}
+              >
+                {termine
+                  ? <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                  : <span>{mod.ordre}</span>
+                }
+              </div>
+              <div class="flex-1 min-w-0 text-left">
+                <p class="text-sm font-semibold" style="color: #0b1f3a;">{mod.titre}</p>
+                <div class="flex items-center gap-2 mt-0.5 text-xs text-gray-400">
+                  <span class="flex items-center gap-1" set:html={`${typeIcon[mod.type] ?? ""} ${mod.type}`} />
+                  <span>·</span>
+                  <span>{mod.duree}</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 flex-shrink-0">
+                {termine && <span class="text-xs font-medium" style="color: #16a34a;">Terminé</span>}
+                <svg
+                  class="module-chevron transition-transform duration-200"
+                  style={isOpen ? "transform: rotate(180deg);" : ""}
+                  xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#9ca3af" stroke-width="2"
+                >
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </div>
+            </button>
+
+            <!-- Contenu du module -->
+            <div
+              class="module-content"
+              style={isOpen ? "display: block;" : "display: none;"}
+            >
+              <div class="px-4 pb-5 pt-1">
+                <div class="rounded-xl p-5" style="background-color: #f8f6f2;">
+
+                  {mod.type === "Vidéo" && (
+                    <div>
+                      <div class="flex flex-col items-center justify-center gap-3 py-10 rounded-xl mb-4" style="background-color: #0b1f3a;">
+                        <div class="w-14 h-14 rounded-full flex items-center justify-center" style="background-color: rgba(212,167,98,0.2);">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="#d4a762" stroke-width="1.8"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        </div>
+                        <p class="text-sm font-medium text-white">{mod.titre}</p>
+                        <p class="text-xs" style="color: rgba(255,255,255,0.4);">{mod.duree}</p>
+                      </div>
+                      {contenu && (
+                        <div class="text-sm leading-relaxed space-y-3" style="color: #374151;">
+                          {contenu.split("\n\n").map(para => <p>{para}</p>)}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {mod.type === "Document" && (
+                    <div>
+                      {contenu && (
+                        <div class="text-sm leading-relaxed space-y-3 mb-5" style="color: #374151;">
+                          {contenu.split("\n\n").map(para => <p>{para}</p>)}
+                        </div>
+                      )}
+                      <div class="flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style="background-color: rgba(212,167,98,0.1);">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#d4a762" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5l5 5v14a2 2 0 01-2 2z"/></svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <p class="text-sm font-medium truncate" style="color: #0b1f3a;">{mod.titre} — Support de cours</p>
+                          <p class="text-xs text-gray-400">Document PDF · {mod.duree} de lecture</p>
+                        </div>
+                        <span class="text-xs font-medium px-3 py-1.5 rounded-lg" style="background-color: #f1f3f5; color: #9ca3af;">Bientôt dispo</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {mod.type === "Quiz" && (
+                    <div class="flex items-center gap-4">
+                      <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: rgba(212,167,98,0.15);">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#d4a762" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                      </div>
+                      <div>
+                        <p class="text-sm font-semibold" style="color: #0b1f3a;">Évaluation finale</p>
+                        <p class="text-xs text-gray-400 mt-0.5">Validez vos acquis pour compléter la formation. Disponible prochainement.</p>
+                      </div>
+                    </div>
+                  )}
+
+                  <!-- Bouton Marquer terminé -->
+                  {!termine && (
+                    <div class="mt-4 pt-4" style="border-top: 1px solid rgba(0,0,0,0.06);">
+                      <button
+                        class="btn-marquer-termine w-full py-2.5 rounded-xl text-sm font-semibold text-white transition hover:opacity-90"
+                        style="background-color: #0b1f3a;"
+                        data-cours-id={cours.id}
+                        data-module-id={mod.id}
+                      >
+                        Marquer comme terminé
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+
+    <!-- Sidebar résumé -->
+    <div class="flex flex-col gap-4 lg:sticky lg:top-6">
+
+      <!-- Cercle progression -->
+      <div class="bg-white rounded-2xl p-5 shadow-sm" style="border: 1px solid #f1f3f5;">
+        <h4 class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-4">Votre progression</h4>
+        <div class="flex items-center justify-center mb-3">
+          <div class="relative w-24 h-24">
+            <svg class="w-24 h-24 -rotate-90" viewBox="0 0 96 96">
+              <circle cx="48" cy="48" r="38" fill="none" stroke="#f1f3f5" stroke-width="8"/>
+              <circle
+                cx="48" cy="48" r="38" fill="none"
+                stroke={pourcentage === 100 ? "#16a34a" : "#d4a762"}
+                stroke-width="8"
+                stroke-linecap="round"
+                stroke-dasharray={`${2 * Math.PI * 38}`}
+                stroke-dashoffset={`${2 * Math.PI * 38 * (1 - pourcentage / 100)}`}
+              />
+            </svg>
+            <div class="absolute inset-0 flex items-center justify-center">
+              <span class="text-xl font-bold" style={pourcentage === 100 ? "color: #16a34a;" : "color: #0b1f3a;"}>{pourcentage}%</span>
+            </div>
+          </div>
+        </div>
+        <p class="text-center text-xs text-gray-400">{modulesTermines.length} / {cours.modules.length} modules</p>
+        {pourcentage === 100 && (
+          <div class="mt-3 p-3 rounded-xl text-center" style="background-color: rgba(22,163,74,0.08);">
+            <p class="text-xs font-semibold" style="color: #16a34a;">Formation complétée !</p>
+          </div>
+        )}
+      </div>
+
+      <!-- Infos -->
+      <div class="bg-white rounded-2xl p-5 shadow-sm" style="border: 1px solid #f1f3f5;">
+        <h4 class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-4">À propos du cours</h4>
+        <div class="flex flex-col gap-3 text-xs">
+          <div class="flex items-center justify-between">
+            <span class="text-gray-400">Niveau</span>
+            <Badge variant={(cours.niveau as string) === "Débutant" ? "or" : (cours.niveau as string) === "Intermédiaire" ? "vert" : "gris"}>{cours.niveau}</Badge>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-gray-400">Durée totale</span>
+            <span class="font-medium" style="color: #0b1f3a;">{cours.duree}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-gray-400">Modules</span>
+            <span class="font-medium" style="color: #0b1f3a;">{cours.modules.length}</span>
+          </div>
+        </div>
+      </div>
+
+      <a href="/adherent/cours" class="flex items-center gap-2 text-sm font-medium transition hover:opacity-70" style="color: #d4a762;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        Retour aux cours
+      </a>
+    </div>
+
+  </div>
+
+</AdherentMemberLayout>
+
+<script is:inline>
+  // Accordéon modules
+  document.querySelectorAll(".module-header").forEach(btn => {
+    btn.addEventListener("click", function() {
+      const targetId = this.dataset.target;
+      const allItems = document.querySelectorAll(".module-item");
+
+      allItems.forEach(item => {
+        const content = item.querySelector(".module-content");
+        const chevron = item.querySelector(".module-chevron");
+        const header = item.querySelector(".module-header");
+        const numero = item.querySelector(".w-9");
+        const isTarget = item.dataset.moduleId === targetId;
+        const isTermine = item.querySelector('[data-module-id="' + item.dataset.moduleId + '"]');
+
+        if (isTarget) {
+          const isCurrentlyOpen = content.style.display !== "none";
+          content.style.display = isCurrentlyOpen ? "none" : "block";
+          chevron.style.transform = isCurrentlyOpen ? "" : "rotate(180deg)";
+        }
+      });
+    });
+  });
+
+  // Marquer module terminé
+  document.querySelectorAll(".btn-marquer-termine").forEach(btn => {
+    btn.addEventListener("click", async function() {
+      const coursId = this.dataset.coursId;
+      const moduleId = this.dataset.moduleId;
+      this.disabled = true;
+      this.textContent = "Enregistrement...";
+
+      const res = await fetch("/api/progression", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ coursId, moduleId }),
+      });
+
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        this.disabled = false;
+        this.textContent = "Marquer comme terminé";
+      }
+    });
+  });
+</script>

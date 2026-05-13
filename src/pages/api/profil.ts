@@ -1,13 +1,15 @@
 import type { APIRoute } from "astro";
 import { profilSchema } from "../../lib/validation";
 import { checkRateLimit } from "../../lib/rateLimit";
-import { updateProfil, getProfil } from "../../lib/store";
+import { updateProfil, getAdherentByEmail } from "../../lib/store";
 
 export const GET: APIRoute = async ({ locals }) => {
   if (!locals.session || locals.session.role !== "adherent") {
     return new Response(JSON.stringify({ error: "Non autorisé" }), { status: 401 });
   }
-  return new Response(JSON.stringify(getProfil()), {
+  const profil = getAdherentByEmail(locals.session.email);
+  if (!profil) return new Response(JSON.stringify({ error: "Introuvable" }), { status: 404 });
+  return new Response(JSON.stringify(profil), {
     status: 200,
     headers: { "Content-Type": "application/json" },
   });
@@ -20,9 +22,7 @@ export const PUT: APIRoute = async ({ request, locals, clientAddress }) => {
 
   const { allowed } = checkRateLimit(`profil:${locals.session.email}`, 10, 60 * 60 * 1000);
   if (!allowed) {
-    return new Response(JSON.stringify({ error: "Trop de modifications. Réessayez plus tard." }), {
-      status: 429,
-    });
+    return new Response(JSON.stringify({ error: "Trop de modifications. Réessayez plus tard." }), { status: 429 });
   }
 
   let body: unknown;
@@ -35,12 +35,14 @@ export const PUT: APIRoute = async ({ request, locals, clientAddress }) => {
   const result = profilSchema.safeParse(body);
   if (!result.success) {
     return new Response(
-      JSON.stringify({ error: result.error.errors[0].message, details: result.error.flatten() }),
+      JSON.stringify({ error: result.error.errors[0].message }),
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
 
-  const updated = updateProfil(result.data);
+  const updated = updateProfil(locals.session.email, result.data);
+  if (!updated) return new Response(JSON.stringify({ error: "Profil introuvable" }), { status: 404 });
+
   return new Response(JSON.stringify(updated), {
     status: 200,
     headers: { "Content-Type": "application/json" },
