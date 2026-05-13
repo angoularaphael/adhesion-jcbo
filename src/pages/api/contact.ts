@@ -1,14 +1,13 @@
 import type { APIRoute } from "astro";
 import { contactSchema } from "../../lib/validation";
 import { checkRateLimit } from "../../lib/rateLimit";
-import { addMessage, getConversations, createActualite } from "../../lib/store";
+import { addMessage, findOrCreateConversation } from "../../lib/store";
 
-export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
+export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.session) {
     return new Response(JSON.stringify({ error: "Non autorisé" }), { status: 401 });
   }
 
-  // Rate limiting : 5 messages / heure par utilisateur
   const { allowed } = checkRateLimit(`contact:${locals.session.email}`, 5, 60 * 60 * 1000);
   if (!allowed) {
     return new Response(
@@ -32,17 +31,9 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     );
   }
 
-  // Trouver ou créer une conversation pour cet adhérent
-  const conversations = getConversations();
-  let conv = conversations.find(c =>
-    locals.session?.role === "adherent"
-      ? c.adherent.toLowerCase().includes("marie")
-      : false
-  );
-
-  if (conv) {
-    addMessage(conv.id, `[${result.data.sujet}] ${result.data.message}`, "adherent");
-  }
+  const { sujet, message } = result.data;
+  const conv = findOrCreateConversation(locals.session.email, sujet);
+  addMessage(conv.id, `[${sujet}] ${message}`, "adherent");
 
   return new Response(JSON.stringify({ success: true }), {
     status: 201,

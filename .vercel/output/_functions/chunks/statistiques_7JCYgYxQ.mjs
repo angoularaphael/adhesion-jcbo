@@ -1,0 +1,42 @@
+import { c as createComponent } from './astro-component_BTNVx6SL.mjs';
+import 'piccolore';
+import { T as renderTemplate, B as maybeRenderHead, a4 as addAttribute } from './sequence_CDEARiL7.mjs';
+import { r as renderComponent } from './entrypoint_BJKBuh4g.mjs';
+import { $ as $$AdherentLayout } from './AdherentLayout_CuUsU77u.mjs';
+import { o as getStats } from './store_Bz098f4M.mjs';
+
+const $$Statistiques = createComponent(($$result, $$props, $$slots) => {
+  const mockStats = getStats();
+  const progression = [
+    { mois: "Jan", valeur: 38 },
+    { mois: "Fév", valeur: 40 },
+    { mois: "Mar", valeur: 41 },
+    { mois: "Avr", valeur: 44 },
+    { mois: "Mai", valeur: 47 }
+  ];
+  const max = Math.max(...progression.map((p) => p.valeur));
+  const kpis = [
+    { label: "Total adhérents", value: mockStats.totalAdherents },
+    { label: "Adhérents actifs", value: mockStats.adherentsActifs },
+    { label: "Nouveaux ce mois", value: `+${mockStats.nouveauxCeMois}`, gold: true },
+    { label: "Taux renouvellement", value: `${mockStats.tauxRenouvellement}%` }
+  ];
+  return renderTemplate`${renderComponent($$result, "AdherentLayout", $$AdherentLayout, { "titre": "Statistiques" }, { "default": ($$result2) => renderTemplate` ${maybeRenderHead()}<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8"> ${kpis.map((k) => renderTemplate`<div class="bg-white rounded-xl p-6 shadow-sm" style="border: 1px solid #f1f3f5;"> <p class="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3">${k.label}</p> <p class="text-3xl font-bold"${addAttribute(k.gold ? "color: #d4a762;" : "color: #0b1f3a;", "style")}>${k.value}</p> </div>`)} </div>  <div class="bg-white rounded-xl shadow-sm p-6 lg:p-8" style="border: 1px solid #f1f3f5;"> <div class="flex items-center justify-between mb-8"> <div> <h2 class="text-base font-semibold" style="color: #0b1f3a;">Progression des adhésions</h2> <p class="text-xs text-gray-400 mt-0.5">Janvier – Mai 2025</p> </div> <span class="text-xs font-medium px-3 py-1.5 rounded-full" style="background-color: rgba(212,167,98,0.1); color: #d4a762;">+23.7% sur la période</span> </div> <div class="flex items-end gap-3 lg:gap-6 px-4" style="height: 200px;"> ${progression.map((p) => {
+    Math.round(p.valeur / max * 100);
+    return renderTemplate`<div class="flex flex-col items-center gap-2 flex-1"> <span class="text-xs font-semibold" style="color: #0b1f3a;">${p.valeur}</span> <div class="w-full rounded-t-lg transition-all duration-500 hover:opacity-80"${addAttribute(`height: ${Math.round(p.valeur / max * 160)}px; background: linear-gradient(180deg, #d4a762 0%, #0b1f3a 100%); min-height: 4px;`, "style")}></div> <span class="text-xs text-gray-400 font-medium">${p.mois}</span> </div>`;
+  })} </div> </div> ` })}`;
+}, "C:/Users/NWAHA/adhesion-jcbo/src/pages/dashboard/statistiques.astro", void 0);
+
+const $$file = "C:/Users/NWAHA/adhesion-jcbo/src/pages/dashboard/statistiques.astro";
+const $$url = "/dashboard/statistiques";
+
+const _page = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
+  __proto__: null,
+  default: $$Statistiques,
+  file: $$file,
+  url: $$url
+}, Symbol.toStringTag, { value: 'Module' }));
+
+const page = () => _page;
+
+export { page };

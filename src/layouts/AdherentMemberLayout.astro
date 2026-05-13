@@ -1,13 +1,14 @@
 ---
 import SidebarAdherent from "../components/navigation/SidebarAdherent.astro";
 import "../styles/global.css";
-import { mockAdherent } from "../data/mock";
+import { getProfil } from "../lib/store";
 
 interface Props {
   titre: string;
 }
 const { titre } = Astro.props;
-const initiales = mockAdherent.prenom[0] + mockAdherent.nom[0];
+const profil = getProfil();
+const initiales = profil.prenom[0] + profil.nom[0];
 ---
 
 <html lang="fr">
@@ -35,8 +36,8 @@ const initiales = mockAdherent.prenom[0] + mockAdherent.nom[0];
         </div>
         <div class="flex items-center gap-3">
           <div class="text-right hidden sm:block">
-            <p class="text-sm font-semibold" style="color: #0b1f3a;">{mockAdherent.prenom} {mockAdherent.nom}</p>
-            <p class="text-xs text-gray-400">{mockAdherent.entreprise}</p>
+            <p class="text-sm font-semibold" style="color: #0b1f3a;">{profil.prenom} {profil.nom}</p>
+            <p class="text-xs text-gray-400">{profil.entreprise}</p>
           </div>
           <div class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0" style="background-color: rgba(212,167,98,0.15); color: #d4a762;">
             {initiales}

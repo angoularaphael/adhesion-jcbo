@@ -4,6 +4,9 @@ import {
   mockIdentifiants,
   mockAdherent,
   mockRessources,
+  mockAdhesion,
+  mockCertificat,
+  mockStats,
 } from "../data/mock";
 
 // Store in-memory — remplacé par Supabase dans la prochaine phase
@@ -116,4 +119,44 @@ export function updateProfil(data: { telephone?: string; entreprise?: string; se
 // --- Ressources ---
 export function getRessources() {
   return ressources;
+}
+
+// --- Adhésion ---
+export function getAdhesion() {
+  return { ...mockAdhesion };
+}
+
+// --- Certificat ---
+export function getCertificat() {
+  return { ...mockCertificat };
+}
+
+// --- Statistiques ---
+export function getStats() {
+  return {
+    ...mockStats,
+    totalAdherents: identifiants.length + 44,
+    adherentsActifs: identifiants.filter(i => i.statut === "Actif").length + 40,
+  };
+}
+
+// --- Messagerie : trouver ou créer une conversation ---
+export function findOrCreateConversation(email: string, sujet: string) {
+  const emailLower = email.toLowerCase();
+  let conv = conversations.find(c => c.email === emailLower);
+  if (!conv) {
+    conv = {
+      id: `MSG-${String(conversations.length + 1).padStart(3, "0")}`,
+      email: emailLower,
+      adherent: emailLower.split("@")[0].replace(/[._]/g, " "),
+      entreprise: "",
+      sujet,
+      dernier_message: "",
+      date: new Date().toISOString().split("T")[0],
+      non_lu: 0,
+      messages: [],
+    };
+    conversations.push(conv);
+  }
+  return conv;
 }

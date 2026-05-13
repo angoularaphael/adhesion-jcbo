@@ -1,0 +1,31 @@
+import { c as createComponent } from './astro-component_BTNVx6SL.mjs';
+import 'piccolore';
+import { T as renderTemplate, B as maybeRenderHead } from './sequence_CDEARiL7.mjs';
+import { r as renderComponent } from './entrypoint_BJKBuh4g.mjs';
+import { r as renderScript } from './global_BNFpsslX.mjs';
+import { $ as $$AdherentLayout } from './AdherentLayout_CuUsU77u.mjs';
+import { $ as $$Card } from './Card_CrioVrA5.mjs';
+
+const $$Contact = createComponent(($$result, $$props, $$slots) => {
+  return renderTemplate`${renderComponent($$result, "AdherentLayout", $$AdherentLayout, { "titre": "Contact" }, { "default": ($$result2) => renderTemplate` ${maybeRenderHead()}<div class="mb-8"> <h2 class="text-2xl font-bold" style="color: #0b1f3a;">Contact</h2> <p class="text-sm text-gray-500 mt-1">Une question ? L'équipe JCBO Conseil vous répond.</p> </div> <div class="grid grid-cols-1 lg:grid-cols-3 gap-6"> <div class="lg:col-span-2"> ${renderComponent($$result2, "Card", $$Card, {}, { "default": ($$result3) => renderTemplate` <h3 class="text-sm font-semibold mb-5" style="color: #0b1f3a;">Envoyer un message</h3> <form id="contact-form" class="flex flex-col gap-5"> <div class="flex flex-col gap-1.5"> <label for="sujet" class="text-xs font-medium text-gray-500 uppercase tracking-wide">Sujet</label> <input id="sujet" name="sujet" type="text" placeholder="Objet de votre message" class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none transition" style="color: #0b1f3a;"> </div> <div class="flex flex-col gap-1.5"> <label for="message" class="text-xs font-medium text-gray-500 uppercase tracking-wide">Message</label> <textarea id="message" name="message" rows="6" placeholder="Décrivez votre demande..." class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none transition resize-none" style="color: #0b1f3a;"></textarea> </div> <button type="submit" class="self-start px-6 py-2.5 rounded-full text-sm font-semibold text-white transition hover:opacity-90 active:scale-[0.98]" style="background-color: #0b1f3a;">
+Envoyer le message
+</button> </form>  <div id="contact-success" class="hidden flex flex-col items-center justify-center py-10 gap-3 text-center"> <div class="w-12 h-12 rounded-full flex items-center justify-center text-xl" style="background-color: rgba(212,167,98,0.15); color: #d4a762;">
+✓
+</div> <p class="font-semibold" style="color: #0b1f3a;">Message envoyé !</p> <p class="text-sm text-gray-400">L'équipe JCBO Conseil vous répondra dans les meilleurs délais.</p> </div> ` })} </div> <div class="flex flex-col gap-4"> ${renderComponent($$result2, "Card", $$Card, {}, { "default": ($$result3) => renderTemplate` <h3 class="text-sm font-semibold mb-4" style="color: #0b1f3a;">Coordonnées</h3> <div class="flex flex-col gap-4"> <div class="flex items-start gap-3"> <span class="text-base mt-0.5">✉️</span> <div> <p class="text-xs text-gray-400 mb-0.5">E-mail</p> <a href="mailto:contact@jcbo-conseil.fr" class="text-sm font-medium hover:underline" style="color: #0b1f3a;">
+contact@jcbo-conseil.fr
+</a> </div> </div> <div class="flex items-start gap-3"> <span class="text-base mt-0.5">📞</span> <div> <p class="text-xs text-gray-400 mb-0.5">Téléphone</p> <p class="text-sm font-medium" style="color: #0b1f3a;">01 23 45 67 89</p> </div> </div> <div class="flex items-start gap-3"> <span class="text-base mt-0.5">🕐</span> <div> <p class="text-xs text-gray-400 mb-0.5">Disponibilité</p> <p class="text-sm font-medium" style="color: #0b1f3a;">Lun – Ven, 9h – 18h</p> </div> </div> </div> ` })} </div> </div> ${renderScript($$result2, "C:/Users/NWAHA/adhesion-jcbo/src/pages/dashboard/contact.astro?astro&type=script&index=0&lang.ts")} ` })}`;
+}, "C:/Users/NWAHA/adhesion-jcbo/src/pages/dashboard/contact.astro", void 0);
+
+const $$file = "C:/Users/NWAHA/adhesion-jcbo/src/pages/dashboard/contact.astro";
+const $$url = "/dashboard/contact";
+
+const _page = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
+  __proto__: null,
+  default: $$Contact,
+  file: $$file,
+  url: $$url
+}, Symbol.toStringTag, { value: 'Module' }));
+
+const page = () => _page;
+
+export { page };

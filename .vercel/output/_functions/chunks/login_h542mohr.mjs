@@ -1,0 +1,52 @@
+import { c as createComponent } from './astro-component_BTNVx6SL.mjs';
+import 'piccolore';
+import { T as renderTemplate, bb as renderHead } from './sequence_CDEARiL7.mjs';
+import { r as renderComponent } from './entrypoint_BJKBuh4g.mjs';
+import { r as renderScript, $ as $$LogoJCBO } from './global_BNFpsslX.mjs';
+
+var __freeze = Object.freeze;
+var __defProp = Object.defineProperty;
+var __template = (cooked, raw) => __freeze(__defProp(cooked, "raw", { value: __freeze(cooked.slice()) }));
+var _a;
+const $$Login = createComponent(async ($$result, $$props, $$slots) => {
+  const Astro2 = $$result.createAstro($$props, $$slots);
+  Astro2.self = $$Login;
+  if (Astro2.locals.session) {
+    return Astro2.redirect(
+      Astro2.locals.session.role === "admin" ? "/dashboard" : "/adherent/tableau-de-bord"
+    );
+  }
+  return renderTemplate(_a || (_a = __template([`<html lang="fr"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="index, follow"><meta name="description" content="Connectez-vous à l'espace d'administration JCBO Conseil pour gérer vos adhérents, publier des actualités et suivre vos statistiques."><meta property="og:title" content="Connexion — JCBO Conseil"><meta property="og:description" content="Accédez à l'espace d'administration JCBO Conseil, cabinet de conseil aux entreprises."><meta property="og:type" content="website"><meta property="og:locale" content="fr_FR"><title>Connexion — JCBO Conseil</title><script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "JCBO Conseil",
+      "description": "Cabinet de conseil aux entreprises spécialisé en accompagnement stratégique, fiscal et organisationnel pour les TPE/PME.",
+      "url": "https://jcboyang-conseil-1.onrender.com",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "email": "contact@jcbo-conseil.fr",
+        "contactType": "customer support",
+        "availableLanguage": "French"
+      }
+    }
+    <\/script>`, `</head> <body class="min-h-screen flex items-center justify-center relative overflow-hidden" style="background-color: #0b1f3a;"> <!-- Cercles décoratifs d'arrière-plan --> <div class="absolute top-0 left-0 w-96 h-96 rounded-full -translate-x-1/2 -translate-y-1/2 opacity-[0.04]" style="background-color: #d4a762;"></div> <div class="absolute bottom-0 right-0 w-80 h-80 rounded-full translate-x-1/3 translate-y-1/3 opacity-[0.06]" style="background-color: #d4a762;"></div> <!-- Carte centrale --> <div class="relative w-full max-w-4xl mx-6 rounded-3xl overflow-hidden shadow-2xl flex" style="border: 1px solid rgba(212,167,98,0.15);"> <!-- Panneau gauche — identité visuelle --> <div class="hidden lg:flex flex-col items-center justify-center gap-8 w-5/12 p-12 text-center" style="background: linear-gradient(160deg, #111f2e 0%, #0a1520 100%); border-right: 1px solid rgba(212,167,98,0.12);"> `, ' <div> <h2 class="text-2xl font-bold text-white mb-3 leading-tight">Espace<br>Administration</h2> <p class="text-sm leading-relaxed" style="color: rgba(255,255,255,0.35);">\nGérez vos adhérents,<br>publiez vos actualités<br>et suivez vos statistiques.\n</p> </div> <div class="w-12 h-px" style="background-color: rgba(212,167,98,0.3);"></div> <p class="text-xs" style="color: rgba(212,167,98,0.35);">© 2025 JCBO Conseil</p> </div> <!-- Panneau droit — formulaire --> <div class="flex-1 flex flex-col justify-center px-10 py-12" style="background-color: #0f1e2d;"> <!-- Logo mobile --> <div class="flex justify-center mb-8 lg:hidden"> ', ` </div> <p class="text-xs font-medium uppercase tracking-widest mb-2" style="color: rgba(212,167,98,0.6);">Administration</p> <h1 class="text-2xl font-bold text-white mb-1">Connexion</h1> <p class="text-sm mb-8" style="color: rgba(255,255,255,0.35);">Accédez à votre tableau de bord</p> <form id="login-form" class="flex flex-col gap-5"> <div class="flex flex-col gap-2"> <label for="email" class="text-xs font-medium uppercase tracking-widest" style="color: rgba(255,255,255,0.4);">E-mail</label> <input id="email" name="email" type="email" required placeholder="vous@exemple.fr" class="w-full rounded-xl px-4 py-3.5 text-sm outline-none transition-all duration-200 text-white placeholder-white/20" style="background-color: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);" onfocus="this.style.borderColor='rgba(212,167,98,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'"> </div> <div class="flex flex-col gap-2"> <label for="password" class="text-xs font-medium uppercase tracking-widest" style="color: rgba(255,255,255,0.4);">Mot de passe</label> <input id="password" name="password" type="password" required placeholder="••••••••" class="w-full rounded-xl px-4 py-3.5 text-sm outline-none transition-all duration-200 text-white placeholder-white/20" style="background-color: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);" onfocus="this.style.borderColor='rgba(212,167,98,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'"> </div> <p id="login-error" class="hidden text-xs text-red-400"></p> <button id="login-btn" type="submit" class="w-full py-3.5 rounded-xl text-sm font-bold transition-all duration-200 hover:brightness-110 active:scale-[0.98] mt-2 disabled:opacity-60 disabled:cursor-not-allowed" style="background-color: #d4a762; color: #0b1f3a; letter-spacing: 0.05em;">
+SE CONNECTER
+</button> </form> <p class="text-xs text-center mt-8" style="color: rgba(255,255,255,0.25);">
+Problème de connexion ?
+<a href="mailto:contact@jcbo-conseil.fr" class="underline transition-colors hover:text-white" style="color: rgba(212,167,98,0.5);">Contactez-nous</a> </p> </div> </div> `, " </body> </html>"])), renderHead(), renderComponent($$result, "LogoJCBO", $$LogoJCBO, { "size": 120 }), renderComponent($$result, "LogoJCBO", $$LogoJCBO, { "size": 72 }), renderScript($$result, "C:/Users/NWAHA/adhesion-jcbo/src/pages/login.astro?astro&type=script&index=0&lang.ts"));
+}, "C:/Users/NWAHA/adhesion-jcbo/src/pages/login.astro", void 0);
+
+const $$file = "C:/Users/NWAHA/adhesion-jcbo/src/pages/login.astro";
+const $$url = "/login";
+
+const _page = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
+  __proto__: null,
+  default: $$Login,
+  file: $$file,
+  url: $$url
+}, Symbol.toStringTag, { value: 'Module' }));
+
+const page = () => _page;
+
+export { page };

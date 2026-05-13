@@ -39,6 +39,7 @@ export const mockActualites = [
 export const mockConversations = [
   {
     id: "MSG-001",
+    email: "m.dupont@dupont-associes.fr",
     adherent: "Marie Dupont",
     entreprise: "Dupont & Associés",
     sujet: "Question sur mon adhésion",
@@ -53,6 +54,7 @@ export const mockConversations = [
   },
   {
     id: "MSG-002",
+    email: "t.renard@renard-consulting.fr",
     adherent: "Thomas Renard",
     entreprise: "Renard Consulting",
     sujet: "Accès aux ressources",
@@ -66,6 +68,7 @@ export const mockConversations = [
   },
   {
     id: "MSG-003",
+    email: "s.laurent@laurent-co.fr",
     adherent: "Sophie Laurent",
     entreprise: "Laurent & Co",
     sujet: "Demande de renseignements",
