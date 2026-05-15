@@ -11,6 +11,8 @@ import {
   mockProgressions,
 } from "../data/mock";
 
+export type AbonnementInfo = { plan: string; statut: "actif" | "inactif"; dateDebut: string };
+
 // Utilise globalThis pour survivre aux rechargements de modules (Vite dev + Vercel warm starts)
 export type AdherentComplet = {
   id: string;
@@ -25,6 +27,17 @@ export type AdherentComplet = {
   dateAdhesion: string;
   numeroAdherent: string;
   coursInscrits: string[];
+  abonnement: AbonnementInfo | null;
+};
+
+export type QuizResultat = { moduleId: string; score: number; passe: boolean };
+
+export type ProgressionComplet = {
+  adherentEmail: string;
+  coursId: string;
+  modulesTermines: string[];
+  quizResultats: QuizResultat[];
+  dateDebut: string;
 };
 
 type StoreData = {
@@ -38,7 +51,7 @@ type StoreData = {
   adherents: AdherentComplet[];
   ressources: { id: string; titre: string; categorie: string; date: string; fichier: string; nom_fichier?: string }[];
   cours: typeof mockCours;
-  progressions: { adherentEmail: string; coursId: string; modulesTermines: string[]; dateDebut: string }[];
+  progressions: ProgressionComplet[];
 };
 
 const g = globalThis as unknown as Record<string, StoreData | undefined>;
@@ -51,7 +64,11 @@ function initStore(): StoreData {
     adherents: mockAdherents.map(a => ({ ...a, coursInscrits: [...a.coursInscrits] })),
     ressources: mockRessources.map(r => ({ ...r })),
     cours: mockCours.map(c => ({ ...c, modules: c.modules.map(m => ({ ...m })) })),
-    progressions: mockProgressions.map(p => ({ ...p, modulesTermines: [...p.modulesTermines] })),
+    progressions: mockProgressions.map(p => ({
+      ...p,
+      modulesTermines: [...p.modulesTermines],
+      quizResultats: (p.quizResultats ?? []).map(q => ({ ...q })),
+    })),
   };
 }
 
@@ -105,9 +122,24 @@ export function createAdherent(data: Omit<AdherentComplet, "id" | "numeroAdheren
     ...data,
     email: data.email.toLowerCase(),
     coursInscrits: data.coursInscrits ?? [],
+    abonnement: data.abonnement ?? null,
   };
   arr.push(item);
   return item;
+}
+
+export function setAbonnement(adherentId: string, plan: string): AdherentComplet | null {
+  const a = s().adherents.find(a => a.id === adherentId);
+  if (!a) return null;
+  a.abonnement = { plan, statut: "actif", dateDebut: new Date().toISOString().split("T")[0] };
+  return a;
+}
+
+export function cancelAbonnement(adherentId: string): AdherentComplet | null {
+  const a = s().adherents.find(a => a.id === adherentId);
+  if (!a || !a.abonnement) return null;
+  a.abonnement.statut = "inactif";
+  return a;
 }
 
 export function updateAdherent(id: string, data: Partial<Omit<AdherentComplet, "id">>) {
@@ -158,6 +190,7 @@ export function createIdentifiant(data: { nom: string; email: string }) {
     telephone: "", entreprise: "", secteur: "",
     statut: "Actif",
     coursInscrits: [],
+    abonnement: null,
   });
   return { ...created, nom: data.nom, motDePasse: password };
 }
@@ -314,14 +347,19 @@ export function getProgressions(adherentEmail?: string) {
   return s().progressions;
 }
 
-export function marquerModuleTermine(adherentEmail: string, coursId: string, moduleId: string) {
-  const email = adherentEmail.toLowerCase();
+function getOrCreateProgression(email: string, coursId: string): ProgressionComplet {
   let prog = s().progressions.find(p => p.adherentEmail === email && p.coursId === coursId);
-
   if (!prog) {
-    prog = { adherentEmail: email, coursId, modulesTermines: [], dateDebut: new Date().toISOString().split("T")[0] };
+    prog = { adherentEmail: email, coursId, modulesTermines: [], quizResultats: [], dateDebut: new Date().toISOString().split("T")[0] };
     s().progressions.push(prog);
   }
+  if (!prog.quizResultats) prog.quizResultats = [];
+  return prog;
+}
+
+export function marquerModuleTermine(adherentEmail: string, coursId: string, moduleId: string) {
+  const email = adherentEmail.toLowerCase();
+  const prog = getOrCreateProgression(email, coursId);
 
   if (!prog.modulesTermines.includes(moduleId)) {
     prog.modulesTermines.push(moduleId);
@@ -334,10 +372,44 @@ export function marquerModuleTermine(adherentEmail: string, coursId: string, mod
   return { ...prog, pourcentage };
 }
 
+export function enregistrerQuizResultat(adherentEmail: string, coursId: string, moduleId: string, score: number, passe: boolean) {
+  const email = adherentEmail.toLowerCase();
+  const prog = getOrCreateProgression(email, coursId);
+
+  const idx = prog.quizResultats.findIndex(q => q.moduleId === moduleId);
+  const resultat = { moduleId, score, passe };
+  if (idx === -1) prog.quizResultats.push(resultat);
+  else prog.quizResultats[idx] = resultat;
+
+  if (passe && !prog.modulesTermines.includes(moduleId)) {
+    prog.modulesTermines.push(moduleId);
+  }
+
+  const cours = s().cours.find(c => c.id === coursId);
+  const totalModules = cours?.modules.length ?? 1;
+  const pourcentage = Math.round((prog.modulesTermines.length / totalModules) * 100);
+  const coursTermine = pourcentage === 100 && prog.quizResultats.filter(q => q.passe).length >= totalModules;
+
+  return { ...prog, pourcentage, coursTermine };
+}
+
 export function getProgressionPourcentage(adherentEmail: string, coursId: string): number {
   const prog = s().progressions.find(p => p.adherentEmail === adherentEmail.toLowerCase() && p.coursId === coursId);
   if (!prog) return 0;
   const cours = s().cours.find(c => c.id === coursId);
   const totalModules = cours?.modules.length ?? 1;
   return Math.round((prog.modulesTermines.length / totalModules) * 100);
+}
+
+export function getCoursTermines(adherentEmail: string): string[] {
+  const email = adherentEmail.toLowerCase();
+  return s().progressions
+    .filter(p => {
+      if (p.adherentEmail !== email) return false;
+      const cours = s().cours.find(c => c.id === p.coursId);
+      if (!cours) return false;
+      const total = cours.modules.length;
+      return p.modulesTermines.length >= total && p.quizResultats.filter(q => q.passe).length >= total;
+    })
+    .map(p => p.coursId);
 }

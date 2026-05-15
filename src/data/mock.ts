@@ -18,6 +18,7 @@ export const mockAdherents = [
     dateAdhesion: "2024-03-15",
     numeroAdherent: "ADH-2024-0042",
     coursInscrits: ["COURS-001"] as string[],
+    abonnement: { plan: "Standard", statut: "actif" as const, dateDebut: "2024-03-15" },
   },
   {
     id: "ADH-002",
@@ -31,6 +32,7 @@ export const mockAdherents = [
     dateAdhesion: "2025-04-30",
     numeroAdherent: "ADH-2025-0001",
     coursInscrits: [] as string[],
+    abonnement: null as null | { plan: string; statut: "actif" | "inactif"; dateDebut: string },
   },
   {
     id: "ADH-003",
@@ -44,6 +46,7 @@ export const mockAdherents = [
     dateAdhesion: "2025-04-22",
     numeroAdherent: "ADH-2025-0002",
     coursInscrits: [] as string[],
+    abonnement: null as null | { plan: string; statut: "actif" | "inactif"; dateDebut: string },
   },
   {
     id: "ADH-004",
@@ -57,6 +60,7 @@ export const mockAdherents = [
     dateAdhesion: "2025-04-10",
     numeroAdherent: "ADH-2025-0003",
     coursInscrits: [] as string[],
+    abonnement: null as null | { plan: string; statut: "actif" | "inactif"; dateDebut: string },
   },
 ];
 
@@ -224,9 +228,79 @@ export const mockProgressions = [
     adherentEmail: "m.dupont@dupont-associes.fr",
     coursId: "COURS-001",
     modulesTermines: ["M01", "M02", "M03"],
+    quizResultats: [
+      { moduleId: "M01", score: 100, passe: true },
+      { moduleId: "M02", score: 67, passe: true },
+      { moduleId: "M03", score: 100, passe: true },
+    ] as { moduleId: string; score: number; passe: boolean }[],
     dateDebut: "2024-09-15",
   },
 ];
+
+export type QuizQuestion = {
+  id: string;
+  question: string;
+  options: string[];
+  correcte: number; // index de la bonne réponse
+};
+
+export const mockQuizParModule: Record<string, QuizQuestion[]> = {
+  M01: [
+    { id: "Q1", question: "Qu'est-ce que le mindset entrepreneurial ?", options: ["Une technique de vente", "Un état d'esprit orienté croissance et opportunité", "Un outil de gestion comptable", "Une méthode de marketing"], correcte: 1 },
+    { id: "Q2", question: "Quelle attitude caractérise l'entrepreneur à fort potentiel ?", options: ["Attendre que les conditions soient parfaites", "Blâmer l'environnement en cas d'échec", "Apprendre de ses erreurs et pivoter", "Éviter les risques à tout prix"], correcte: 2 },
+    { id: "Q3", question: "Le mindset de croissance (growth mindset) implique :", options: ["Croire que ses capacités sont figées", "Chercher constamment à apprendre et s'améliorer", "Se comparer négativement aux autres", "Refuser tout feedback"], correcte: 1 },
+  ],
+  M02: [
+    { id: "Q1", question: "La posture professionnelle influence principalement :", options: ["Uniquement votre apparence physique", "La perception que les autres ont de votre crédibilité", "Votre vitesse de frappe au clavier", "Vos compétences techniques"], correcte: 1 },
+    { id: "Q2", question: "Quel élément contribue le plus à une posture professionnelle solide ?", options: ["La chance", "La cohérence entre discours et actions", "Le réseau social uniquement", "Le diplôme obtenu"], correcte: 1 },
+    { id: "Q3", question: "Renforcer sa posture professionnelle nécessite :", options: ["Ignorer les critiques", "Travailler sa communication et sa présentation", "Se limiter à son secteur d'expertise", "Éviter les situations nouvelles"], correcte: 1 },
+  ],
+  M03: [
+    { id: "Q1", question: "La structuration stratégique d'une activité commence par :", options: ["Créer un logo", "Définir sa vision et ses objectifs clés", "Recruter immédiatement", "Investir dans la publicité"], correcte: 1 },
+    { id: "Q2", question: "Un business model solide doit répondre à :", options: ["Comment je génère de la valeur et pour qui", "Combien coûte mon bureau", "Quel est mon salaire idéal", "Quels logiciels j'utilise"], correcte: 0 },
+    { id: "Q3", question: "Quelle est la priorité dans la structuration d'une activité naissante ?", options: ["Les aspects esthétiques", "La validation du marché et de l'offre", "L'embauche d'une équipe", "La création d'une société holding"], correcte: 1 },
+  ],
+  M04: [
+    { id: "Q1", question: "La prise de décision efficace repose sur :", options: ["L'intuition seule", "La collecte et l'analyse des données pertinentes", "L'avis de la majorité", "L'évitement du problème"], correcte: 1 },
+    { id: "Q2", question: "Le pilotage d'activité implique de surveiller :", options: ["Uniquement le chiffre d'affaires", "Des indicateurs clés de performance (KPIs) multiples", "Seulement les dépenses", "L'opinion des concurrents"], correcte: 1 },
+    { id: "Q3", question: "Face à une décision difficile, l'entrepreneur doit :", options: ["Déléguer systématiquement", "Fuir la responsabilité", "Analyser, décider et assumer", "Attendre que le problème se résolve seul"], correcte: 2 },
+  ],
+  M05: [
+    { id: "Q1", question: "Le leadership entrepreneurial se traduit par :", options: ["Imposer ses décisions sans explication", "Inspirer et mobiliser les équipes vers un objectif commun", "Gérer uniquement les budgets", "Contrôler chaque tâche personnellement"], correcte: 1 },
+    { id: "Q2", question: "La discipline opérationnelle consiste à :", options: ["Travailler 24h/24", "Appliquer rigoureusement les processus définis", "Tout faire soi-même", "Ignorer les plannings"], correcte: 1 },
+    { id: "Q3", question: "Un leader efficace sait avant tout :", options: ["Tout décider seul", "Écouter, déléguer et faire confiance", "Éviter les conflits à tout prix", "Imposer son style de management"], correcte: 1 },
+  ],
+  M06: [
+    { id: "Q1", question: "La vision business permet de :", options: ["Justifier les dépenses passées", "Donner une direction claire à long terme", "Éviter les investissements", "Limiter la croissance"], correcte: 1 },
+    { id: "Q2", question: "La performance d'une entreprise se mesure :", options: ["Uniquement au nombre d'employés", "Par des indicateurs financiers et non-financiers", "Au prestige de ses bureaux", "Au nombre de réunions tenues"], correcte: 1 },
+    { id: "Q3", question: "Pour maximiser la performance, l'entrepreneur doit :", options: ["Tout garder en tête sans systèmes", "Mettre en place des processus reproductibles", "Changer de stratégie chaque mois", "Ignorer les résultats passés"], correcte: 1 },
+  ],
+  M07: [
+    { id: "Q1", question: "La communication d'impact vise à :", options: ["Parler le plus possible", "Transmettre un message clair qui génère une réaction", "Utiliser un vocabulaire technique complexe", "Impressionner par le volume d'information"], correcte: 1 },
+    { id: "Q2", question: "La crédibilité professionnelle se construit :", options: ["En une seule réunion", "Sur la durée, par la cohérence et les résultats", "Grâce aux réseaux sociaux uniquement", "Par la taille de son entreprise"], correcte: 1 },
+    { id: "Q3", question: "Lors d'une prise de parole professionnelle, il est important de :", options: ["Lire ses notes sans regarder l'audience", "Adapter son message à son interlocuteur", "Parler le plus vite possible", "Éviter les questions de l'audience"], correcte: 1 },
+  ],
+  M08: [
+    { id: "Q1", question: "La comptabilité d'entreprise sert principalement à :", options: ["Décorer les rapports annuels", "Enregistrer et analyser les flux financiers", "Calculer les congés des employés", "Gérer les réseaux sociaux"], correcte: 1 },
+    { id: "Q2", question: "Un compte de résultat présente :", options: ["Les biens possédés par l'entreprise", "Les produits et charges sur une période", "Le capital social uniquement", "La liste des clients"], correcte: 1 },
+    { id: "Q3", question: "La trésorerie correspond à :", options: ["Le bénéfice annuel", "Les liquidités disponibles à un instant donné", "Le patrimoine total de l'entreprise", "Les dettes à long terme"], correcte: 1 },
+  ],
+  M09: [
+    { id: "Q1", question: "Le bilan comptable montre :", options: ["Les flux de trésorerie du mois", "L'actif (ce que l'entreprise possède) et le passif (ce qu'elle doit)", "Uniquement les dettes", "Le chiffre d'affaires annuel"], correcte: 1 },
+    { id: "Q2", question: "Les capitaux propres dans un bilan représentent :", options: ["Les dettes fournisseurs", "La valeur nette appartenant aux associés", "Les investissements futurs", "Les salaires à verser"], correcte: 1 },
+    { id: "Q3", question: "Un bilan équilibré signifie que :", options: ["L'entreprise est rentable", "Le total actif est égal au total passif", "Il n'y a pas de dettes", "Le résultat est positif"], correcte: 1 },
+  ],
+  M10: [
+    { id: "Q1", question: "L'optimisation fiscale légale consiste à :", options: ["Dissimuler des revenus", "Utiliser les dispositifs légaux pour réduire l'imposition", "Ne pas déclarer certains flux", "Délocaliser dans des paradis fiscaux"], correcte: 1 },
+    { id: "Q2", question: "La TVA collectée par l'entreprise doit être :", options: ["Conservée comme bénéfice", "Reversée à l'État", "Distribuée aux associés", "Utilisée pour payer les salaires"], correcte: 1 },
+    { id: "Q3", question: "Une charge déductible permet de :", options: ["Augmenter le résultat imposable", "Réduire l'assiette d'imposition", "Éviter toute déclaration fiscale", "Augmenter le chiffre d'affaires"], correcte: 1 },
+  ],
+  M11: [
+    { id: "Q1", question: "L'optimisation de la trésorerie passe par :", options: ["Ignorer les délais de paiement", "Anticiper les flux entrants et sortants", "Dépenser le maximum en fin de mois", "Éviter tout investissement"], correcte: 1 },
+    { id: "Q2", question: "Un expert-comptable peut aider l'entrepreneur à :", options: ["Choisir sa stratégie marketing", "Sécuriser sa conformité fiscale et sociale", "Recruter ses collaborateurs", "Créer son logo"], correcte: 1 },
+    { id: "Q3", question: "Pour évaluer la santé financière d'une entreprise, on analyse :", options: ["Uniquement le chiffre d'affaires", "La rentabilité, la trésorerie et l'endettement", "Le nombre de salariés", "La notoriété de la marque"], correcte: 1 },
+  ],
+};
 
 export const mockRessources = [
   {

@@ -1,0 +1,159 @@
+---
+import AdherentMemberLayout from "../../layouts/AdherentMemberLayout.astro";
+import Card from "../../components/ui/Card.astro";
+import Badge from "../../components/ui/Badge.astro";
+import { getAdherentByEmail } from "../../lib/store";
+
+const profil = getAdherentByEmail(Astro.locals.session?.email ?? "");
+if (!profil) return Astro.redirect("/login");
+
+const abonnement = profil.abonnement;
+
+const plans = [
+  {
+    nom: "Découverte",
+    prix: "Gratuit",
+    periode: "",
+    description: "Accès limité pour découvrir la plateforme.",
+    fonctionnalites: ["Accès aux actualités", "1 ressource disponible", "Support par e-mail"],
+    couleur: "#6b7280",
+    bg: "rgba(107,114,128,0.05)",
+  },
+  {
+    nom: "Standard",
+    prix: "49 €",
+    periode: "/ mois",
+    description: "Idéal pour les entrepreneurs actifs qui veulent progresser.",
+    fonctionnalites: ["Tous les cours publiés", "Ressources illimitées", "Messagerie prioritaire", "Certificats de formation"],
+    couleur: "#d4a762",
+    bg: "rgba(212,167,98,0.06)",
+    recommande: true,
+  },
+  {
+    nom: "Premium",
+    prix: "99 €",
+    periode: "/ mois",
+    description: "Accompagnement personnalisé et accès exclusif.",
+    fonctionnalites: ["Tout le Standard", "Sessions coaching individuel", "Accès anticipé aux nouveaux cours", "Réseau exclusif d'adhérents"],
+    couleur: "#0b1f3a",
+    bg: "rgba(11,31,58,0.04)",
+  },
+];
+---
+
+<AdherentMemberLayout titre="Mon abonnement">
+
+  <div class="mb-8">
+    <h2 class="text-2xl font-bold" style="color: #0b1f3a;">Mon abonnement</h2>
+    <p class="text-sm text-gray-500 mt-1">Choisissez le plan adapté à votre ambition.</p>
+  </div>
+
+  {abonnement && abonnement.statut === "actif" && (
+    <div class="rounded-2xl p-5 mb-8 flex items-center justify-between" style="background: linear-gradient(135deg, #0b1f3a 0%, #162d4f 100%);">
+      <div>
+        <p class="text-xs font-medium uppercase tracking-widest mb-1" style="color: rgba(212,167,98,0.7);">Abonnement actuel</p>
+        <h3 class="text-xl font-bold text-white">{abonnement.plan}</h3>
+        <p class="text-xs mt-1" style="color: rgba(255,255,255,0.4);">Actif depuis le {new Date(abonnement.dateDebut).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</p>
+      </div>
+      <div class="flex flex-col items-end gap-3">
+        <Badge variant="vert">Actif</Badge>
+        <button id="btn-cancel" class="text-xs underline" style="color: rgba(255,255,255,0.3);">Résilier</button>
+      </div>
+    </div>
+  )}
+
+  <!-- Plans -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+    {plans.map(plan => {
+      const estActuel = abonnement?.statut === "actif" && abonnement?.plan === plan.nom;
+      return (
+        <div
+          class="rounded-2xl p-6 flex flex-col relative"
+          style={`background-color: ${plan.bg}; border: 2px solid ${estActuel ? plan.couleur : plan.recommande ? "rgba(212,167,98,0.3)" : "#f1f3f5;"};`}
+        >
+          {plan.recommande && (
+            <span class="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-bold px-3 py-1 rounded-full text-white" style="background-color: #d4a762;">
+              Recommandé
+            </span>
+          )}
+          <div class="mb-4">
+            <p class="text-xs font-semibold uppercase tracking-wide mb-1" style={`color: ${plan.couleur};`}>{plan.nom}</p>
+            <div class="flex items-baseline gap-1">
+              <span class="text-3xl font-bold" style="color: #0b1f3a;">{plan.prix}</span>
+              {plan.periode && <span class="text-sm text-gray-400">{plan.periode}</span>}
+            </div>
+            <p class="text-xs text-gray-500 mt-2">{plan.description}</p>
+          </div>
+          <ul class="flex flex-col gap-2 flex-1 mb-6">
+            {plan.fonctionnalites.map(f => (
+              <li class="flex items-center gap-2 text-sm text-gray-600">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                {f}
+              </li>
+            ))}
+          </ul>
+          {estActuel ? (
+            <div class="w-full py-2.5 rounded-xl text-sm font-semibold text-center" style={`background-color: ${plan.couleur}22; color: ${plan.couleur};`}>
+              Plan actuel
+            </div>
+          ) : (
+            <button
+              class="btn-souscrire w-full py-2.5 rounded-xl text-sm font-semibold transition hover:opacity-90 active:scale-[0.98]"
+              style={`background-color: ${plan.couleur}; color: ${plan.couleur === "#0b1f3a" || plan.couleur === "#d4a762" ? (plan.couleur === "#d4a762" ? "#0b1f3a" : "white") : "white"};`}
+              data-plan={plan.nom}
+            >
+              {plan.nom === "Découverte" ? "Choisir ce plan" : "S'abonner"}
+            </button>
+          )}
+        </div>
+      );
+    })}
+  </div>
+
+  <p class="text-xs text-center text-gray-400">Simulation uniquement — aucun prélèvement n'est effectué.</p>
+
+  <p id="sub-error" class="text-red-500 text-sm text-center mt-4 hidden"></p>
+  <p id="sub-success" class="text-green-600 text-sm text-center mt-4 hidden"></p>
+
+</AdherentMemberLayout>
+
+<script is:inline>
+(function() {
+  document.querySelectorAll(".btn-souscrire").forEach(btn => {
+    btn.addEventListener("click", async function() {
+      const plan = this.dataset.plan;
+      const err = document.getElementById("sub-error");
+      const suc = document.getElementById("sub-success");
+      err.classList.add("hidden");
+      suc.classList.add("hidden");
+      this.disabled = true;
+      this.textContent = "Traitement…";
+
+      try {
+        const res = await fetch("/api/abonnement", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ plan }),
+        });
+        const data = await res.json();
+        if (!res.ok) { err.textContent = data.error || "Erreur"; err.classList.remove("hidden"); this.disabled = false; this.textContent = plan === "Découverte" ? "Choisir ce plan" : "S'abonner"; return; }
+        suc.textContent = `Vous êtes maintenant abonné au plan ${plan} !`;
+        suc.classList.remove("hidden");
+        setTimeout(() => location.reload(), 1200);
+      } catch {
+        err.textContent = "Erreur réseau";
+        err.classList.remove("hidden");
+        this.disabled = false;
+      }
+    });
+  });
+
+  const cancelBtn = document.getElementById("btn-cancel");
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", async () => {
+      if (!confirm("Confirmer la résiliation de votre abonnement ?")) return;
+      const res = await fetch("/api/abonnement", { method: "DELETE" });
+      if (res.ok) location.reload();
+    });
+  }
+})();
+</script>
