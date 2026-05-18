@@ -1,13 +1,13 @@
 ---
 import AdherentMemberLayout from "../../layouts/AdherentMemberLayout.astro";
 import Card from "../../components/ui/Card.astro";
-import { getAdherentByEmail, findOrCreateConversation, getConversations } from "../../lib/store";
+import { getAdherentByEmail, findOrCreateConversation, markAsReadAdherent } from "../../lib/store";
 
 const profil = getAdherentByEmail(Astro.locals.session?.email ?? "");
 if (!profil) return Astro.redirect("/login");
 
-// Trouver ou créer la conversation pour cet adhérent
 const conv = findOrCreateConversation(profil.email, "Messagerie adhérent");
+markAsReadAdherent(conv.id);
 const messages = conv.messages;
 ---
 

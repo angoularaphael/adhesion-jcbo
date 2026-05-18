@@ -1,0 +1,146 @@
+---
+import AdherentLayout from "../../layouts/AdherentLayout.astro";
+import Card from "../../components/ui/Card.astro";
+import Badge from "../../components/ui/Badge.astro";
+import { getPaiements, getAdherentByEmail, getCours } from "../../lib/store";
+
+const tousLesPaiements = getPaiements().sort((a, b) => b.date.localeCompare(a.date));
+const tousLesCours = getCours();
+
+const totalRevenu = tousLesPaiements.reduce((sum, p) => sum + p.montant, 0);
+const paiementsParCours = tousLesCours.map(c => ({
+  cours: c,
+  paiements: tousLesPaiements.filter(p => p.coursId === c.id),
+  total: tousLesPaiements.filter(p => p.coursId === c.id).reduce((s, p) => s + p.montant, 0),
+})).filter(g => g.paiements.length > 0);
+---
+
+<AdherentLayout titre="Paiements">
+
+  <div class="mb-8">
+    <h2 class="text-2xl font-bold" style="color: #0b1f3a;">Paiements</h2>
+    <p class="text-sm text-gray-500 mt-1">Suivi des souscriptions et revenus des formations.</p>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
+    <Card>
+      <p class="text-xs font-semibold uppercase tracking-widest mb-2" style="color: #6b7280;">Total encaissé</p>
+      <p class="text-3xl font-bold" style="color: #0b1f3a;">{totalRevenu} €</p>
+    </Card>
+    <Card>
+      <p class="text-xs font-semibold uppercase tracking-widest mb-2" style="color: #6b7280;">Transactions</p>
+      <p class="text-3xl font-bold" style="color: #0b1f3a;">{tousLesPaiements.length}</p>
+    </Card>
+    <Card>
+      <p class="text-xs font-semibold uppercase tracking-widest mb-2" style="color: #6b7280;">Formations payantes</p>
+      <p class="text-3xl font-bold" style="color: #0b1f3a;">{paiementsParCours.length}</p>
+    </Card>
+  </div>
+
+  <!-- Tableau des paiements -->
+  <Card>
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-base font-bold" style="color: #0b1f3a;">Historique des transactions</h3>
+      <Badge variant="vert">{tousLesPaiements.length} transaction{tousLesPaiements.length !== 1 ? "s" : ""}</Badge>
+    </div>
+
+    {tousLesPaiements.length === 0 ? (
+      <div class="text-center py-12">
+        <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4" style="background-color: rgba(212,167,98,0.1);">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#d4a762" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+          </svg>
+        </div>
+        <p class="text-sm text-gray-400">Aucune transaction pour le moment.</p>
+      </div>
+    ) : (
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr style="border-bottom: 2px solid #f1f3f5;">
+              <th class="text-left pb-3 text-xs font-semibold uppercase tracking-wide" style="color: #6b7280;">Adhérent</th>
+              <th class="text-left pb-3 text-xs font-semibold uppercase tracking-wide" style="color: #6b7280;">Formation</th>
+              <th class="text-left pb-3 text-xs font-semibold uppercase tracking-wide" style="color: #6b7280;">Date</th>
+              <th class="text-left pb-3 text-xs font-semibold uppercase tracking-wide" style="color: #6b7280;">Réf.</th>
+              <th class="text-right pb-3 text-xs font-semibold uppercase tracking-wide" style="color: #6b7280;">Montant</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tousLesPaiements.map(p => {
+              const adherent = getAdherentByEmail(p.adherentEmail);
+              const dateFormatee = new Date(p.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+              return (
+                <tr style="border-bottom: 1px solid #f8f9fa;" class="hover:bg-gray-50 transition">
+                  <td class="py-3 pr-4">
+                    <div>
+                      <p class="font-medium" style="color: #0b1f3a;">{adherent ? `${adherent.prenom} ${adherent.nom}` : p.adherentEmail}</p>
+                      <p class="text-xs text-gray-400">{p.adherentEmail}</p>
+                    </div>
+                  </td>
+                  <td class="py-3 pr-4">
+                    <p class="font-medium text-xs" style="color: #0b1f3a;">{p.coursTitre}</p>
+                  </td>
+                  <td class="py-3 pr-4">
+                    <p class="text-xs text-gray-500">{dateFormatee}</p>
+                  </td>
+                  <td class="py-3 pr-4">
+                    <p class="text-xs font-mono text-gray-400">{p.numerTransaction}</p>
+                  </td>
+                  <td class="py-3 text-right">
+                    <span class="text-sm font-bold" style="color: #16a34a;">{p.montant} €</span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+          <tfoot>
+            <tr style="border-top: 2px solid #f1f3f5;">
+              <td colspan="4" class="pt-4 text-xs font-semibold uppercase tracking-wide" style="color: #6b7280;">Total</td>
+              <td class="pt-4 text-right text-base font-bold" style="color: #0b1f3a;">{totalRevenu} €</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    )}
+  </Card>
+
+  <!-- Répartition par formation -->
+  {paiementsParCours.length > 0 && (
+    <div class="mt-6">
+      <h3 class="text-base font-bold mb-4" style="color: #0b1f3a;">Répartition par formation</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {paiementsParCours.map(({ cours, paiements: ps, total }) => (
+          <Card>
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-bold truncate" style="color: #0b1f3a;">{cours.titre}</p>
+                <p class="text-xs text-gray-400 mt-1">{ps.length} inscription{ps.length > 1 ? "s" : ""}</p>
+                <div class="flex flex-wrap gap-1 mt-2">
+                  {ps.slice(0, 3).map(p => {
+                    const a = getAdherentByEmail(p.adherentEmail);
+                    return (
+                      <span class="text-xs px-2 py-0.5 rounded-full" style="background-color: rgba(11,31,58,0.06); color: #0b1f3a;">
+                        {a ? `${a.prenom} ${a.nom}` : p.adherentEmail}
+                      </span>
+                    );
+                  })}
+                  {ps.length > 3 && (
+                    <span class="text-xs px-2 py-0.5 rounded-full" style="background-color: #f1f3f5; color: #6b7280;">
+                      +{ps.length - 3} autre{ps.length - 3 > 1 ? "s" : ""}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div class="text-right flex-shrink-0">
+                <p class="text-xl font-bold" style="color: #d4a762;">{total} €</p>
+                <p class="text-xs text-gray-400 mt-0.5">encaissés</p>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )}
+
+</AdherentLayout>

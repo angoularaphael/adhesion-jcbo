@@ -1,0 +1,202 @@
+---
+import AdherentMemberLayout from "../../layouts/AdherentMemberLayout.astro";
+import LogoJCBO from "../../components/ui/LogoJCBO.astro";
+import Stripe from "stripe";
+import {
+  getPaiementParSession, getAdherentByEmail,
+  enregistrerPaiement, setCoursAdherent, addNotification
+} from "../../lib/store";
+
+const sessionId = Astro.url.searchParams.get("session_id") ?? "";
+const profil = getAdherentByEmail(Astro.locals.session?.email ?? "");
+if (!profil) return Astro.redirect("/login");
+
+// Vérifie si le webhook a déjà enregistré ce paiement
+let recu = sessionId ? getPaiementParSession(sessionId) : null;
+
+// Si le webhook n'a pas encore tourné (pas de Stripe CLI ou secret manquant),
+// on traite directement depuis la session Stripe
+if (!recu && sessionId) {
+  const stripeKey = import.meta.env.STRIPE_SECRET_KEY;
+  if (stripeKey && !stripeKey.includes("REMPLACER")) {
+    try {
+      const stripe = new Stripe(stripeKey);
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      if (session.payment_status === "paid" && session.metadata) {
+        const { adherentEmail, coursId, coursTitre, montant } = session.metadata;
+        const email = (adherentEmail ?? profil.email).toLowerCase();
+
+        // Inscrire l'adhérent au cours s'il ne l'est pas déjà
+        const adherent = getAdherentByEmail(email);
+        if (adherent && coursId && !adherent.coursInscrits.includes(coursId)) {
+          setCoursAdherent(adherent.id, [...adherent.coursInscrits, coursId]);
+        }
+
+        // Enregistrer le paiement dans le store
+        recu = enregistrerPaiement({
+          adherentEmail: email,
+          coursId: coursId ?? "",
+          coursTitre: coursTitre ?? "Formation JCBO",
+          montant: Number(montant ?? 0),
+          stripeSessionId: sessionId,
+        });
+
+        // Créer les notifications
+        addNotification({
+          adherentEmail: email,
+          type: "paiement",
+          titre: "Paiement confirmé",
+          message: `Votre paiement de ${recu.montant} € pour "${recu.coursTitre}" a été validé. Réf. ${recu.numerTransaction}`,
+        });
+        addNotification({
+          adherentEmail: email,
+          type: "inscription",
+          titre: "Inscription confirmée",
+          message: `Vous êtes maintenant inscrit à "${recu.coursTitre}". Rendez-vous dans "Mes cours" pour commencer.`,
+        });
+      }
+    } catch { /* session invalide ou clés manquantes */ }
+  }
+}
+
+const dateFormatee = recu
+  ? new Date(recu.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+  : new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+---
+
+<AdherentMemberLayout titre="Paiement confirmé">
+
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+    <div>
+      <h2 class="text-2xl font-bold" style="color: #0b1f3a;">Paiement confirmé</h2>
+      <p class="text-sm text-gray-500 mt-1">Votre inscription a bien été enregistrée.</p>
+    </div>
+    <div class="flex gap-3">
+      <button
+        onclick="window.print()"
+        class="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition hover:opacity-90 no-print"
+        style="background-color: #0b1f3a; color: white;"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+        </svg>
+        Télécharger le reçu
+      </button>
+      <a
+        href="/adherent/cours"
+        class="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition hover:opacity-90 no-print"
+        style="background-color: rgba(212,167,98,0.12); color: #0b1f3a;"
+      >
+        Accéder à ma formation
+      </a>
+    </div>
+  </div>
+
+  <!-- Bandeau succès -->
+  <div class="flex items-center gap-4 p-5 rounded-2xl mb-8 no-print" style="background: linear-gradient(135deg, rgba(22,163,74,0.08) 0%, rgba(22,163,74,0.04) 100%); border: 1px solid rgba(22,163,74,0.2);">
+    <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: rgba(22,163,74,0.12);">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2.5">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+    </div>
+    <div>
+      <p class="text-sm font-bold" style="color: #15803d;">Paiement validé avec succès</p>
+      <p class="text-xs text-gray-500 mt-0.5">Votre accès à la formation a été activé. Vous pouvez commencer dès maintenant.</p>
+    </div>
+  </div>
+
+  <!-- Reçu de paiement -->
+  <div id="recu-paiement" class="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden" style="border: 1px solid rgba(212,167,98,0.3);">
+
+    <div class="h-2 w-full" style="background: linear-gradient(90deg, #0b1f3a 0%, #d4a762 50%, #0b1f3a 100%);"></div>
+
+    <div class="px-8 py-10">
+
+      <!-- En-tête -->
+      <div class="flex items-start justify-between mb-8">
+        <div>
+          <LogoJCBO size={52} />
+          <p class="text-xs font-medium uppercase tracking-[0.2em] mt-2" style="color: #d4a762;">JCBO-CONSEIL</p>
+          <p class="text-xs text-gray-400 mt-0.5">Stratégie · Mindset · Performance</p>
+        </div>
+        <div class="text-right">
+          <p class="text-xs font-semibold uppercase tracking-widest" style="color: #0b1f3a;">Reçu de paiement</p>
+          <p class="text-xs text-gray-400 mt-1">N° {recu?.numerTransaction ?? "—"}</p>
+          <p class="text-xs text-gray-400 mt-0.5">Émis le {dateFormatee}</p>
+        </div>
+      </div>
+
+      <!-- Séparateur -->
+      <div class="h-px mb-8" style="background: linear-gradient(90deg, transparent, rgba(212,167,98,0.4), transparent);"></div>
+
+      <!-- Bénéficiaire -->
+      <div class="mb-6">
+        <p class="text-xs font-semibold uppercase tracking-widest mb-3" style="color: #0b1f3a;">Bénéficiaire</p>
+        <p class="text-base font-bold" style="color: #0b1f3a;">{profil.prenom} {profil.nom}</p>
+        <p class="text-sm text-gray-500">{profil.email}</p>
+        {profil.entreprise && <p class="text-sm text-gray-400 mt-0.5">{profil.entreprise}</p>}
+      </div>
+
+      <!-- Détail de la commande -->
+      <div class="rounded-xl p-5 mb-6" style="background-color: rgba(248,246,242,0.9); border: 1px solid rgba(212,167,98,0.15);">
+        <p class="text-xs font-semibold uppercase tracking-widest mb-4" style="color: #0b1f3a;">Détail de la commande</p>
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-sm font-bold" style="color: #0b1f3a;">{recu?.coursTitre ?? "Formation JCBO-CONSEIL"}</p>
+            <p class="text-xs text-gray-400 mt-0.5">Accès complet · Certificat inclus</p>
+          </div>
+          <p class="text-base font-bold flex-shrink-0" style="color: #d4a762;">{recu ? `${recu.montant} €` : "—"}</p>
+        </div>
+        <div class="h-px my-4" style="background-color: rgba(212,167,98,0.2);"></div>
+        <div class="flex items-center justify-between">
+          <p class="text-sm font-semibold" style="color: #0b1f3a;">Total payé</p>
+          <p class="text-lg font-bold" style="color: #0b1f3a;">{recu ? `${recu.montant} €` : "—"}</p>
+        </div>
+      </div>
+
+      <!-- Référence Stripe -->
+      <div class="mb-8">
+        <p class="text-xs font-semibold uppercase tracking-widest mb-2" style="color: #0b1f3a;">Référence de transaction</p>
+        <p class="text-xs font-mono text-gray-500">{recu?.stripeSessionId ?? sessionId ?? "—"}</p>
+      </div>
+
+      <!-- Message -->
+      <div class="text-center py-4 rounded-xl mb-8" style="background-color: rgba(11,31,58,0.04); border: 1px solid rgba(11,31,58,0.08);">
+        <p class="text-xs text-gray-500 leading-relaxed">
+          Ce reçu confirme votre inscription au programme de formation.<br/>
+          Conservez ce document comme justificatif de votre paiement.
+        </p>
+      </div>
+
+      <!-- Pied de page -->
+      <div class="flex items-center justify-between pt-4" style="border-top: 1px solid #f1f3f5;">
+        <div>
+          <p class="text-xs font-bold" style="color: #0b1f3a;">JCBO-CONSEIL</p>
+          <p class="text-xs text-gray-400">contact@jcbo-conseil.fr</p>
+        </div>
+        <p class="text-xs text-gray-300 font-mono">{recu?.numerTransaction ?? ""}</p>
+      </div>
+
+    </div>
+
+    <div class="h-2 w-full" style="background: linear-gradient(90deg, #0b1f3a 0%, #d4a762 50%, #0b1f3a 100%);"></div>
+
+  </div>
+
+</AdherentMemberLayout>
+
+<style>
+  @media print {
+    .no-print { display: none !important; }
+    #sidebar-adherent { display: none !important; }
+    #sidebar-overlay-adherent { display: none !important; }
+    header { display: none !important; }
+    body { background: white !important; }
+    main { padding: 0 !important; }
+    #recu-paiement {
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      max-width: 100% !important;
+    }
+  }
+</style>

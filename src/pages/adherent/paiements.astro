@@ -1,0 +1,265 @@
+---
+import AdherentMemberLayout from "../../layouts/AdherentMemberLayout.astro";
+import Card from "../../components/ui/Card.astro";
+import Badge from "../../components/ui/Badge.astro";
+import {
+  getAdherentByEmail, getPaiements, getNotifications,
+  marquerNotificationsLues, getCours
+} from "../../lib/store";
+
+const profil = getAdherentByEmail(Astro.locals.session?.email ?? "");
+if (!profil) return Astro.redirect("/login");
+
+const paiements = getPaiements(profil.email);
+const notifications = getNotifications(profil.email);
+const tousLesCours = getCours();
+
+// Marquer les notifications comme lues à l'ouverture de la page
+marquerNotificationsLues(profil.email);
+
+const onglet = Astro.url.searchParams.get("onglet") ?? "paiements";
+
+const typeNotifLabel: Record<string, string> = {
+  paiement: "Paiement",
+  inscription: "Inscription",
+  abonnement: "Abonnement",
+  rappel: "Rappel",
+  certificat: "Certificat",
+};
+
+const typeNotifVariant: Record<string, "or" | "vert" | "gris"> = {
+  paiement: "vert",
+  inscription: "or",
+  abonnement: "or",
+  rappel: "gris",
+  certificat: "vert",
+};
+---
+
+<AdherentMemberLayout titre="Paiements & notifications">
+
+  <div class="mb-8">
+    <h2 class="text-2xl font-bold" style="color: #0b1f3a;">Paiements & notifications</h2>
+    <p class="text-sm text-gray-500 mt-1">Consultez vos paiements, abonnements et notifications.</p>
+  </div>
+
+  <!-- Onglets -->
+  <div class="flex gap-1 p-1 rounded-xl mb-8 w-fit" style="background-color: #f1f3f5;">
+    {[
+      { id: "paiements", label: "Paiements & reçus" },
+      { id: "abonnement", label: "Abonnement" },
+      { id: "notifications", label: `Notifications${notifications.filter(n => !n.lue).length > 0 ? ` (${notifications.filter(n => !n.lue).length})` : ""}` },
+    ].map(t => (
+      <a
+        href={`?onglet=${t.id}`}
+        class="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+        style={onglet === t.id
+          ? "background-color: white; color: #0b1f3a; box-shadow: 0 1px 3px rgba(0,0,0,0.08);"
+          : "color: #6b7280;"}
+      >
+        {t.label}
+      </a>
+    ))}
+  </div>
+
+  <!-- ONGLET : Paiements & reçus -->
+  {onglet === "paiements" && (
+    <div>
+      {paiements.length === 0 ? (
+        <Card>
+          <div class="text-center py-12">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4" style="background-color: rgba(212,167,98,0.1);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#d4a762" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+              </svg>
+            </div>
+            <p class="text-sm font-medium" style="color: #0b1f3a;">Aucun paiement enregistré</p>
+            <p class="text-xs text-gray-400 mt-1">Vos paiements apparaîtront ici après inscription à une formation.</p>
+          </div>
+        </Card>
+      ) : (
+        <div class="flex flex-col gap-4">
+          {paiements.map(p => {
+            const cours = tousLesCours.find(c => c.id === p.coursId);
+            const dateFormatee = new Date(p.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+            return (
+              <Card>
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div class="flex items-start gap-4">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background-color: rgba(22,163,74,0.1);">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <p class="text-sm font-bold" style="color: #0b1f3a;">{p.coursTitre}</p>
+                      <p class="text-xs text-gray-400 mt-0.5">Payé le {dateFormatee}</p>
+                      <p class="text-xs font-mono text-gray-400 mt-0.5">Réf. {p.numerTransaction}</p>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-4 sm:flex-col sm:items-end">
+                    <p class="text-lg font-bold" style="color: #0b1f3a;">{p.montant} €</p>
+                    <a
+                      href={`/paiement/succes?session_id=${p.stripeSessionId}`}
+                      class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition hover:opacity-80"
+                      style="background-color: rgba(11,31,58,0.06); color: #0b1f3a;"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                      </svg>
+                      Voir le reçu
+                    </a>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  )}
+
+  <!-- ONGLET : Abonnement -->
+  {onglet === "abonnement" && (
+    <div class="flex flex-col gap-5">
+      {profil.abonnement ? (
+        <Card>
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2 mb-3">
+                <Badge variant={profil.abonnement.statut === "actif" ? "vert" : "gris"}>
+                  {profil.abonnement.statut === "actif" ? "Actif" : "Inactif"}
+                </Badge>
+              </div>
+              <p class="text-base font-bold" style="color: #0b1f3a;">Plan {profil.abonnement.plan}</p>
+              <p class="text-sm text-gray-400 mt-1">
+                Depuis le {new Date(profil.abonnement.dateDebut).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+              </p>
+            </div>
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style="background-color: rgba(212,167,98,0.1);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#d4a762" stroke-width="1.8">
+                <rect x="2" y="5" width="20" height="14" rx="2"/>
+                <line x1="2" y1="10" x2="22" y2="10" stroke-linecap="round"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="mt-5 pt-5 grid grid-cols-2 sm:grid-cols-3 gap-4" style="border-top: 1px solid #f1f3f5;">
+            <div>
+              <p class="text-xs text-gray-400 mb-1">Formations inscrites</p>
+              <p class="text-lg font-bold" style="color: #0b1f3a;">{profil.coursInscrits.length}</p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-400 mb-1">Total payé</p>
+              <p class="text-lg font-bold" style="color: #0b1f3a;">
+                {paiements.reduce((sum, p) => sum + p.montant, 0)} €
+              </p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-400 mb-1">Statut membre</p>
+              <p class="text-sm font-semibold" style="color: #16a34a;">{profil.statut}</p>
+            </div>
+          </div>
+        </Card>
+      ) : (
+        <Card>
+          <div class="text-center py-10">
+            <p class="text-sm font-medium" style="color: #0b1f3a;">Aucun abonnement actif</p>
+            <p class="text-xs text-gray-400 mt-1 mb-5">Inscrivez-vous à une formation pour activer votre accès.</p>
+            <a
+              href="/adherent/cours"
+              class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition hover:opacity-90"
+              style="background-color: #0b1f3a; color: white;"
+            >
+              Voir les formations
+            </a>
+          </div>
+        </Card>
+      )}
+
+      <!-- Formations souscrites -->
+      {profil.coursInscrits.length > 0 && (
+        <div>
+          <h3 class="text-base font-bold mb-4" style="color: #0b1f3a;">Formations souscrites</h3>
+          <div class="flex flex-col gap-3">
+            {profil.coursInscrits.map(id => {
+              const cours = tousLesCours.find(c => c.id === id);
+              if (!cours) return null;
+              const paiement = paiements.find(p => p.coursId === id);
+              return (
+                <div class="flex items-center justify-between p-4 rounded-xl" style="background-color: #f8f9fa; border: 1px solid #f1f3f5;">
+                  <div>
+                    <p class="text-sm font-semibold" style="color: #0b1f3a;">{cours.titre}</p>
+                    <p class="text-xs text-gray-400 mt-0.5">{cours.duree} · {cours.modules.length} modules</p>
+                  </div>
+                  {paiement && (
+                    <p class="text-sm font-bold" style="color: #d4a762;">{paiement.montant} €</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )}
+
+  <!-- ONGLET : Notifications -->
+  {onglet === "notifications" && (
+    <div>
+      {notifications.length === 0 ? (
+        <Card>
+          <div class="text-center py-12">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4" style="background-color: rgba(212,167,98,0.1);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#d4a762" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+              </svg>
+            </div>
+            <p class="text-sm font-medium" style="color: #0b1f3a;">Aucune notification</p>
+            <p class="text-xs text-gray-400 mt-1">Vos notifications apparaîtront ici.</p>
+          </div>
+        </Card>
+      ) : (
+        <div class="flex flex-col gap-3">
+          {notifications.map(n => {
+            const dateFormatee = new Date(n.date).toLocaleDateString("fr-FR", {
+              day: "numeric", month: "short", year: "numeric",
+              hour: "2-digit", minute: "2-digit"
+            });
+            return (
+              <div
+                class="flex items-start gap-4 p-4 rounded-xl transition"
+                style={`border: 1px solid ${n.lue ? "#f1f3f5" : "rgba(212,167,98,0.3)"}; background-color: ${n.lue ? "white" : "rgba(248,246,242,0.7)"};`}
+              >
+                <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={`background-color: ${n.type === "paiement" || n.type === "certificat" ? "rgba(22,163,74,0.1)" : "rgba(212,167,98,0.12)"};`}>
+                  {n.type === "paiement" && (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  )}
+                  {n.type === "certificat" && (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+                  )}
+                  {(n.type === "inscription" || n.type === "abonnement") && (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#d4a762" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                  )}
+                  {n.type === "rappel" && (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#d4a762" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                  )}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-1">
+                    <Badge variant={typeNotifVariant[n.type] ?? "gris"}>{typeNotifLabel[n.type] ?? n.type}</Badge>
+                    {!n.lue && <span class="w-2 h-2 rounded-full flex-shrink-0" style="background-color: #d4a762;"></span>}
+                  </div>
+                  <p class="text-sm font-semibold" style="color: #0b1f3a;">{n.titre}</p>
+                  <p class="text-xs text-gray-500 mt-0.5 leading-relaxed">{n.message}</p>
+                  <p class="text-xs text-gray-300 mt-1.5">{dateFormatee}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  )}
+
+</AdherentMemberLayout>

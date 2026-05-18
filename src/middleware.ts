@@ -1,7 +1,7 @@
 import { defineMiddleware } from "astro:middleware";
 import { verifySession } from "./lib/session";
 
-const PUBLIC_PATHS = ["/login", "/api/auth/login"];
+const PUBLIC_PATHS = ["/login", "/api/auth/login", "/api/stripe/webhook"];
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const path = new URL(context.request.url).pathname;
@@ -29,7 +29,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return context.redirect("/adherent/tableau-de-bord");
   }
 
-  if (path.startsWith("/adherent") && session.role !== "adherent") {
+  if ((path.startsWith("/adherent") || path.startsWith("/paiement")) && session.role !== "adherent") {
     return context.redirect("/dashboard");
   }
 

@@ -102,13 +102,13 @@ export const mockConversations = [
     adherent: "Marie Dupont",
     entreprise: "Dupont & Associés",
     sujet: "Question sur mon adhésion",
-    dernier_message: "Bonjour, je souhaite renouveler mon adhésion pour l'année prochaine.",
+    dernier_message: "Bonjour Marie, bien sûr ! Je vous envoie les modalités par e-mail.",
     date: "2025-05-04",
-    non_lu: 2,
+    non_lu: 1,
+    non_lu_adherent: 1,
     messages: [
       { de: "adherent", texte: "Bonjour, je souhaite renouveler mon adhésion pour l'année prochaine.", heure: "09:14" },
       { de: "admin", texte: "Bonjour Marie, bien sûr ! Je vous envoie les modalités par e-mail.", heure: "09:32" },
-      { de: "adherent", texte: "Merci beaucoup. Et est-il possible de payer en plusieurs fois ?", heure: "09:45" },
     ],
   },
   {
@@ -117,9 +117,10 @@ export const mockConversations = [
     adherent: "Thomas Renard",
     entreprise: "Renard Consulting",
     sujet: "Accès aux ressources",
-    dernier_message: "Je n'arrive pas à télécharger le guide de création d'entreprise.",
+    dernier_message: "Nous avons résolu le problème, le fichier est à nouveau disponible.",
     date: "2025-05-03",
     non_lu: 0,
+    non_lu_adherent: 0,
     messages: [
       { de: "adherent", texte: "Je n'arrive pas à télécharger le guide de création d'entreprise.", heure: "14:02" },
       { de: "admin", texte: "Nous avons résolu le problème, le fichier est à nouveau disponible.", heure: "15:20" },
@@ -134,6 +135,7 @@ export const mockConversations = [
     dernier_message: "Quels sont les avantages de l'adhésion premium ?",
     date: "2025-05-02",
     non_lu: 1,
+    non_lu_adherent: 0,
     messages: [
       { de: "adherent", texte: "Quels sont les avantages de l'adhésion premium ?", heure: "11:30" },
     ],
@@ -195,6 +197,7 @@ export const mockCours = [
     duree: "14h",
     niveau: "Intermédiaire" as const,
     statut: "Publié" as const,
+    prix: 490,
     date: "2024-01-15",
     modules: [
       { id: "M01", titre: "Développement du mindset entrepreneurial", duree: "2h", type: "Vidéo" as const, ordre: 1 },
@@ -212,13 +215,66 @@ export const mockCours = [
     description: "Maîtrisez les leviers fiscaux et comptables pour optimiser la rentabilité de votre entreprise et sécuriser votre trésorerie.",
     duree: "6h",
     niveau: "Débutant" as const,
-    statut: "Brouillon" as const,
+    statut: "Publié" as const,
+    prix: 290,
     date: "2025-03-01",
     modules: [
       { id: "M08", titre: "Introduction à la comptabilité d'entreprise", duree: "1h30", type: "Vidéo" as const, ordre: 1 },
       { id: "M09", titre: "Lire et interpréter un bilan", duree: "1h30", type: "Document" as const, ordre: 2 },
       { id: "M10", titre: "Stratégies d'optimisation fiscale", duree: "2h", type: "Vidéo" as const, ordre: 3 },
       { id: "M11", titre: "Évaluation finale", duree: "1h", type: "Quiz" as const, ordre: 4 },
+    ],
+  },
+  {
+    id: "COURS-003",
+    titre: "VENDEUR ATTITUDE™",
+    description: "Développez les réflexes, la posture et les techniques des meilleurs commerciaux. De la prospection à la conclusion, maîtrisez chaque étape du cycle de vente avec confiance et impact.",
+    duree: "10h",
+    niveau: "Intermédiaire" as const,
+    statut: "Publié" as const,
+    prix: 390,
+    date: "2025-01-10",
+    modules: [
+      { id: "M12", titre: "La psychologie de l'acheteur", duree: "1h30", type: "Vidéo" as const, ordre: 1 },
+      { id: "M13", titre: "Posture et communication commerciale", duree: "2h", type: "Vidéo" as const, ordre: 2 },
+      { id: "M14", titre: "Techniques de prospection efficaces", duree: "2h", type: "Document" as const, ordre: 3 },
+      { id: "M15", titre: "Traiter les objections", duree: "2h", type: "Vidéo" as const, ordre: 4 },
+      { id: "M16", titre: "Conclure et fidéliser", duree: "1h30", type: "Vidéo" as const, ordre: 5 },
+      { id: "M17", titre: "Évaluation VENDEUR ATTITUDE™", duree: "1h", type: "Quiz" as const, ordre: 6 },
+    ],
+  },
+  {
+    id: "COURS-004",
+    titre: "Leadership & Performance",
+    description: "Affirmez votre leadership, mobilisez vos équipes et pilotez la performance de votre organisation avec méthode, vision et discipline.",
+    duree: "8h",
+    niveau: "Avancé" as const,
+    statut: "Publié" as const,
+    prix: 450,
+    date: "2025-02-01",
+    modules: [
+      { id: "M18", titre: "Les fondements du leadership moderne", duree: "1h30", type: "Vidéo" as const, ordre: 1 },
+      { id: "M19", titre: "Mobiliser et fédérer une équipe", duree: "2h", type: "Vidéo" as const, ordre: 2 },
+      { id: "M20", titre: "Gestion de la performance et des KPIs", duree: "2h", type: "Document" as const, ordre: 3 },
+      { id: "M21", titre: "Leadership en situation de crise", duree: "1h30", type: "Vidéo" as const, ordre: 4 },
+      { id: "M22", titre: "Évaluation Leadership & Performance", duree: "1h", type: "Quiz" as const, ordre: 5 },
+    ],
+  },
+  {
+    id: "COURS-005",
+    titre: "Structuration stratégique",
+    description: "Posez les fondations solides de votre activité : business model, offre de valeur, positionnement et plan d'action structuré pour une croissance durable.",
+    duree: "7h",
+    niveau: "Débutant" as const,
+    statut: "Publié" as const,
+    prix: 320,
+    date: "2025-04-01",
+    modules: [
+      { id: "M23", titre: "Clarifier sa vision et ses objectifs", duree: "1h30", type: "Vidéo" as const, ordre: 1 },
+      { id: "M24", titre: "Construire son business model", duree: "2h", type: "Document" as const, ordre: 2 },
+      { id: "M25", titre: "Définir son offre et son positionnement", duree: "2h", type: "Vidéo" as const, ordre: 3 },
+      { id: "M26", titre: "Élaborer son plan d'action 90 jours", duree: "1h", type: "Document" as const, ordre: 4 },
+      { id: "M27", titre: "Évaluation Structuration stratégique", duree: "30min", type: "Quiz" as const, ordre: 5 },
     ],
   },
 ];
@@ -299,6 +355,89 @@ export const mockQuizParModule: Record<string, QuizQuestion[]> = {
     { id: "Q1", question: "L'optimisation de la trésorerie passe par :", options: ["Ignorer les délais de paiement", "Anticiper les flux entrants et sortants", "Dépenser le maximum en fin de mois", "Éviter tout investissement"], correcte: 1 },
     { id: "Q2", question: "Un expert-comptable peut aider l'entrepreneur à :", options: ["Choisir sa stratégie marketing", "Sécuriser sa conformité fiscale et sociale", "Recruter ses collaborateurs", "Créer son logo"], correcte: 1 },
     { id: "Q3", question: "Pour évaluer la santé financière d'une entreprise, on analyse :", options: ["Uniquement le chiffre d'affaires", "La rentabilité, la trésorerie et l'endettement", "Le nombre de salariés", "La notoriété de la marque"], correcte: 1 },
+  ],
+  // VENDEUR ATTITUDE™
+  M12: [
+    { id: "Q1", question: "La psychologie de l'acheteur repose principalement sur :", options: ["Le prix affiché", "Les émotions et la perception de valeur", "La notoriété de la marque uniquement", "Les caractéristiques techniques du produit"], correcte: 1 },
+    { id: "Q2", question: "Comprendre les motivations d'achat permet de :", options: ["Réduire les prix", "Adapter son discours commercial à chaque profil", "Éviter de poser des questions", "Accélérer la présentation"], correcte: 1 },
+    { id: "Q3", question: "Le frein d'achat le plus fréquent est :", options: ["Le manque de temps du vendeur", "La peur du changement et du risque perçu", "L'absence de catalogue", "Un site web insuffisant"], correcte: 1 },
+  ],
+  M13: [
+    { id: "Q1", question: "Une posture commerciale solide se caractérise par :", options: ["Un discours agressif", "La confiance, l'écoute et la cohérence", "Une présentation très longue", "Des promesses non tenues"], correcte: 1 },
+    { id: "Q2", question: "En communication commerciale, l'écoute active consiste à :", options: ["Attendre que le client finisse pour parler", "Reformuler, questionner et montrer que l'on comprend", "Parler plus fort que le client", "Ignorer les silences"], correcte: 1 },
+    { id: "Q3", question: "Le langage non-verbal représente quel pourcentage de la communication ?", options: ["10 %", "30 %", "Plus de 55 %", "100 %"], correcte: 2 },
+  ],
+  M14: [
+    { id: "Q1", question: "Une prospection efficace commence par :", options: ["Appeler le maximum de personnes sans ciblage", "Définir un profil client idéal (ICP)", "Envoyer des emails en masse", "Attendre les recommandations"], correcte: 1 },
+    { id: "Q2", question: "Le meilleur canal de prospection dépend de :", options: ["Votre budget publicitaire uniquement", "Votre cible, votre offre et votre style", "La mode du moment", "Ce que font vos concurrents"], correcte: 1 },
+    { id: "Q3", question: "Un pipeline de vente structuré permet de :", options: ["Vendre sans effort", "Suivre et piloter chaque opportunité commerciale", "Éviter les relances", "Réduire le nombre de prospects"], correcte: 1 },
+  ],
+  M15: [
+    { id: "Q1", question: "Face à une objection 'C'est trop cher', la meilleure réponse est :", options: ["Baisser immédiatement le prix", "Comprendre ce que 'cher' signifie pour le client et revaloriser l'offre", "Ignorer l'objection", "Mettre fin à la négociation"], correcte: 1 },
+    { id: "Q2", question: "Une objection est souvent le signe que :", options: ["Le client n'est pas intéressé", "Le client s'implique et cherche à être rassuré", "Le prix est trop élevé", "La présentation a échoué"], correcte: 1 },
+    { id: "Q3", question: "La technique du 'oui... et' permet de :", options: ["Contredire le client", "Valider l'objection sans la laisser bloquer la vente", "Changer de sujet", "Proposer une remise"], correcte: 1 },
+  ],
+  M16: [
+    { id: "Q1", question: "Le signal d'achat le plus fort chez un prospect est :", options: ["Il pose des questions sur la livraison ou les modalités", "Il demande une réduction", "Il reste silencieux", "Il compare avec un concurrent"], correcte: 0 },
+    { id: "Q2", question: "La fidélisation client repose principalement sur :", options: ["Des remises permanentes", "La qualité de l'expérience après-vente", "Des campagnes publicitaires répétées", "Le nombre de produits proposés"], correcte: 1 },
+    { id: "Q3", question: "Conclure une vente nécessite :", options: ["D'attendre que le client propose", "D'oser demander l'engagement au bon moment", "De baisser le prix en dernier recours", "D'envoyer une offre écrite uniquement"], correcte: 1 },
+  ],
+  M17: [
+    { id: "Q1", question: "L'attitude du vendeur performant se définit par :", options: ["L'agressivité commerciale", "La persévérance, l'empathie et la préparation", "Le fait de parler sans écouter", "La chance"], correcte: 1 },
+    { id: "Q2", question: "Un bon vendeur gère son temps en :", options: ["Se concentrant sur les prospects les plus faciles uniquement", "Priorisant les actions à fort impact commercial", "Improvisant chaque journée", "Évitant les relances"], correcte: 1 },
+    { id: "Q3", question: "La vente consultative se distingue de la vente classique par :", options: ["Un prix plus élevé", "Une approche centrée sur les besoins du client plutôt que sur le produit", "L'absence de négociation", "Un cycle de vente plus court"], correcte: 1 },
+  ],
+  // Leadership & Performance
+  M18: [
+    { id: "Q1", question: "Le leadership moderne se distingue du management traditionnel par :", options: ["L'autorité hiérarchique", "L'inspiration, l'influence et la vision partagée", "Le contrôle permanent", "Les sanctions disciplinaires"], correcte: 1 },
+    { id: "Q2", question: "Un leader efficace sait avant tout :", options: ["Tout décider seul", "Écouter, déléguer et développer ses collaborateurs", "Imposer son style de travail", "Éviter les conflits à tout prix"], correcte: 1 },
+    { id: "Q3", question: "La légitimité d'un leader se construit grâce à :", options: ["Son titre officiel", "Ses résultats, sa cohérence et sa crédibilité", "Son ancienneté uniquement", "Ses relations personnelles"], correcte: 1 },
+  ],
+  M19: [
+    { id: "Q1", question: "Pour fédérer une équipe autour d'un objectif, il faut :", options: ["Imposer l'objectif sans explication", "Donner du sens, impliquer et reconnaître les contributions", "Promettre des primes uniquement", "Éviter les réunions d'équipe"], correcte: 1 },
+    { id: "Q2", question: "La délégation efficace implique :", options: ["Confier une tâche sans suivi", "Définir clairement les attentes, les ressources et les échéances", "Micromanager chaque étape", "Réserver les responsabilités aux managers seniors"], correcte: 1 },
+    { id: "Q3", question: "La motivation d'une équipe dépend principalement de :", options: ["La rémunération seule", "La reconnaissance, l'autonomie et le sens du travail", "Le nombre de réunions", "La taille de l'entreprise"], correcte: 1 },
+  ],
+  M20: [
+    { id: "Q1", question: "Un KPI pertinent doit être :", options: ["Difficile à mesurer pour rester ambitieux", "Spécifique, mesurable, atteignable, réaliste et temporel (SMART)", "Uniquement financier", "Défini une fois par an"], correcte: 1 },
+    { id: "Q2", question: "Le pilotage de la performance nécessite :", options: ["D'ignorer les écarts si l'objectif global est atteint", "Un tableau de bord régulièrement mis à jour et analysé", "De changer les objectifs en cours de route", "De ne mesurer que les résultats financiers"], correcte: 1 },
+    { id: "Q3", question: "Un collaborateur sous-performant doit être :", options: ["Sanctionné immédiatement", "Accompagné avec un plan de développement clair", "Ignoré pour ne pas démotiver l'équipe", "Remplacé sans dialogue"], correcte: 1 },
+  ],
+  M21: [
+    { id: "Q1", question: "En situation de crise, le leader doit en priorité :", options: ["Blâmer les responsables publiquement", "Communiquer clairement, stabiliser l'équipe et décider vite", "Attendre que la situation se résolve seule", "Déléguer la totalité de la gestion de crise"], correcte: 1 },
+    { id: "Q2", question: "La résilience d'un leader se manifeste par :", options: ["L'absence d'émotions", "La capacité à rebondir et à apprendre des épreuves", "L'évitement des situations difficiles", "La délégation systématique des problèmes"], correcte: 1 },
+    { id: "Q3", question: "Après une crise, la priorité du leader est :", options: ["Retrouver la routine immédiatement", "Analyser, tirer les leçons et renforcer les processus", "Éviter d'en parler pour ne pas raviver les tensions", "Changer d'équipe"], correcte: 1 },
+  ],
+  M22: [
+    { id: "Q1", question: "Un style de leadership adaptatif consiste à :", options: ["Appliquer toujours le même style de management", "Ajuster son approche selon la maturité et le contexte de l'équipe", "Laisser l'équipe s'organiser seule", "Imposer un cadre rigide en toute circonstance"], correcte: 1 },
+    { id: "Q2", question: "La performance durable d'une organisation repose sur :", options: ["Des résultats à court terme uniquement", "L'alignement entre vision, culture, processus et personnes", "Une croissance du chiffre d'affaires uniquement", "Le recrutement permanent de nouveaux talents"], correcte: 1 },
+    { id: "Q3", question: "Pour développer sa propre performance de leader, il faut :", options: ["Attendre les formations imposées par l'entreprise", "Pratiquer l'auto-évaluation, solliciter du feedback et se former continuellement", "Se comparer uniquement aux leaders célèbres", "Éviter les remises en question"], correcte: 1 },
+  ],
+  // Structuration stratégique
+  M23: [
+    { id: "Q1", question: "Une vision claire d'entreprise permet de :", options: ["Justifier les dépenses passées", "Donner une direction et aligner les décisions sur le long terme", "Limiter les ambitions", "Rassurer uniquement les investisseurs"], correcte: 1 },
+    { id: "Q2", question: "Des objectifs SMART sont :", options: ["Généraux et inspirants", "Spécifiques, Mesurables, Atteignables, Réalistes et Temporels", "Uniquement quantitatifs", "Fixés une fois pour toutes"], correcte: 1 },
+    { id: "Q3", question: "La première étape de la structuration d'une activité est :", options: ["Créer un logo", "Clarifier sa proposition de valeur et son marché cible", "Ouvrir un compte bancaire professionnel", "Recruter une équipe"], correcte: 1 },
+  ],
+  M24: [
+    { id: "Q1", question: "Un business model décrit :", options: ["Uniquement le prix de vente", "Comment l'entreprise crée, délivre et capture de la valeur", "Le budget de communication annuel", "La structure juridique de l'entreprise"], correcte: 1 },
+    { id: "Q2", question: "Le Business Model Canvas est un outil qui permet de :", options: ["Calculer les impôts", "Visualiser et structurer les composantes clés d'un modèle économique", "Rédiger un contrat commercial", "Gérer les ressources humaines"], correcte: 1 },
+    { id: "Q3", question: "Un segment de clientèle bien défini permet de :", options: ["Vendre à tout le monde", "Concentrer ses efforts sur les clients à plus forte valeur", "Réduire la gamme de produits", "Augmenter les coûts de production"], correcte: 1 },
+  ],
+  M25: [
+    { id: "Q1", question: "Le positionnement d'une offre définit :", options: ["Le prix de vente uniquement", "Comment votre offre est perçue par rapport à la concurrence", "La couleur de votre logo", "Votre réseau de distribution"], correcte: 1 },
+    { id: "Q2", question: "Une offre de valeur percutante répond à :", options: ["Ce que vous voulez vendre", "Le problème précis que vous résolvez pour votre client cible", "Les tendances du marché uniquement", "Les exigences des fournisseurs"], correcte: 1 },
+    { id: "Q3", question: "Se différencier de la concurrence passe par :", options: ["Copier les meilleures pratiques du secteur", "Identifier et valoriser ce qui vous rend unique et pertinent", "Baisser systématiquement les prix", "Proposer plus de produits que les concurrents"], correcte: 1 },
+  ],
+  M26: [
+    { id: "Q1", question: "Un plan d'action 90 jours est efficace car il :", options: ["Est trop court pour avoir un impact", "Crée un horizon proche favorisant l'action et la mesure des résultats", "Remplace le plan stratégique annuel", "Ne s'applique qu'aux startups"], correcte: 1 },
+    { id: "Q2", question: "La priorisation des actions doit se faire selon :", options: ["L'ordre alphabétique", "L'impact potentiel et l'urgence de chaque action", "Les préférences personnelles uniquement", "Le coût le plus bas"], correcte: 1 },
+    { id: "Q3", question: "Pour suivre l'exécution d'un plan d'action, on utilise :", options: ["Sa mémoire uniquement", "Un tableau de suivi avec indicateurs et responsables clairement définis", "Des réunions hebdomadaires sans compte-rendu", "Des objectifs annuels non découpés"], correcte: 1 },
+  ],
+  M27: [
+    { id: "Q1", question: "La structuration stratégique d'une activité est un processus :", options: ["Ponctuel, à faire une seule fois à la création", "Continu, à réviser régulièrement selon l'évolution du marché", "Réservé aux grandes entreprises", "Uniquement utile en période de crise"], correcte: 1 },
+    { id: "Q2", question: "Aligner stratégie, offre et actions opérationnelles permet de :", options: ["Réduire le nombre d'employés", "Maximiser la cohérence et l'efficacité de l'entreprise", "Éliminer toute prise de risque", "Garantir des bénéfices immédiats"], correcte: 1 },
+    { id: "Q3", question: "Le principal obstacle à la structuration stratégique est :", options: ["Le manque de budget", "L'absence de clarté sur sa vision et ses priorités", "La taille de l'équipe", "Les contraintes réglementaires"], correcte: 1 },
   ],
 };
 

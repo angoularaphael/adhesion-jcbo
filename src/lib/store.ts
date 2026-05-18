@@ -13,6 +13,27 @@ import {
 
 export type AbonnementInfo = { plan: string; statut: "actif" | "inactif"; dateDebut: string };
 
+export type Notification = {
+  id: string;
+  adherentEmail: string;
+  type: "paiement" | "inscription" | "abonnement" | "rappel" | "certificat";
+  titre: string;
+  message: string;
+  date: string;
+  lue: boolean;
+};
+
+export type Paiement = {
+  id: string;
+  adherentEmail: string;
+  coursId: string;
+  coursTitre: string;
+  montant: number;
+  date: string;
+  stripeSessionId: string;
+  numerTransaction: string;
+};
+
 // Utilise globalThis pour survivre aux rechargements de modules (Vite dev + Vercel warm starts)
 export type AdherentComplet = {
   id: string;
@@ -45,13 +66,15 @@ type StoreData = {
   actualites: { id: string; titre: string; contenu: string; statut: string; date: string }[];
   conversations: {
     id: string; email: string; adherent: string; entreprise: string;
-    sujet: string; dernier_message: string; date: string; non_lu: number;
+    sujet: string; dernier_message: string; date: string; non_lu: number; non_lu_adherent: number;
     messages: { de: string; texte: string; heure: string }[];
   }[];
   adherents: AdherentComplet[];
   ressources: { id: string; titre: string; categorie: string; date: string; fichier: string; nom_fichier?: string }[];
   cours: typeof mockCours;
   progressions: ProgressionComplet[];
+  paiements: Paiement[];
+  notifications: Notification[];
 };
 
 const g = globalThis as unknown as Record<string, StoreData | undefined>;
@@ -69,6 +92,8 @@ function initStore(): StoreData {
       modulesTermines: [...p.modulesTermines],
       quizResultats: (p.quizResultats ?? []).map(q => ({ ...q })),
     })),
+    paiements: [],
+    notifications: [],
   };
 }
 
@@ -234,12 +259,18 @@ export function addMessage(conversationId: string, texte: string, de: "admin" | 
   conv.dernier_message = texte;
   conv.date = now.toISOString().split("T")[0];
   if (de === "adherent") conv.non_lu++;
+  if (de === "admin") conv.non_lu_adherent++;
   return msg;
 }
 
 export function markAsRead(conversationId: string) {
   const conv = s().conversations.find(c => c.id === conversationId);
   if (conv) conv.non_lu = 0;
+}
+
+export function markAsReadAdherent(conversationId: string) {
+  const conv = s().conversations.find(c => c.id === conversationId);
+  if (conv) conv.non_lu_adherent = 0;
 }
 
 export function findOrCreateConversation(email: string, sujet: string) {
@@ -255,7 +286,7 @@ export function findOrCreateConversation(email: string, sujet: string) {
       id: `MSG-${String(s().conversations.length + 1).padStart(3, "0")}`,
       email: emailLower, adherent: adherentNom, entreprise,
       sujet, dernier_message: "", date: new Date().toISOString().split("T")[0],
-      non_lu: 0, messages: [],
+      non_lu: 0, non_lu_adherent: 0, messages: [],
     };
     s().conversations.push(conv);
   }
@@ -399,6 +430,58 @@ export function getProgressionPourcentage(adherentEmail: string, coursId: string
   const cours = s().cours.find(c => c.id === coursId);
   const totalModules = cours?.modules.length ?? 1;
   return Math.round((prog.modulesTermines.length / totalModules) * 100);
+}
+
+// --- Paiements ---
+export function getPaiements(adherentEmail?: string): Paiement[] {
+  if (adherentEmail) return s().paiements.filter(p => p.adherentEmail === adherentEmail.toLowerCase());
+  return s().paiements;
+}
+
+export function getPaiementParSession(stripeSessionId: string): Paiement | null {
+  return s().paiements.find(p => p.stripeSessionId === stripeSessionId) ?? null;
+}
+
+export function enregistrerPaiement(data: Omit<Paiement, "id" | "date" | "numerTransaction">): Paiement {
+  const num = String(s().paiements.length + 1).padStart(6, "0");
+  const paiement: Paiement = {
+    id: `PAY-${Date.now()}`,
+    date: new Date().toISOString().split("T")[0],
+    numerTransaction: `TXN-${new Date().getFullYear()}-${num}`,
+    ...data,
+    adherentEmail: data.adherentEmail.toLowerCase(),
+  };
+  s().paiements.push(paiement);
+  return paiement;
+}
+
+// --- Notifications ---
+export function getNotifications(adherentEmail: string): Notification[] {
+  return s().notifications
+    .filter(n => n.adherentEmail === adherentEmail.toLowerCase())
+    .sort((a, b) => b.date.localeCompare(a.date));
+}
+
+export function getNonLuCount(adherentEmail: string): number {
+  return s().notifications.filter(n => n.adherentEmail === adherentEmail.toLowerCase() && !n.lue).length;
+}
+
+export function addNotification(data: Omit<Notification, "id" | "date" | "lue">): Notification {
+  const notif: Notification = {
+    id: `NOTIF-${Date.now()}`,
+    date: new Date().toISOString(),
+    lue: false,
+    ...data,
+    adherentEmail: data.adherentEmail.toLowerCase(),
+  };
+  s().notifications.push(notif);
+  return notif;
+}
+
+export function marquerNotificationsLues(adherentEmail: string): void {
+  s().notifications
+    .filter(n => n.adherentEmail === adherentEmail.toLowerCase())
+    .forEach(n => { n.lue = true; });
 }
 
 export function getCoursTermines(adherentEmail: string): string[] {

@@ -38,7 +38,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   });
 
   const score = Math.round((bonnes / questions.length) * 100);
-  const passe = score >= 60;
+  const passe = score >= 80;
 
   const progression = enregistrerQuizResultat(locals.session.email, coursId, moduleId, score, passe);
 

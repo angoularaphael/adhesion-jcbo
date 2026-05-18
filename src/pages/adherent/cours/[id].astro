@@ -249,7 +249,7 @@ const quizData = Object.fromEntries(
     <div class="flex items-center justify-between px-6 pt-6 pb-4" style="border-bottom: 1px solid #f1f3f5;">
       <div>
         <h3 id="quiz-titre" class="text-lg font-bold" style="color: #0b1f3a;">Quiz du module</h3>
-        <p class="text-xs text-gray-400 mt-0.5">Répondez à toutes les questions. Score minimum : 60%</p>
+        <p class="text-xs text-gray-400 mt-0.5">Répondez à toutes les questions. Score minimum : 80%</p>
       </div>
       <button id="quiz-close" class="text-gray-400 hover:text-gray-600 text-xl font-bold">×</button>
     </div>
@@ -393,6 +393,9 @@ const quizData = Object.fromEntries(
     quizBody.style.display = "none";
     quizResult.classList.remove("hidden");
 
+    const retryBtn = document.getElementById("quiz-retry");
+    const continueBtn = document.getElementById("quiz-continue");
+
     if (data.passe) {
       quizResultContent.innerHTML = `
         <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background-color: rgba(22,163,74,0.1);">
@@ -403,8 +406,9 @@ const quizData = Object.fromEntries(
         <p class="text-xs text-gray-400">Ce module est maintenant validé.</p>
       `;
       quizResultContent.style.backgroundColor = "rgba(22,163,74,0.05)";
-      document.getElementById("quiz-retry").style.display = "none";
-      document.getElementById("quiz-continue").textContent = "Continuer";
+      retryBtn.style.display = "none";
+      continueBtn.style.display = "";
+      continueBtn.textContent = "Continuer →";
     } else {
       quizResultContent.innerHTML = `
         <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background-color: rgba(220,38,38,0.08);">
@@ -412,15 +416,18 @@ const quizData = Object.fromEntries(
         </div>
         <h4 class="text-xl font-bold mb-1" style="color:#dc2626;">Pas encore !</h4>
         <p class="text-sm text-gray-500 mb-1">Score : <strong style="color:#0b1f3a;">${data.score}%</strong> — ${data.bonnes}/${data.total} bonnes réponses</p>
-        <p class="text-xs text-gray-400">Il faut 60% minimum pour valider. Relisez le module et réessayez.</p>
+        <p class="text-xs text-gray-400">Il faut <strong>80%</strong> minimum pour valider. Relisez le module et réessayez.</p>
       `;
       quizResultContent.style.backgroundColor = "rgba(220,38,38,0.03)";
-      document.getElementById("quiz-retry").style.display = "";
-      document.getElementById("quiz-continue").style.display = "none";
+      retryBtn.style.display = "";
+      continueBtn.style.display = "none";
     }
   }
 
   document.getElementById("quiz-retry").addEventListener("click", () => {
+    // Remettre les boutons dans leur état initial avant de relancer
+    document.getElementById("quiz-retry").style.display = "";
+    document.getElementById("quiz-continue").style.display = "";
     quizBody.style.display = "";
     quizResult.classList.add("hidden");
     openModal(currentModuleId);
