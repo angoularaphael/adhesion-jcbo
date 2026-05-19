@@ -1,0 +1,122 @@
+---
+import "../../styles/global.css";
+import LogoJCBO from "../../components/ui/LogoJCBO.astro";
+import { getCertificatByNumero, getAdherentByEmail, getCours } from "../../lib/store";
+
+const { numero } = Astro.params;
+const cert = numero ? getCertificatByNumero(numero) : null;
+const adherent = cert ? getAdherentByEmail(cert.adherentEmail) : null;
+const cours = cert ? getCours().find(c => c.id === cert.coursId) : null;
+
+const valide = !!(cert && adherent && cours);
+const dateFormatee = cert
+  ? new Date(cert.dateEmission).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+  : "";
+---
+
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vérification du certificat — JCBO-CONSEIL</title>
+    <meta name="description" content="Vérifiez l'authenticité d'un certificat JCBO-CONSEIL." />
+  </head>
+
+  <body class="min-h-screen flex items-center justify-center px-4 py-12" style="background-color: #f8f6f2;">
+
+    <div class="w-full max-w-lg">
+
+      <!-- En-tête -->
+      <div class="text-center mb-8">
+        <LogoJCBO size={64} />
+        <p class="text-xs font-semibold uppercase tracking-[0.2em] mt-3" style="color: #d4a762;">JCBO-CONSEIL</p>
+        <h1 class="text-xl font-bold mt-2" style="color: #0b1f3a;">Vérification du certificat</h1>
+        <p class="text-sm text-gray-500 mt-1">Authentification officielle JCBO-CONSEIL</p>
+      </div>
+
+      <!-- Carte de résultat -->
+      <div class="bg-white rounded-2xl shadow-lg overflow-hidden" style="border: 1px solid rgba(212,167,98,0.25);">
+
+        <div class="h-1.5 w-full" style="background: linear-gradient(90deg, #0b1f3a 0%, #d4a762 50%, #0b1f3a 100%);"></div>
+
+        <div class="px-8 py-8">
+
+          <!-- Statut -->
+          {valide ? (
+            <div class="flex items-center gap-3 p-4 rounded-xl mb-6" style="background-color: rgba(22,163,74,0.07); border: 1px solid rgba(22,163,74,0.2);">
+              <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: rgba(22,163,74,0.12);">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2.5">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </div>
+              <div>
+                <p class="text-sm font-bold" style="color: #15803d;">Certificat valide</p>
+                <p class="text-xs text-gray-500 mt-0.5">Ce certificat est authentique et délivré par JCBO-CONSEIL.</p>
+              </div>
+            </div>
+          ) : (
+            <div class="flex items-center gap-3 p-4 rounded-xl mb-6" style="background-color: rgba(220,38,38,0.06); border: 1px solid rgba(220,38,38,0.18);">
+              <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: rgba(220,38,38,0.1);">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#dc2626" stroke-width="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </div>
+              <div>
+                <p class="text-sm font-bold" style="color: #dc2626;">Certificat introuvable</p>
+                <p class="text-xs text-gray-500 mt-0.5">Ce numéro ne correspond à aucun certificat enregistré.</p>
+              </div>
+            </div>
+          )}
+
+          {valide && (
+            <>
+              <!-- Numéro -->
+              <div class="mb-5 p-3 rounded-xl text-center" style="background-color: rgba(11,31,58,0.04);">
+                <p class="text-xs text-gray-400 mb-1 uppercase tracking-widest">Numéro de certificat</p>
+                <p class="text-base font-mono font-bold tracking-wider" style="color: #d4a762;">{cert!.numero}</p>
+              </div>
+
+              <!-- Infos -->
+              <div class="divide-y divide-gray-100">
+                <div class="flex justify-between items-center py-3">
+                  <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Titulaire</p>
+                  <p class="text-sm font-bold" style="color: #0b1f3a;">{adherent!.prenom} {adherent!.nom}</p>
+                </div>
+                <div class="flex justify-between items-center py-3">
+                  <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Programme</p>
+                  <p class="text-sm font-semibold text-right max-w-xs" style="color: #0b1f3a;">{cours!.titre}</p>
+                </div>
+                <div class="flex justify-between items-center py-3">
+                  <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Niveau</p>
+                  <span class="text-xs font-bold px-3 py-1 rounded-full" style="background-color: rgba(212,167,98,0.12); color: #d4a762;">{cert!.niveauCode}</span>
+                </div>
+                <div class="flex justify-between items-center py-3">
+                  <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Date de délivrance</p>
+                  <p class="text-sm font-semibold" style="color: #0b1f3a;">{dateFormatee}</p>
+                </div>
+                {adherent!.entreprise && (
+                  <div class="flex justify-between items-center py-3">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Entreprise</p>
+                    <p class="text-sm text-gray-600">{adherent!.entreprise}</p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+        </div>
+
+        <div class="h-1.5 w-full" style="background: linear-gradient(90deg, #0b1f3a 0%, #d4a762 50%, #0b1f3a 100%);"></div>
+      </div>
+
+      <!-- Pied de page -->
+      <div class="text-center mt-6">
+        <p class="text-xs font-bold uppercase tracking-widest" style="color: #0b1f3a;">JCBO-CONSEIL</p>
+        <p class="text-xs mt-1" style="color: #d4a762;">Stratégie · Mindset · Performance</p>
+        <p class="text-xs text-gray-400 mt-1">contact@jcbo-conseil.fr</p>
+      </div>
+
+    </div>
+
+  </body>
+</html>

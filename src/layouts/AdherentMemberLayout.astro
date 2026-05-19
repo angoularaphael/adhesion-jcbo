@@ -1,7 +1,7 @@
 ---
 import SidebarAdherent from "../components/navigation/SidebarAdherent.astro";
 import "../styles/global.css";
-import { getAdherentByEmail, getConversations, getNonLuCount } from "../lib/store";
+import { getAdherentByEmail } from "../lib/store";
 
 interface Props {
   titre: string;
@@ -10,11 +10,6 @@ const { titre } = Astro.props;
 const email = Astro.locals.session?.email ?? "";
 const profil = getAdherentByEmail(email);
 const initiales = profil ? (profil.prenom[0] + profil.nom[0]).toUpperCase() : "?";
-
-const conv = email ? getConversations().find(c => c.email === email.toLowerCase()) : null;
-const msgNonLus = conv?.non_lu_adherent ?? 0;
-const notifsNonLues = email ? getNonLuCount(email) : 0;
-const currentPath = Astro.url.pathname;
 ---
 
 <html lang="fr">
@@ -51,54 +46,19 @@ const currentPath = Astro.url.pathname;
         </div>
       </header>
 
-      <main class="p-4 lg:p-8 flex-1 pb-24 lg:pb-8">
+      <main class="p-4 lg:p-8 flex-1">
         <slot />
       </main>
 
     </div>
 
-    <!-- Barre de navigation mobile (bas d'écran) -->
-    <nav class="fixed bottom-0 left-0 right-0 z-40 lg:hidden flex items-stretch border-t border-gray-200" style="background-color: #0b1f3a; height: 64px;">
-      {[
-        { href: "/adherent/tableau-de-bord", label: "Accueil", badge: 0, icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>` },
-        { href: "/adherent/cours", label: "Cours", badge: 0, icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>` },
-        { href: "/adherent/messagerie", label: "Messages", badge: msgNonLus, icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4-4 7-9 7a9.9 9.9 0 01-4-.8L3 20l1.8-4A7 7 0 013 12c0-4 4-7 9-7s9 3 9 7z"/></svg>` },
-        { href: "/adherent/paiements", label: "Paiements", badge: notifsNonLues, icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>` },
-      ].map(link => {
-        const isActive = currentPath === link.href || currentPath.startsWith(link.href + "/");
-        return (
-          <a href={link.href} class="relative flex-1 flex flex-col items-center justify-center gap-1 transition-all duration-200"
-            style={isActive ? "color: #d4a762;" : "color: rgba(255,255,255,0.45);"}>
-            {isActive && <span class="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full" style="background-color: #d4a762;"></span>}
-            {link.badge > 0 && (
-              <span class="absolute top-2 right-1/4 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold" style="background-color: #d4a762; color: #0b1f3a;">{link.badge > 9 ? "9+" : link.badge}</span>
-            )}
-            <span set:html={link.icon} />
-            <span class="text-[10px] font-medium">{link.label}</span>
-          </a>
-        );
-      })}
-      <!-- Bouton "Plus" ouvre la sidebar -->
-      <button id="mobile-menu-btn" class="flex-1 flex flex-col items-center justify-center gap-1 transition-all duration-200" style="color: rgba(255,255,255,0.45);">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
-        <span class="text-[10px] font-medium">Menu</span>
-      </button>
-    </nav>
-
     <script>
       const toggle = document.getElementById("menu-toggle");
-      const mobileMenuBtn = document.getElementById("mobile-menu-btn");
       const sidebar = document.getElementById("sidebar-adherent");
       const overlay = document.getElementById("sidebar-overlay-adherent");
-      function openSidebar() {
+      toggle?.addEventListener("click", () => {
         sidebar?.classList.remove("-translate-x-full");
         overlay?.classList.remove("hidden");
-      }
-      toggle?.addEventListener("click", openSidebar);
-      mobileMenuBtn?.addEventListener("click", openSidebar);
-      overlay?.addEventListener("click", () => {
-        sidebar?.classList.add("-translate-x-full");
-        overlay?.classList.add("hidden");
       });
     </script>
 

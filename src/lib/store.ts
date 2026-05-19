@@ -61,6 +61,17 @@ export type ProgressionComplet = {
   dateDebut: string;
 };
 
+export type CertificatEmis = {
+  id: string;
+  adherentEmail: string;
+  coursId: string;
+  numero: string;
+  programmeCode: string;
+  niveauCode: string;
+  annee: number;
+  dateEmission: string;
+};
+
 type StoreData = {
   adminMotDePasse: string;
   actualites: { id: string; titre: string; contenu: string; statut: string; date: string }[];
@@ -75,6 +86,8 @@ type StoreData = {
   progressions: ProgressionComplet[];
   paiements: Paiement[];
   notifications: Notification[];
+  certificatsEmis: CertificatEmis[];
+  compteursCertificats: Record<string, number>;
 };
 
 const g = globalThis as unknown as Record<string, StoreData | undefined>;
@@ -94,10 +107,12 @@ function initStore(): StoreData {
     })),
     paiements: [],
     notifications: [],
+    certificatsEmis: [],
+    compteursCertificats: {},
   };
 }
 
-if (!g.__jcboStore || !g.__jcboStore.adherents) g.__jcboStore = initStore();
+if (!g.__jcboStore || !g.__jcboStore.adherents || !g.__jcboStore.certificatsEmis) g.__jcboStore = initStore();
 
 const s = () => g.__jcboStore as StoreData;
 
@@ -495,4 +510,68 @@ export function getCoursTermines(adherentEmail: string): string[] {
       return p.modulesTermines.length >= total && p.quizResultats.filter(q => q.passe).length >= total;
     })
     .map(p => p.coursId);
+}
+
+// --- Certificats ---
+
+function getProgrammeCode(titre: string): string {
+  const t = titre.toUpperCase();
+  if (t.includes("MINDSET")) return "ME";
+  if (t.includes("VENDEUR")) return "VA";
+  if (t.includes("LEADERSHIP")) return "LS";
+  if (t.includes("STRUCTURATION") || t.includes("BUSINESS DEVELOPMENT")) return "BD";
+  if (t.includes("FISCAL") || t.includes("OPTIMISATION")) return "OF";
+  if (t.includes("DIAGNOSTIC")) return "DG";
+  return "PR";
+}
+
+function getNiveauCode(niveau: string): string {
+  if (niveau === "Débutant") return "L1";
+  if (niveau === "Intermédiaire") return "L2";
+  if (niveau === "Avancé") return "L3";
+  return "L1";
+}
+
+export function getCertificatAdherent(email: string, coursId: string): CertificatEmis | null {
+  return s().certificatsEmis.find(
+    c => c.adherentEmail === email.toLowerCase() && c.coursId === coursId
+  ) ?? null;
+}
+
+export function getCertificatByNumero(numero: string): CertificatEmis | null {
+  return s().certificatsEmis.find(c => c.numero === numero) ?? null;
+}
+
+export function genererCertificat(
+  email: string,
+  coursId: string,
+  coursTitre: string,
+  niveauCours: string,
+): CertificatEmis {
+  const existing = getCertificatAdherent(email, coursId);
+  if (existing) return existing;
+
+  const programmeCode = getProgrammeCode(coursTitre);
+  const niveauCode = getNiveauCode(niveauCours);
+  const annee = new Date().getFullYear();
+  const key = `${programmeCode}-${niveauCode}-${annee}`;
+  const store = s();
+  const seq = (store.compteursCertificats[key] ?? 0) + 1;
+  store.compteursCertificats[key] = seq;
+
+  const numero = `JCBO-${programmeCode}-${niveauCode}-${annee}-${String(seq).padStart(4, "0")}`;
+
+  const cert: CertificatEmis = {
+    id: `CERT-${Date.now()}`,
+    adherentEmail: email.toLowerCase(),
+    coursId,
+    numero,
+    programmeCode,
+    niveauCode,
+    annee,
+    dateEmission: new Date().toISOString().split("T")[0],
+  };
+
+  store.certificatsEmis.push(cert);
+  return cert;
 }

@@ -1,7 +1,7 @@
 ---
 import AdherentMemberLayout from "../../layouts/AdherentMemberLayout.astro";
 import LogoJCBO from "../../components/ui/LogoJCBO.astro";
-import { getAdherentByEmail, getCoursTermines, getProgressions, getCours } from "../../lib/store";
+import { getAdherentByEmail, getCoursTermines, getProgressions, getCours, genererCertificat } from "../../lib/store";
 import { mockCertificat } from "../../data/mock";
 
 const profil = getAdherentByEmail(Astro.locals.session?.email ?? "");
@@ -26,9 +26,18 @@ if (coursPrincipal) {
   }
 }
 
+// Générer (ou récupérer) le numéro de certificat premium
+const certEmis = coursPrincipal
+  ? genererCertificat(profil.email, coursPrincipal.id, coursPrincipal.titre, coursPrincipal.niveau)
+  : null;
+
 const nomParticipant = `${profil.prenom} ${profil.nom}`;
-const numeroCertificat = `JCBO-ME-${profil.numeroAdherent.replace("ADH-", "").replace("-", "")}`;
-const dateDelivrance = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+const numeroCertificat = certEmis?.numero ?? "";
+const verificationUrl = certEmis ? `${Astro.url.origin}/verification/${certEmis.numero}` : "";
+const qrSrc = verificationUrl ? `https://api.qrserver.com/v1/create-qr-code/?size=90x90&margin=4&data=${encodeURIComponent(verificationUrl)}` : "";
+const dateDelivrance = certEmis
+  ? new Date(certEmis.dateEmission).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+  : new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 ---
 
 <AdherentMemberLayout titre="Mon certificat">
@@ -157,13 +166,31 @@ const dateDelivrance = new Date().toLocaleDateString("fr-FR", { day: "numeric", 
         </div>
 
         <div class="flex flex-col sm:flex-row justify-between items-start gap-6 pt-6" style="border-top: 1px solid #f1f3f5;">
-          <div>
-            <p class="text-xs text-gray-400 mb-1">Délivré le</p>
-            <p class="text-sm font-semibold" style="color: #0b1f3a;">{dateDelivrance}</p>
-            <p class="text-xs text-gray-400 mt-3 mb-1">Numéro du certificat</p>
-            <p class="text-sm font-mono font-semibold" style="color: #d4a762;">{numeroCertificat}</p>
+          <!-- Colonne gauche : date + numéro + QR code -->
+          <div class="flex flex-col gap-3">
+            <div>
+              <p class="text-xs text-gray-400 mb-1">Délivré le</p>
+              <p class="text-sm font-semibold" style="color: #0b1f3a;">{dateDelivrance}</p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-400 mb-1">Numéro du certificat</p>
+              <p class="text-sm font-mono font-bold tracking-wide" style="color: #d4a762;">{numeroCertificat}</p>
+              {certEmis && (
+                <p class="text-xs text-gray-400 mt-0.5">
+                  Programme <strong style="color: #0b1f3a;">{certEmis.programmeCode}</strong> · Niveau <strong style="color: #0b1f3a;">{certEmis.niveauCode}</strong>
+                </p>
+              )}
+            </div>
+            {qrSrc && (
+              <div class="flex flex-col items-start gap-1.5">
+                <p class="text-xs text-gray-400">Vérification</p>
+                <img src={qrSrc} alt="QR Code de vérification" width="80" height="80" class="rounded-lg" style="border: 1px solid rgba(212,167,98,0.2);" />
+                <p class="text-[10px] text-gray-300 font-mono break-all max-w-[140px]">{verificationUrl.replace(/^https?:\/\//, "")}</p>
+              </div>
+            )}
           </div>
 
+          <!-- Colonne droite : signature -->
           <div class="text-center sm:text-right">
             <p class="text-xs text-gray-400 mb-3">Signature</p>
             <div class="w-32 h-px mb-3 sm:ml-auto" style="background-color: #0b1f3a;"></div>
