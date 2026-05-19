@@ -22,7 +22,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return new Response(JSON.stringify({ error: "coursId ou planNom requis" }), { status: 400 });
   }
 
-  const adherent = getAdherentByEmail(locals.session.email);
+  const adherent = await getAdherentByEmail(locals.session.email);
   if (!adherent) {
     return new Response(JSON.stringify({ error: "Adhérent introuvable" }), { status: 404 });
   }
@@ -35,7 +35,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const stripe = new Stripe(stripeKey);
   const origin = new URL(request.url).origin;
 
-  // --- Abonnement ---
   if (planNom) {
     const planInfo = PLANS_ABONNEMENT[planNom];
     if (!planInfo) {
@@ -46,26 +45,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
       mode: "subscription",
       payment_method_types: ["card"],
       customer_email: adherent.email,
-      line_items: [
-        {
-          price_data: {
-            currency: "eur",
-            product_data: {
-              name: `Abonnement JCBO-CONSEIL — Plan ${planNom}`,
-              description: planInfo.description,
-            },
-            unit_amount: planInfo.montant * 100,
-            recurring: { interval: "month" },
-          },
-          quantity: 1,
+      line_items: [{
+        price_data: {
+          currency: "eur",
+          product_data: { name: `Abonnement JCBO-CONSEIL — Plan ${planNom}`, description: planInfo.description },
+          unit_amount: planInfo.montant * 100,
+          recurring: { interval: "month" },
         },
-      ],
-      metadata: {
-        adherentEmail: adherent.email,
-        type: "abonnement",
-        planNom,
-        montant: String(planInfo.montant),
-      },
+        quantity: 1,
+      }],
+      metadata: { adherentEmail: adherent.email, type: "abonnement", planNom, montant: String(planInfo.montant) },
       success_url: `${origin}/adherent/abonnement?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/adherent/abonnement`,
     });
@@ -76,8 +65,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     });
   }
 
-  // --- Cours (logique existante) ---
-  const cours = getCours().find(c => c.id === coursId);
+  const allCours = await getCours();
+  const cours = allCours.find(c => c.id === coursId);
   if (!cours || cours.statut !== "Publié") {
     return new Response(JSON.stringify({ error: "Formation introuvable" }), { status: 404 });
   }
@@ -90,24 +79,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
     mode: "payment",
     payment_method_types: ["card"],
     customer_email: adherent.email,
-    line_items: [
-      {
-        price_data: {
-          currency: "eur",
-          product_data: {
-            name: cours.titre,
-            description: cours.description,
-          },
-          unit_amount: (cours as typeof cours & { prix: number }).prix * 100,
-        },
-        quantity: 1,
+    line_items: [{
+      price_data: {
+        currency: "eur",
+        product_data: { name: cours.titre, description: cours.description },
+        unit_amount: (cours.prix ?? 0) * 100,
       },
-    ],
+      quantity: 1,
+    }],
     metadata: {
       adherentEmail: adherent.email,
       coursId: cours.id,
       coursTitre: cours.titre,
-      montant: String((cours as typeof cours & { prix: number }).prix),
+      montant: String(cours.prix ?? 0),
     },
     success_url: `${origin}/paiement/succes?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/adherent/cours`,

@@ -13,9 +13,12 @@
   },
   "dependencies": {
     "@astrojs/vercel": "^10.0.6",
+    "@supabase/supabase-js": "^2.106.0",
     "@tailwindcss/vite": "^4.2.4",
+    "@types/nodemailer": "^8.0.0",
     "astro": "^6.2.0",
     "jose": "^6.2.3",
+    "nodemailer": "^8.0.7",
     "resend": "^6.12.3",
     "stripe": "^22.1.1",
     "tailwindcss": "^4.2.4",

@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import { messageSchema } from "../../lib/validation";
 import { checkRateLimit } from "../../lib/rateLimit";
-import { addMessage, markAsRead, getConversation } from "../../lib/store";
+import { addMessage, markAsRead } from "../../lib/store";
 
 export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.session) {
@@ -23,7 +23,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const result = messageSchema.safeParse(body);
   if (!result.success) {
     return new Response(
-      JSON.stringify({ error: result.error.errors[0].message }),
+      JSON.stringify({ error: result.error.issues[0].message }),
       { status: 400 }
     );
   }
@@ -31,7 +31,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const { conversationId, texte } = result.data;
   const de = locals.session.role === "admin" ? "admin" : "adherent";
 
-  const msg = addMessage(conversationId, texte, de);
+  const msg = await addMessage(conversationId, texte, de);
   if (!msg) {
     return new Response(JSON.stringify({ error: "Conversation introuvable" }), { status: 404 });
   }
@@ -59,6 +59,6 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
     return new Response(JSON.stringify({ error: "ID manquant" }), { status: 400 });
   }
 
-  markAsRead(conversationId);
+  await markAsRead(conversationId);
   return new Response(JSON.stringify({ success: true }), { status: 200 });
 };

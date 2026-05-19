@@ -8,7 +8,6 @@ import { getAdminMotDePasse, getAdherentByEmail } from "../../../lib/store";
 export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
   const ip = clientAddress || "unknown";
 
-  // Vérification blacklist IP
   if (isBlacklisted(ip)) {
     return new Response(JSON.stringify({ error: "Accès refusé." }), {
       status: 403,
@@ -16,7 +15,6 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
     });
   }
 
-  // Rate limiting : 5 tentatives / 15 min par IP
   const { allowed, remaining, retryAfterMs } = checkRateLimit(`login:${ip}`, 5, 15 * 60 * 1000);
   if (!allowed) {
     const minutes = Math.ceil(retryAfterMs / 60000);
@@ -33,7 +31,6 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
     );
   }
 
-  // Parsing du body
   let body: unknown;
   try {
     body = await request.json();
@@ -44,18 +41,16 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
     });
   }
 
-  // Validation Zod
   const result = loginSchema.safeParse(body);
   if (!result.success) {
     return new Response(
-      JSON.stringify({ error: result.error.errors[0].message }),
+      JSON.stringify({ error: result.error.issues[0].message }),
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
 
   const { email, password } = result.data;
 
-  // Vérification blacklist email
   if (isBlacklisted(email)) {
     return new Response(JSON.stringify({ error: "Accès refusé." }), {
       status: 403,
@@ -63,13 +58,12 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
     });
   }
 
-  // Vérification des identifiants
   let role: "admin" | "adherent" | null = null;
 
-  if (email === mockAdmin.email.toLowerCase() && password === getAdminMotDePasse()) {
+  if (email === mockAdmin.email.toLowerCase() && password === await getAdminMotDePasse()) {
     role = "admin";
   } else {
-    const adherent = getAdherentByEmail(email);
+    const adherent = await getAdherentByEmail(email);
     if (adherent && adherent.statut === "Actif" && password === adherent.motDePasse) {
       role = "adherent";
     }
@@ -77,18 +71,13 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
 
   if (!role) {
     return new Response(
-      JSON.stringify({
-        error: "Identifiants incorrects.",
-        remaining,
-      }),
+      JSON.stringify({ error: "Identifiants incorrects.", remaining }),
       { status: 401, headers: { "Content-Type": "application/json" } }
     );
   }
 
-  // Succès — réinitialiser le rate limit
   resetRateLimit(`login:${ip}`);
 
-  // Créer la session JWT
   const token = await createSession({ email, role });
 
   cookies.set("session", token, {

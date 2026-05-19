@@ -10,7 +10,7 @@ export const GET: APIRoute = async ({ locals, params }) => {
   const { id } = params;
   if (!id) return new Response(JSON.stringify({ error: "ID manquant" }), { status: 400 });
 
-  const item = getRessource(id);
+  const item = await getRessource(id);
   if (!item) return new Response(JSON.stringify({ error: "Introuvable" }), { status: 404 });
 
   return new Response(JSON.stringify(item), {
@@ -36,10 +36,10 @@ export const PUT: APIRoute = async ({ request, locals, params }) => {
 
   const result = ressourceSchema.partial().safeParse(body);
   if (!result.success) {
-    return new Response(JSON.stringify({ error: result.error.errors[0].message }), { status: 400 });
+    return new Response(JSON.stringify({ error: result.error.issues[0].message }), { status: 400 });
   }
 
-  const updated = updateRessource(id, result.data as Parameters<typeof updateRessource>[1]);
+  const updated = await updateRessource(id, result.data as Parameters<typeof updateRessource>[1]);
   if (!updated) return new Response(JSON.stringify({ error: "Introuvable" }), { status: 404 });
 
   return new Response(JSON.stringify(updated), {
@@ -56,7 +56,7 @@ export const DELETE: APIRoute = async ({ locals, params }) => {
   const { id } = params;
   if (!id) return new Response(JSON.stringify({ error: "ID manquant" }), { status: 400 });
 
-  const deleted = deleteRessource(id);
+  const deleted = await deleteRessource(id);
   if (!deleted) return new Response(JSON.stringify({ error: "Introuvable" }), { status: 404 });
 
   return new Response(JSON.stringify({ success: true }), { status: 200 });

@@ -8,11 +8,11 @@ import {
 } from "../../lib/store";
 
 const sessionId = Astro.url.searchParams.get("session_id") ?? "";
-const profil = getAdherentByEmail(Astro.locals.session?.email ?? "");
+const profil = await getAdherentByEmail(Astro.locals.session?.email ?? "");
 if (!profil) return Astro.redirect("/login");
 
 // Vérifie si le webhook a déjà enregistré ce paiement
-let recu = sessionId ? getPaiementParSession(sessionId) : null;
+let recu = sessionId ? await getPaiementParSession(sessionId) : null;
 
 // Si le webhook n'a pas encore tourné (pas de Stripe CLI ou secret manquant),
 // on traite directement depuis la session Stripe
@@ -27,13 +27,13 @@ if (!recu && sessionId) {
         const email = (adherentEmail ?? profil.email).toLowerCase();
 
         // Inscrire l'adhérent au cours s'il ne l'est pas déjà
-        const adherent = getAdherentByEmail(email);
+        const adherent = await getAdherentByEmail(email);
         if (adherent && coursId && !adherent.coursInscrits.includes(coursId)) {
-          setCoursAdherent(adherent.id, [...adherent.coursInscrits, coursId]);
+          await setCoursAdherent(adherent.id, [...adherent.coursInscrits, coursId]);
         }
 
         // Enregistrer le paiement dans le store
-        recu = enregistrerPaiement({
+        recu = await enregistrerPaiement({
           adherentEmail: email,
           coursId: coursId ?? "",
           coursTitre: coursTitre ?? "Formation JCBO",
@@ -42,13 +42,13 @@ if (!recu && sessionId) {
         });
 
         // Créer les notifications
-        addNotification({
+        await addNotification({
           adherentEmail: email,
           type: "paiement",
           titre: "Paiement confirmé",
           message: `Votre paiement de ${recu.montant} € pour "${recu.coursTitre}" a été validé. Réf. ${recu.numerTransaction}`,
         });
-        addNotification({
+        await addNotification({
           adherentEmail: email,
           type: "inscription",
           titre: "Inscription confirmée",

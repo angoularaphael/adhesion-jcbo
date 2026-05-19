@@ -8,7 +8,7 @@ import {
   addNotification, getPaiementParSession,
 } from "../../lib/store";
 
-let profil = getAdherentByEmail(Astro.locals.session?.email ?? "");
+let profil = await getAdherentByEmail(Astro.locals.session?.email ?? "");
 if (!profil) return Astro.redirect("/login");
 
 const sessionId = Astro.url.searchParams.get("session_id") ?? "";
@@ -17,7 +17,7 @@ let planActive = "";
 
 // Fallback : traitement si webhook n'a pas encore tourné
 if (sessionId) {
-  const existingPaiement = getPaiementParSession(sessionId);
+  const existingPaiement = await getPaiementParSession(sessionId);
   if (existingPaiement && existingPaiement.coursTitre.startsWith("Abonnement ")) {
     abonnementActive = true;
     planActive = existingPaiement.coursTitre.replace("Abonnement ", "");
@@ -33,23 +33,23 @@ if (sessionId) {
         ) {
           const { adherentEmail, planNom, montant } = session.metadata;
           const email = (adherentEmail ?? profil.email).toLowerCase();
-          const adherentTarget = getAdherentByEmail(email);
+          const adherentTarget = await getAdherentByEmail(email);
           if (adherentTarget) {
-            setAbonnement(adherentTarget.id, planNom);
-            enregistrerPaiement({
+            await setAbonnement(adherentTarget.id, planNom);
+            await enregistrerPaiement({
               adherentEmail: email,
               coursId: "",
               coursTitre: `Abonnement ${planNom}`,
               montant: Number(montant ?? 0),
               stripeSessionId: sessionId,
             });
-            addNotification({
+            await addNotification({
               adherentEmail: email,
               type: "abonnement",
               titre: "Abonnement activé",
               message: `Votre abonnement Plan ${planNom} (${montant} €/mois) est maintenant actif. Profitez de tous vos avantages JCBO-CONSEIL.`,
             });
-            profil = getAdherentByEmail(email)!;
+            profil = await getAdherentByEmail(email) ?? profil;
           }
           abonnementActive = true;
           planActive = planNom;

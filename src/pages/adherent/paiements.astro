@@ -7,15 +7,15 @@ import {
   marquerNotificationsLues, getCours
 } from "../../lib/store";
 
-const profil = getAdherentByEmail(Astro.locals.session?.email ?? "");
+const profil = await getAdherentByEmail(Astro.locals.session?.email ?? "");
 if (!profil) return Astro.redirect("/login");
 
-const paiements = getPaiements(profil.email);
-const notifications = getNotifications(profil.email);
-const tousLesCours = getCours();
+const paiements = await getPaiements(profil.email);
+const notifications = await getNotifications(profil.email);
+const tousLesCours = await getCours();
 
 // Marquer les notifications comme lues à l'ouverture de la page
-marquerNotificationsLues(profil.email);
+await marquerNotificationsLues(profil.email);
 
 const onglet = Astro.url.searchParams.get("onglet") ?? "paiements";
 

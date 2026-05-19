@@ -20,7 +20,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const result = schema.safeParse(body);
   if (!result.success) {
-    return new Response(JSON.stringify({ error: result.error.errors[0].message }), { status: 400 });
+    return new Response(JSON.stringify({ error: result.error.issues[0].message }), { status: 400 });
   }
 
   const { coursId, moduleId, reponses } = result.data;
@@ -40,7 +40,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const score = Math.round((bonnes / questions.length) * 100);
   const passe = score >= 80;
 
-  const progression = enregistrerQuizResultat(locals.session.email, coursId, moduleId, score, passe);
+  const progression = await enregistrerQuizResultat(locals.session.email, coursId, moduleId, score, passe);
 
   return new Response(JSON.stringify({ score, passe, bonnes, total: questions.length, details, progression }), {
     status: 200,

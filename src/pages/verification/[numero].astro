@@ -4,9 +4,9 @@ import LogoJCBO from "../../components/ui/LogoJCBO.astro";
 import { getCertificatByNumero, getAdherentByEmail, getCours } from "../../lib/store";
 
 const { numero } = Astro.params;
-const cert = numero ? getCertificatByNumero(numero) : null;
-const adherent = cert ? getAdherentByEmail(cert.adherentEmail) : null;
-const cours = cert ? getCours().find(c => c.id === cert.coursId) : null;
+const cert = numero ? await getCertificatByNumero(numero) : null;
+const adherent = cert ? await getAdherentByEmail(cert.adherentEmail) : null;
+const cours = cert ? (await getCours()).find(c => c.id === cert.coursId) : null;
 
 const valide = !!(cert && adherent && cours);
 const dateFormatee = cert

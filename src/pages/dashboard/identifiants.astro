@@ -3,7 +3,7 @@ import AdherentLayout from "../../layouts/AdherentLayout.astro";
 import Badge from "../../components/ui/Badge.astro";
 import { getIdentifiants } from "../../lib/store";
 
-const identifiants = getIdentifiants();
+const identifiants = await getIdentifiants();
 ---
 
 <AdherentLayout titre="Identifiants">

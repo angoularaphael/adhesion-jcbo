@@ -9,13 +9,13 @@ export const GET: APIRoute = async ({ locals, url }) => {
 
   if (locals.session.role === "admin") {
     const email = url.searchParams.get("email");
-    return new Response(JSON.stringify(getProgressions(email ?? undefined)), {
+    return new Response(JSON.stringify(await getProgressions(email ?? undefined)), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
   }
 
-  return new Response(JSON.stringify(getProgressions(locals.session.email)), {
+  return new Response(JSON.stringify(await getProgressions(locals.session.email)), {
     status: 200,
     headers: { "Content-Type": "application/json" },
   });
@@ -36,12 +36,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const result = progressionSchema.safeParse(body);
   if (!result.success) {
     return new Response(
-      JSON.stringify({ error: result.error.errors[0].message }),
+      JSON.stringify({ error: result.error.issues[0].message }),
       { status: 400 }
     );
   }
 
-  const updated = marquerModuleTermine(locals.session.email, result.data.coursId, result.data.moduleId);
+  const updated = await marquerModuleTermine(locals.session.email, result.data.coursId, result.data.moduleId);
   return new Response(JSON.stringify(updated), {
     status: 200,
     headers: { "Content-Type": "application/json" },

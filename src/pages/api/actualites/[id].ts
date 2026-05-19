@@ -22,12 +22,12 @@ export const PUT: APIRoute = async ({ request, locals, params }) => {
   const result = actualiteSchema.partial().safeParse(body);
   if (!result.success) {
     return new Response(
-      JSON.stringify({ error: result.error.errors[0].message }),
+      JSON.stringify({ error: result.error.issues[0].message }),
       { status: 400 }
     );
   }
 
-  const updated = updateActualite(id, result.data);
+  const updated = await updateActualite(id, result.data);
   if (!updated) {
     return new Response(JSON.stringify({ error: "Actualité introuvable" }), { status: 404 });
   }
@@ -48,7 +48,7 @@ export const DELETE: APIRoute = async ({ locals, params }) => {
     return new Response(JSON.stringify({ error: "ID manquant" }), { status: 400 });
   }
 
-  const deleted = deleteActualite(id);
+  const deleted = await deleteActualite(id);
   if (!deleted) {
     return new Response(JSON.stringify({ error: "Actualité introuvable" }), { status: 404 });
   }

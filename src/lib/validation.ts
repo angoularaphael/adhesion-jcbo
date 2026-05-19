@@ -4,10 +4,10 @@ export const loginSchema = z.object({
   email: z
     .string()
     .min(1, "L'e-mail est requis")
-    .email("Adresse e-mail invalide")
     .max(254, "E-mail trop long")
     .toLowerCase()
-    .trim(),
+    .trim()
+    .refine(v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), "Adresse e-mail invalide"),
   password: z
     .string()
     .min(1, "Le mot de passe est requis")
@@ -28,19 +28,9 @@ export const contactSchema = z.object({
 });
 
 export const actualiteSchema = z.object({
-  titre: z
-    .string()
-    .min(3, "Titre trop court")
-    .max(200, "Titre trop long")
-    .trim(),
-  contenu: z
-    .string()
-    .min(10, "Contenu trop court")
-    .max(5000, "Contenu trop long")
-    .trim(),
-  statut: z.enum(["Publié", "Brouillon"], {
-    errorMap: () => ({ message: "Statut invalide" }),
-  }),
+  titre: z.string().min(3, "Titre trop court").max(200, "Titre trop long").trim(),
+  contenu: z.string().min(10, "Contenu trop court").max(5000, "Contenu trop long").trim(),
+  statut: z.enum(["Publié", "Brouillon"], "Statut invalide"),
 });
 
 export const identifiantSchema = z.object({
@@ -52,10 +42,10 @@ export const identifiantSchema = z.object({
     .trim(),
   email: z
     .string()
-    .email("Adresse e-mail invalide")
     .max(254, "E-mail trop long")
     .toLowerCase()
-    .trim(),
+    .trim()
+    .refine(v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), "Adresse e-mail invalide"),
 });
 
 export const profilSchema = z.object({
@@ -78,9 +68,7 @@ export const messageSchema = z.object({
 
 export const ressourceSchema = z.object({
   titre: z.string().min(2, "Titre trop court").max(200).trim(),
-  categorie: z.enum(["Guide", "Modèle", "Outil", "Vidéo", "Autre"], {
-    errorMap: () => ({ message: "Catégorie invalide" }),
-  }),
+  categorie: z.enum(["Guide", "Modèle", "Outil", "Vidéo", "Autre"], "Catégorie invalide"),
   fichier: z.string().min(1, "Fichier requis"),
   nom_fichier: z.string().optional(),
 });
@@ -89,12 +77,8 @@ export const coursSchema = z.object({
   titre: z.string().min(3, "Titre trop court").max(200, "Titre trop long").trim(),
   description: z.string().min(10, "Description trop courte").max(2000).trim(),
   duree: z.string().min(1, "Durée requise").max(20).trim(),
-  niveau: z.enum(["Débutant", "Intermédiaire", "Avancé"], {
-    errorMap: () => ({ message: "Niveau invalide" }),
-  }),
-  statut: z.enum(["Publié", "Brouillon"], {
-    errorMap: () => ({ message: "Statut invalide" }),
-  }),
+  niveau: z.enum(["Débutant", "Intermédiaire", "Avancé"], "Niveau invalide"),
+  statut: z.enum(["Publié", "Brouillon"], "Statut invalide"),
 });
 
 export const progressionSchema = z.object({

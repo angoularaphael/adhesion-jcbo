@@ -4,7 +4,7 @@ import Card from "../../components/ui/Card.astro";
 import Badge from "../../components/ui/Badge.astro";
 import { getAdherentByEmail } from "../../lib/store";
 
-const profil = getAdherentByEmail(Astro.locals.session?.email ?? "");
+const profil = await getAdherentByEmail(Astro.locals.session?.email ?? "");
 if (!profil) return Astro.redirect("/login");
 ---
 

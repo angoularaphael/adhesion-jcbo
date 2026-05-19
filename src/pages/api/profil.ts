@@ -7,7 +7,7 @@ export const GET: APIRoute = async ({ locals }) => {
   if (!locals.session || locals.session.role !== "adherent") {
     return new Response(JSON.stringify({ error: "Non autorisé" }), { status: 401 });
   }
-  const profil = getAdherentByEmail(locals.session.email);
+  const profil = await getAdherentByEmail(locals.session.email);
   if (!profil) return new Response(JSON.stringify({ error: "Introuvable" }), { status: 404 });
   return new Response(JSON.stringify(profil), {
     status: 200,
@@ -15,7 +15,7 @@ export const GET: APIRoute = async ({ locals }) => {
   });
 };
 
-export const PUT: APIRoute = async ({ request, locals, clientAddress }) => {
+export const PUT: APIRoute = async ({ request, locals }) => {
   if (!locals.session || locals.session.role !== "adherent") {
     return new Response(JSON.stringify({ error: "Non autorisé" }), { status: 401 });
   }
@@ -35,12 +35,12 @@ export const PUT: APIRoute = async ({ request, locals, clientAddress }) => {
   const result = profilSchema.safeParse(body);
   if (!result.success) {
     return new Response(
-      JSON.stringify({ error: result.error.errors[0].message }),
+      JSON.stringify({ error: result.error.issues[0].message }),
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
 
-  const updated = updateProfil(locals.session.email, result.data);
+  const updated = await updateProfil(locals.session.email, result.data);
   if (!updated) return new Response(JSON.stringify({ error: "Profil introuvable" }), { status: 404 });
 
   return new Response(JSON.stringify(updated), {

@@ -3,11 +3,11 @@ import AdherentMemberLayout from "../../layouts/AdherentMemberLayout.astro";
 import Card from "../../components/ui/Card.astro";
 import { getAdherentByEmail, findOrCreateConversation, markAsReadAdherent } from "../../lib/store";
 
-const profil = getAdherentByEmail(Astro.locals.session?.email ?? "");
+const profil = await getAdherentByEmail(Astro.locals.session?.email ?? "");
 if (!profil) return Astro.redirect("/login");
 
-const conv = findOrCreateConversation(profil.email, "Messagerie adhérent");
-markAsReadAdherent(conv.id);
+const conv = await findOrCreateConversation(profil.email, "Messagerie adhérent");
+await markAsReadAdherent(conv.id);
 const messages = conv.messages;
 ---
 

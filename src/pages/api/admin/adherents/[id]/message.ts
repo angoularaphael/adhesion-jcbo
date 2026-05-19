@@ -14,7 +14,7 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
   const { id } = params;
   if (!id) return new Response(JSON.stringify({ error: "ID manquant" }), { status: 400 });
 
-  const adherent = getAdherentById(id);
+  const adherent = await getAdherentById(id);
   if (!adherent) {
     return new Response(JSON.stringify({ error: "Adhérent introuvable" }), { status: 404 });
   }
@@ -25,11 +25,11 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
 
   const result = schema.safeParse(body);
   if (!result.success) {
-    return new Response(JSON.stringify({ error: result.error.errors[0].message }), { status: 400 });
+    return new Response(JSON.stringify({ error: result.error.issues[0].message }), { status: 400 });
   }
 
-  const conv = findOrCreateConversation(adherent.email, "Rappel de paiement");
-  const msg = addMessage(conv.id, result.data.texte, "admin");
+  const conv = await findOrCreateConversation(adherent.email, "Rappel de paiement");
+  const msg = await addMessage(conv.id, result.data.texte, "admin");
 
   return new Response(JSON.stringify({ success: true, conversationId: conv.id, message: msg }), {
     status: 201,

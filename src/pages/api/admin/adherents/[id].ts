@@ -22,7 +22,7 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
   const { id } = params;
   if (!id) return new Response(JSON.stringify({ error: "ID manquant" }), { status: 400 });
 
-  if (!getAdherentById(id)) {
+  if (!await getAdherentById(id)) {
     return new Response(JSON.stringify({ error: "Adhérent introuvable" }), { status: 404 });
   }
 
@@ -32,10 +32,10 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
 
   const result = updateSchema.safeParse(body);
   if (!result.success) {
-    return new Response(JSON.stringify({ error: result.error.errors[0].message }), { status: 400 });
+    return new Response(JSON.stringify({ error: result.error.issues[0].message }), { status: 400 });
   }
 
-  const updated = updateAdherent(id, result.data);
+  const updated = await updateAdherent(id, result.data);
   return new Response(JSON.stringify(updated), {
     status: 200,
     headers: { "Content-Type": "application/json" },
@@ -50,7 +50,7 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
   const { id } = params;
   if (!id) return new Response(JSON.stringify({ error: "ID manquant" }), { status: 400 });
 
-  const deleted = deleteAdherent(id);
+  const deleted = await deleteAdherent(id);
   if (!deleted) {
     return new Response(JSON.stringify({ error: "Adhérent introuvable" }), { status: 404 });
   }

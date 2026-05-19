@@ -16,7 +16,7 @@ const schema = z.object({
     .regex(/[0-9!@#$%^&*]/, "Doit contenir au moins un chiffre ou caractère spécial"),
 });
 
-export const PUT: APIRoute = async ({ request, locals, clientAddress }) => {
+export const PUT: APIRoute = async ({ request, locals }) => {
   if (!locals.session) {
     return new Response(JSON.stringify({ error: "Non autorisé" }), { status: 401 });
   }
@@ -36,7 +36,7 @@ export const PUT: APIRoute = async ({ request, locals, clientAddress }) => {
   const result = schema.safeParse(body);
   if (!result.success) {
     return new Response(
-      JSON.stringify({ error: result.error.errors[0].message }),
+      JSON.stringify({ error: result.error.issues[0].message }),
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
@@ -44,16 +44,16 @@ export const PUT: APIRoute = async ({ request, locals, clientAddress }) => {
   const { ancienMotDePasse, nouveauMotDePasse } = result.data;
 
   if (locals.session.role === "admin") {
-    if (ancienMotDePasse !== getAdminMotDePasse()) {
+    if (ancienMotDePasse !== await getAdminMotDePasse()) {
       return new Response(JSON.stringify({ error: "Mot de passe actuel incorrect." }), { status: 401 });
     }
-    setAdminMotDePasse(nouveauMotDePasse);
+    await setAdminMotDePasse(nouveauMotDePasse);
   } else {
-    const adherent = getAdherentByEmail(locals.session.email);
+    const adherent = await getAdherentByEmail(locals.session.email);
     if (!adherent || ancienMotDePasse !== adherent.motDePasse) {
       return new Response(JSON.stringify({ error: "Mot de passe actuel incorrect." }), { status: 401 });
     }
-    updateProfil(locals.session.email, { motDePasse: nouveauMotDePasse });
+    await updateProfil(locals.session.email, { motDePasse: nouveauMotDePasse });
   }
 
   return new Response(JSON.stringify({ success: true }), {

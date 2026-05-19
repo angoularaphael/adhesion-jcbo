@@ -1,15 +1,6 @@
-import {
-  mockActualites,
-  mockConversations,
-  mockAdherents,
-  mockAdmin,
-  mockRessources,
-  mockAdhesion,
-  mockCertificat,
-  mockStats,
-  mockCours,
-  mockProgressions,
-} from "../data/mock";
+import { getSupabase } from "./supabase";
+
+// ── Re-exported types (unchanged surface for callers) ─────────────────────────
 
 export type AbonnementInfo = { plan: string; statut: "actif" | "inactif"; dateDebut: string };
 
@@ -34,7 +25,6 @@ export type Paiement = {
   numerTransaction: string;
 };
 
-// Utilise globalThis pour survivre aux rechargements de modules (Vite dev + Vercel warm starts)
 export type AdherentComplet = {
   id: string;
   prenom: string;
@@ -72,457 +62,545 @@ export type CertificatEmis = {
   dateEmission: string;
 };
 
-type StoreData = {
-  adminMotDePasse: string;
-  actualites: { id: string; titre: string; contenu: string; statut: string; date: string }[];
-  conversations: {
-    id: string; email: string; adherent: string; entreprise: string;
-    sujet: string; dernier_message: string; date: string; non_lu: number; non_lu_adherent: number;
-    messages: { de: string; texte: string; heure: string }[];
-  }[];
-  adherents: AdherentComplet[];
-  ressources: { id: string; titre: string; categorie: string; date: string; fichier: string; nom_fichier?: string }[];
-  cours: typeof mockCours;
-  progressions: ProgressionComplet[];
-  paiements: Paiement[];
-  notifications: Notification[];
-  certificatsEmis: CertificatEmis[];
-  compteursCertificats: Record<string, number>;
-};
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-const g = globalThis as unknown as Record<string, StoreData | undefined>;
-
-function initStore(): StoreData {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function toAdherent(row: any): AdherentComplet {
   return {
-    adminMotDePasse: mockAdmin.motDePasse,
-    actualites: mockActualites.map(a => ({ ...a })),
-    conversations: mockConversations.map(c => ({ ...c, messages: c.messages.map(m => ({ ...m })) })),
-    adherents: mockAdherents.map(a => ({ ...a, coursInscrits: [...a.coursInscrits] })),
-    ressources: mockRessources.map(r => ({ ...r })),
-    cours: mockCours.map(c => ({ ...c, modules: c.modules.map(m => ({ ...m })) })),
-    progressions: mockProgressions.map(p => ({
-      ...p,
-      modulesTermines: [...p.modulesTermines],
-      quizResultats: (p.quizResultats ?? []).map(q => ({ ...q })),
-    })),
-    paiements: [],
-    notifications: [],
-    certificatsEmis: [],
-    compteursCertificats: {},
+    id: row.id,
+    prenom: row.prenom,
+    nom: row.nom,
+    email: row.email,
+    motDePasse: row.mot_de_passe,
+    telephone: row.telephone ?? "",
+    entreprise: row.entreprise ?? "",
+    secteur: row.secteur ?? "",
+    statut: row.statut as "Actif" | "Inactif",
+    dateAdhesion: row.date_adhesion,
+    numeroAdherent: row.numero_adherent,
+    coursInscrits: row.cours_inscrits ?? [],
+    abonnement: row.abonnement_plan
+      ? { plan: row.abonnement_plan, statut: row.abonnement_statut as "actif" | "inactif", dateDebut: row.abonnement_date_debut }
+      : null,
   };
 }
 
-if (!g.__jcboStore || !g.__jcboStore.adherents || !g.__jcboStore.certificatsEmis) g.__jcboStore = initStore();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function toNotification(row: any): Notification {
+  return {
+    id: row.id,
+    adherentEmail: row.adherent_email,
+    type: row.type as Notification["type"],
+    titre: row.titre,
+    message: row.message,
+    date: row.date,
+    lue: row.lue,
+  };
+}
 
-const s = () => g.__jcboStore as StoreData;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function toPaiement(row: any): Paiement {
+  return {
+    id: row.id,
+    adherentEmail: row.adherent_email,
+    coursId: row.cours_id,
+    coursTitre: row.cours_titre,
+    montant: Number(row.montant),
+    date: row.date,
+    stripeSessionId: row.stripe_session_id,
+    numerTransaction: row.numer_transaction,
+  };
+}
 
-// --- Actualités ---
-export function getActualites() { return s().actualites; }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function toCours(row: any, modules: any[] = []) {
+  return {
+    id: row.id,
+    titre: row.titre,
+    description: row.description,
+    duree: row.duree,
+    niveau: row.niveau as "Débutant" | "Intermédiaire" | "Avancé",
+    statut: row.statut as "Publié" | "Brouillon",
+    prix: row.prix !== null ? Number(row.prix) : undefined,
+    date: row.date,
+    modules: modules
+      .filter((m: any) => m.cours_id === row.id)
+      .sort((a: any, b: any) => a.ordre - b.ordre)
+      .map((m: any) => ({
+        id: m.id,
+        titre: m.titre,
+        duree: m.duree,
+        type: m.type as "Vidéo" | "Document" | "Quiz",
+        ordre: m.ordre,
+      })),
+  };
+}
 
-export function createActualite(data: { titre: string; contenu: string; statut: "Publié" | "Brouillon" }) {
+// ── Actualités ────────────────────────────────────────────────────────────────
+
+export async function getActualites() {
+  const { data } = await getSupabase().from("actualites").select("*").order("date", { ascending: false });
+  return data ?? [];
+}
+
+export async function createActualite(data: { titre: string; contenu: string; statut: "Publié" | "Brouillon" }) {
   const item = { id: `ACT-${Date.now()}`, ...data, date: new Date().toISOString().split("T")[0] };
-  s().actualites.unshift(item);
+  await getSupabase().from("actualites").insert(item);
   return item;
 }
 
-export function updateActualite(id: string, data: { titre?: string; contenu?: string; statut?: string }) {
-  const arr = s().actualites;
-  const index = arr.findIndex(a => a.id === id);
-  if (index === -1) return null;
-  arr[index] = { ...arr[index], ...data };
-  return arr[index];
+export async function updateActualite(id: string, data: { titre?: string; contenu?: string; statut?: string }) {
+  const { data: row } = await getSupabase().from("actualites").update(data).eq("id", id).select().single();
+  return row ?? null;
 }
 
-export function deleteActualite(id: string): boolean {
-  const arr = s().actualites;
-  const index = arr.findIndex(a => a.id === id);
-  if (index === -1) return false;
-  arr.splice(index, 1);
-  return true;
+export async function deleteActualite(id: string): Promise<boolean> {
+  const { error } = await getSupabase().from("actualites").delete().eq("id", id);
+  return !error;
 }
 
-// --- Adhérents (modèle unifié) ---
-export function getAdherents() { return s().adherents; }
+// ── Adhérents ─────────────────────────────────────────────────────────────────
 
-export function getAdherentByEmail(email: string): AdherentComplet | null {
-  return s().adherents.find(a => a.email.toLowerCase() === email.toLowerCase()) ?? null;
+export async function getAdherents(): Promise<AdherentComplet[]> {
+  const { data } = await getSupabase().from("adherents").select("*").order("date_adhesion", { ascending: false });
+  return (data ?? []).map(toAdherent);
 }
 
-export function getAdherentById(id: string): AdherentComplet | null {
-  return s().adherents.find(a => a.id === id) ?? null;
+export async function getAdherentByEmail(email: string): Promise<AdherentComplet | null> {
+  const { data } = await getSupabase().from("adherents").select("*").ilike("email", email).maybeSingle();
+  return data ? toAdherent(data) : null;
 }
 
-export function createAdherent(data: Omit<AdherentComplet, "id" | "numeroAdherent" | "dateAdhesion">) {
-  const arr = s().adherents;
-  const num = String(arr.length + 1).padStart(4, "0");
-  const item: AdherentComplet = {
+export async function getAdherentById(id: string): Promise<AdherentComplet | null> {
+  const { data } = await getSupabase().from("adherents").select("*").eq("id", id).maybeSingle();
+  return data ? toAdherent(data) : null;
+}
+
+export async function createAdherent(data: Omit<AdherentComplet, "id" | "numeroAdherent" | "dateAdhesion">): Promise<AdherentComplet> {
+  const { count } = await getSupabase().from("adherents").select("id", { count: "exact", head: true });
+  const num = String((count ?? 0) + 1).padStart(4, "0");
+  const row = {
     id: `ADH-${Date.now()}`,
-    numeroAdherent: `ADH-${new Date().getFullYear()}-${num}`,
-    dateAdhesion: new Date().toISOString().split("T")[0],
-    ...data,
+    numero_adherent: `ADH-${new Date().getFullYear()}-${num}`,
+    date_adhesion: new Date().toISOString().split("T")[0],
+    prenom: data.prenom,
+    nom: data.nom,
     email: data.email.toLowerCase(),
-    coursInscrits: data.coursInscrits ?? [],
-    abonnement: data.abonnement ?? null,
+    mot_de_passe: data.motDePasse,
+    telephone: data.telephone ?? "",
+    entreprise: data.entreprise ?? "",
+    secteur: data.secteur ?? "",
+    statut: data.statut ?? "Actif",
+    cours_inscrits: data.coursInscrits ?? [],
+    abonnement_plan: data.abonnement?.plan ?? null,
+    abonnement_statut: data.abonnement?.statut ?? null,
+    abonnement_date_debut: data.abonnement?.dateDebut ?? null,
   };
-  arr.push(item);
-  return item;
+  await getSupabase().from("adherents").insert(row);
+  return toAdherent(row);
 }
 
-export function setAbonnement(adherentId: string, plan: string): AdherentComplet | null {
-  const a = s().adherents.find(a => a.id === adherentId);
-  if (!a) return null;
-  a.abonnement = { plan, statut: "actif", dateDebut: new Date().toISOString().split("T")[0] };
-  return a;
+export async function updateAdherent(id: string, data: Partial<Omit<AdherentComplet, "id">>): Promise<AdherentComplet | null> {
+  const patch: Record<string, unknown> = {};
+  if (data.prenom !== undefined) patch.prenom = data.prenom;
+  if (data.nom !== undefined) patch.nom = data.nom;
+  if (data.email !== undefined) patch.email = data.email.toLowerCase();
+  if (data.motDePasse !== undefined) patch.mot_de_passe = data.motDePasse;
+  if (data.telephone !== undefined) patch.telephone = data.telephone;
+  if (data.entreprise !== undefined) patch.entreprise = data.entreprise;
+  if (data.secteur !== undefined) patch.secteur = data.secteur;
+  if (data.statut !== undefined) patch.statut = data.statut;
+  if (data.coursInscrits !== undefined) patch.cours_inscrits = data.coursInscrits;
+  if (data.abonnement !== undefined) {
+    patch.abonnement_plan = data.abonnement?.plan ?? null;
+    patch.abonnement_statut = data.abonnement?.statut ?? null;
+    patch.abonnement_date_debut = data.abonnement?.dateDebut ?? null;
+  }
+  const { data: row } = await getSupabase().from("adherents").update(patch).eq("id", id).select().single();
+  return row ? toAdherent(row) : null;
 }
 
-export function cancelAbonnement(adherentId: string): AdherentComplet | null {
-  const a = s().adherents.find(a => a.id === adherentId);
-  if (!a || !a.abonnement) return null;
-  a.abonnement.statut = "inactif";
-  return a;
+export async function deleteAdherent(id: string): Promise<boolean> {
+  const { error } = await getSupabase().from("adherents").delete().eq("id", id);
+  return !error;
 }
 
-export function updateAdherent(id: string, data: Partial<Omit<AdherentComplet, "id">>) {
-  const arr = s().adherents;
-  const index = arr.findIndex(a => a.id === id);
-  if (index === -1) return null;
-  arr[index] = { ...arr[index], ...data };
-  return arr[index];
+export async function setCoursAdherent(id: string, coursInscrits: string[]): Promise<AdherentComplet | null> {
+  const { data } = await getSupabase().from("adherents").update({ cours_inscrits: coursInscrits }).eq("id", id).select().single();
+  return data ? toAdherent(data) : null;
 }
 
-export function deleteAdherent(id: string): boolean {
-  const arr = s().adherents;
-  const index = arr.findIndex(a => a.id === id);
-  if (index === -1) return false;
-  arr.splice(index, 1);
-  return true;
+export async function setAbonnement(adherentId: string, plan: string): Promise<AdherentComplet | null> {
+  const { data } = await getSupabase().from("adherents").update({
+    abonnement_plan: plan,
+    abonnement_statut: "actif",
+    abonnement_date_debut: new Date().toISOString().split("T")[0],
+  }).eq("id", adherentId).select().single();
+  return data ? toAdherent(data) : null;
 }
 
-export function setCoursAdherent(id: string, coursInscrits: string[]) {
-  const a = s().adherents.find(a => a.id === id);
-  if (!a) return null;
-  a.coursInscrits = coursInscrits;
-  return a;
+export async function cancelAbonnement(adherentId: string): Promise<AdherentComplet | null> {
+  const { data } = await getSupabase().from("adherents").update({ abonnement_statut: "inactif" }).eq("id", adherentId).select().single();
+  return data ? toAdherent(data) : null;
 }
 
-// Compatibilité identifiants page
-export function getIdentifiants() {
-  return s().adherents.map(a => ({
-    id: a.id,
-    nom: `${a.prenom} ${a.nom}`,
-    email: a.email,
-    cree_le: a.dateAdhesion,
-    statut: a.statut,
-  }));
+// Compatibilité page identifiants
+export async function getIdentifiants() {
+  const adhs = await getAdherents();
+  return adhs.map(a => ({ id: a.id, nom: `${a.prenom} ${a.nom}`, email: a.email, cree_le: a.dateAdhesion, statut: a.statut }));
 }
 
-export function createIdentifiant(data: { nom: string; email: string }) {
+export async function createIdentifiant(data: { nom: string; email: string }) {
   const charset = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#!";
   let password = "";
   for (let i = 0; i < 12; i++) password += charset[Math.floor(Math.random() * charset.length)];
   const parts = data.nom.trim().split(" ");
   const prenom = parts[0] ?? data.nom;
   const nom = parts.slice(1).join(" ") || prenom;
-  const created = createAdherent({
-    prenom, nom,
-    email: data.email,
-    motDePasse: password,
-    telephone: "", entreprise: "", secteur: "",
-    statut: "Actif",
-    coursInscrits: [],
-    abonnement: null,
+  const created = await createAdherent({
+    prenom, nom, email: data.email, motDePasse: password,
+    telephone: "", entreprise: "", secteur: "", statut: "Actif",
+    coursInscrits: [], abonnement: null,
   });
   return { ...created, nom: data.nom, motDePasse: password };
 }
 
-export function resetMotDePasse(adherentId: string): { email: string; nom: string; motDePasse: string } | null {
-  const a = s().adherents.find(a => a.id === adherentId);
+export async function resetMotDePasse(adherentId: string): Promise<{ email: string; nom: string; motDePasse: string } | null> {
+  const a = await getAdherentById(adherentId);
   if (!a) return null;
   const charset = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#!";
   let password = "";
   for (let i = 0; i < 12; i++) password += charset[Math.floor(Math.random() * charset.length)];
-  a.motDePasse = password;
+  await getSupabase().from("adherents").update({ mot_de_passe: password }).eq("id", adherentId);
   return { email: a.email, nom: `${a.prenom} ${a.nom}`, motDePasse: password };
 }
 
-export function toggleIdentifiantStatut(id: string) {
-  const a = s().adherents.find(a => a.id === id);
+export async function toggleIdentifiantStatut(id: string) {
+  const a = await getAdherentById(id);
   if (!a) return null;
-  a.statut = a.statut === "Actif" ? "Inactif" : "Actif";
-  return { id: a.id, nom: `${a.prenom} ${a.nom}`, email: a.email, cree_le: a.dateAdhesion, statut: a.statut };
+  const newStatut = a.statut === "Actif" ? "Inactif" : "Actif";
+  await getSupabase().from("adherents").update({ statut: newStatut }).eq("id", id);
+  return { id, nom: `${a.prenom} ${a.nom}`, email: a.email, cree_le: a.dateAdhesion, statut: newStatut };
 }
 
-// Profil adhérent (compatibilité)
-export function getProfil(email?: string) {
+export async function getProfil(email?: string): Promise<AdherentComplet | null> {
   if (email) return getAdherentByEmail(email);
-  return s().adherents[0] ?? null;
+  const { data } = await getSupabase().from("adherents").select("*").limit(1).single();
+  return data ? toAdherent(data) : null;
 }
 
-export function updateProfil(email: string, data: Partial<Pick<AdherentComplet, "telephone" | "entreprise" | "secteur" | "motDePasse">>) {
-  const arr = s().adherents;
-  const index = arr.findIndex(a => a.email.toLowerCase() === email.toLowerCase());
-  if (index === -1) return null;
-  arr[index] = { ...arr[index], ...data };
-  return arr[index];
+export async function updateProfil(email: string, data: Partial<Pick<AdherentComplet, "telephone" | "entreprise" | "secteur" | "motDePasse">>) {
+  const patch: Record<string, unknown> = {};
+  if (data.telephone !== undefined) patch.telephone = data.telephone;
+  if (data.entreprise !== undefined) patch.entreprise = data.entreprise;
+  if (data.secteur !== undefined) patch.secteur = data.secteur;
+  if (data.motDePasse !== undefined) patch.mot_de_passe = data.motDePasse;
+  const { data: row } = await getSupabase().from("adherents").update(patch).ilike("email", email).select().single();
+  return row ? toAdherent(row) : null;
 }
 
-// --- Mots de passe ---
-export function getAdminMotDePasse() { return s().adminMotDePasse; }
-export function setAdminMotDePasse(pwd: string) { s().adminMotDePasse = pwd; }
+// ── Admin password ────────────────────────────────────────────────────────────
 
-// --- Messagerie ---
-export function getConversations() { return s().conversations; }
-export function getConversation(id: string) { return s().conversations.find(c => c.id === id) || null; }
+export async function getAdminMotDePasse(): Promise<string> {
+  const { data } = await getSupabase().from("config").select("valeur").eq("cle", "admin_mot_de_passe").single();
+  return data?.valeur ?? "Jcbo2025!";
+}
 
-export function addMessage(conversationId: string, texte: string, de: "admin" | "adherent") {
-  const conv = s().conversations.find(c => c.id === conversationId);
+export async function setAdminMotDePasse(pwd: string): Promise<void> {
+  await getSupabase().from("config").upsert({ cle: "admin_mot_de_passe", valeur: pwd });
+}
+
+// ── Messagerie ────────────────────────────────────────────────────────────────
+
+export async function getConversations() {
+  const { data: convs } = await getSupabase().from("conversations").select("*").order("date", { ascending: false });
+  const { data: msgs } = await getSupabase().from("messages").select("*").order("created_at", { ascending: true });
+  return (convs ?? []).map(c => ({
+    ...c,
+    messages: (msgs ?? []).filter(m => m.conversation_id === c.id).map(m => ({ de: m.de, texte: m.texte, heure: m.heure })),
+  }));
+}
+
+export async function getConversation(id: string) {
+  const { data: conv } = await getSupabase().from("conversations").select("*").eq("id", id).maybeSingle();
   if (!conv) return null;
+  const { data: msgs } = await getSupabase().from("messages").select("*").eq("conversation_id", id).order("created_at", { ascending: true });
+  return { ...conv, messages: (msgs ?? []).map(m => ({ de: m.de, texte: m.texte, heure: m.heure })) };
+}
+
+export async function addMessage(conversationId: string, texte: string, de: "admin" | "adherent") {
   const now = new Date();
   const heure = now.getHours().toString().padStart(2, "0") + ":" + now.getMinutes().toString().padStart(2, "0");
-  const msg = { de, texte, heure };
-  conv.messages.push(msg);
-  conv.dernier_message = texte;
-  conv.date = now.toISOString().split("T")[0];
-  if (de === "adherent") conv.non_lu++;
-  if (de === "admin") conv.non_lu_adherent++;
-  return msg;
-}
-
-export function markAsRead(conversationId: string) {
-  const conv = s().conversations.find(c => c.id === conversationId);
-  if (conv) conv.non_lu = 0;
-}
-
-export function markAsReadAdherent(conversationId: string) {
-  const conv = s().conversations.find(c => c.id === conversationId);
-  if (conv) conv.non_lu_adherent = 0;
-}
-
-export function findOrCreateConversation(email: string, sujet: string) {
-  const emailLower = email.toLowerCase();
-  let conv = s().conversations.find(c => c.email === emailLower);
-  if (!conv) {
-    const adherent = getAdherentByEmail(emailLower);
-    const adherentNom = adherent
-      ? `${adherent.prenom} ${adherent.nom}`
-      : emailLower.split("@")[0].replace(/[._]/g, " ");
-    const entreprise = adherent?.entreprise ?? "";
-    conv = {
-      id: `MSG-${String(s().conversations.length + 1).padStart(3, "0")}`,
-      email: emailLower, adherent: adherentNom, entreprise,
-      sujet, dernier_message: "", date: new Date().toISOString().split("T")[0],
-      non_lu: 0, non_lu_adherent: 0, messages: [],
-    };
-    s().conversations.push(conv);
+  const msg = { conversation_id: conversationId, de, texte, heure };
+  await getSupabase().from("messages").insert(msg);
+  const patch: Record<string, unknown> = {
+    dernier_message: texte,
+    date: now.toISOString().split("T")[0],
+  };
+  if (de === "adherent") {
+    const { data: c } = await getSupabase().from("conversations").select("non_lu").eq("id", conversationId).single();
+    patch.non_lu = (c?.non_lu ?? 0) + 1;
+  } else {
+    const { data: c } = await getSupabase().from("conversations").select("non_lu_adherent").eq("id", conversationId).single();
+    patch.non_lu_adherent = (c?.non_lu_adherent ?? 0) + 1;
   }
-  return conv;
+  await getSupabase().from("conversations").update(patch).eq("id", conversationId);
+  return { de, texte, heure };
 }
 
-// --- Ressources ---
-export function getRessources() { return s().ressources; }
+export async function markAsRead(conversationId: string) {
+  await getSupabase().from("conversations").update({ non_lu: 0 }).eq("id", conversationId);
+}
 
-export function createRessource(data: { titre: string; categorie: string; fichier: string; nom_fichier?: string }) {
+export async function markAsReadAdherent(conversationId: string) {
+  await getSupabase().from("conversations").update({ non_lu_adherent: 0 }).eq("id", conversationId);
+}
+
+export async function findOrCreateConversation(email: string, sujet: string) {
+  const emailLower = email.toLowerCase();
+  const { data: existing } = await getSupabase().from("conversations").select("*").eq("email", emailLower).maybeSingle();
+  if (existing) {
+    const { data: msgs } = await getSupabase().from("messages").select("*").eq("conversation_id", existing.id).order("created_at", { ascending: true });
+    return { ...existing, messages: (msgs ?? []).map(m => ({ de: m.de, texte: m.texte, heure: m.heure })) };
+  }
+  const adherent = await getAdherentByEmail(emailLower);
+  const adherentNom = adherent
+    ? `${adherent.prenom} ${adherent.nom}`
+    : emailLower.split("@")[0].replace(/[._]/g, " ");
+  const { count } = await getSupabase().from("conversations").select("id", { count: "exact", head: true });
+  const newConv = {
+    id: `MSG-${String((count ?? 0) + 1).padStart(3, "0")}`,
+    email: emailLower,
+    adherent: adherentNom,
+    entreprise: adherent?.entreprise ?? "",
+    sujet,
+    dernier_message: "",
+    date: new Date().toISOString().split("T")[0],
+    non_lu: 0,
+    non_lu_adherent: 0,
+  };
+  await getSupabase().from("conversations").insert(newConv);
+  return { ...newConv, messages: [] };
+}
+
+// ── Ressources ────────────────────────────────────────────────────────────────
+
+export async function getRessources() {
+  const { data } = await getSupabase().from("ressources").select("*").order("date", { ascending: false });
+  return data ?? [];
+}
+
+export async function getRessource(id: string) {
+  const { data } = await getSupabase().from("ressources").select("*").eq("id", id).maybeSingle();
+  return data ?? null;
+}
+
+export async function createRessource(data: { titre: string; categorie: string; fichier: string; nom_fichier?: string }) {
   const item = { id: `RES-${Date.now()}`, ...data, date: new Date().toISOString().split("T")[0] };
-  s().ressources.push(item);
+  await getSupabase().from("ressources").insert(item);
   return item;
 }
 
-export function updateRessource(id: string, data: Partial<{ titre: string; categorie: string; fichier: string; nom_fichier: string }>) {
-  const arr = s().ressources;
-  const index = arr.findIndex(r => r.id === id);
-  if (index === -1) return null;
-  arr[index] = { ...arr[index], ...data };
-  return arr[index];
+export async function updateRessource(id: string, data: Partial<{ titre: string; categorie: string; fichier: string; nom_fichier: string }>) {
+  const { data: row } = await getSupabase().from("ressources").update(data).eq("id", id).select().single();
+  return row ?? null;
 }
 
-export function deleteRessource(id: string): boolean {
-  const arr = s().ressources;
-  const index = arr.findIndex(r => r.id === id);
-  if (index === -1) return false;
-  arr.splice(index, 1);
-  return true;
+export async function deleteRessource(id: string): Promise<boolean> {
+  const { error } = await getSupabase().from("ressources").delete().eq("id", id);
+  return !error;
 }
 
-export function getRessource(id: string) {
-  return s().ressources.find(r => r.id === id) ?? null;
-}
+// ── Adhésion / Certificat (données fixes) ────────────────────────────────────
 
-// --- Adhésion (données fixes) ---
+import { mockAdhesion, mockCertificat } from "../data/mock";
 export function getAdhesion() { return { ...mockAdhesion }; }
 export function getCertificat() { return { ...mockCertificat }; }
 
-// --- Statistiques dynamiques ---
-export function getStats() {
-  const adh = s().adherents;
+// ── Statistiques ──────────────────────────────────────────────────────────────
+
+import { mockStats } from "../data/mock";
+export async function getStats() {
+  const { count: total } = await getSupabase().from("adherents").select("id", { count: "exact", head: true });
+  const { count: actifs } = await getSupabase().from("adherents").select("id", { count: "exact", head: true }).eq("statut", "Actif");
   return {
     ...mockStats,
-    totalAdherents: adh.length,
-    adherentsActifs: adh.filter(a => a.statut === "Actif").length,
-    nouveauxCeMois: mockStats.nouveauxCeMois,
-    tauxRenouvellement: mockStats.tauxRenouvellement,
+    totalAdherents: total ?? 0,
+    adherentsActifs: actifs ?? 0,
   };
 }
 
-// --- Cours ---
-export function getCours() { return s().cours; }
+// ── Cours ─────────────────────────────────────────────────────────────────────
 
-export function createCours(data: {
+export async function getCours() {
+  const { data: coursRows } = await getSupabase().from("cours").select("*").order("date", { ascending: false });
+  const { data: moduleRows } = await getSupabase().from("modules").select("*");
+  return (coursRows ?? []).map(c => toCours(c, moduleRows ?? []));
+}
+
+export async function createCours(data: {
   titre: string; description: string; duree: string;
   niveau: "Débutant" | "Intermédiaire" | "Avancé"; statut: "Publié" | "Brouillon";
 }) {
-  const item = {
-    id: `COURS-${Date.now()}`,
-    ...data,
-    date: new Date().toISOString().split("T")[0],
-    modules: [] as typeof mockCours[number]["modules"],
-  };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (s().cours as any[]).push(item);
-  return item;
+  const item = { id: `COURS-${Date.now()}`, ...data, date: new Date().toISOString().split("T")[0], prix: null };
+  await getSupabase().from("cours").insert(item);
+  return { ...item, modules: [] };
 }
 
-export function updateCours(id: string, data: Partial<{ titre: string; description: string; duree: string; niveau: string; statut: string }>) {
-  const arr = s().cours;
-  const index = arr.findIndex(c => c.id === id);
-  if (index === -1) return null;
-  arr[index] = { ...arr[index], ...data } as typeof arr[number];
-  return arr[index];
+export async function updateCours(id: string, data: Partial<{ titre: string; description: string; duree: string; niveau: string; statut: string }>) {
+  const { data: row } = await getSupabase().from("cours").update(data).eq("id", id).select().single();
+  return row ? toCours(row, []) : null;
 }
 
-export function deleteCours(id: string): boolean {
-  const arr = s().cours;
-  const index = arr.findIndex(c => c.id === id);
-  if (index === -1) return false;
-  arr.splice(index, 1);
-  return true;
+export async function deleteCours(id: string): Promise<boolean> {
+  const { error } = await getSupabase().from("cours").delete().eq("id", id);
+  return !error;
 }
 
-// --- Progressions ---
-export function getProgressions(adherentEmail?: string) {
-  if (adherentEmail) return s().progressions.filter(p => p.adherentEmail === adherentEmail.toLowerCase());
-  return s().progressions;
+// ── Progressions ──────────────────────────────────────────────────────────────
+
+async function getQuizResultats(email?: string): Promise<{ adherent_email: string; cours_id: string; module_id: string; score: number; passe: boolean }[]> {
+  let q = getSupabase().from("quiz_resultats").select("*");
+  if (email) q = q.eq("adherent_email", email.toLowerCase());
+  const { data } = await q;
+  return data ?? [];
 }
 
-function getOrCreateProgression(email: string, coursId: string): ProgressionComplet {
-  let prog = s().progressions.find(p => p.adherentEmail === email && p.coursId === coursId);
-  if (!prog) {
-    prog = { adherentEmail: email, coursId, modulesTermines: [], quizResultats: [], dateDebut: new Date().toISOString().split("T")[0] };
-    s().progressions.push(prog);
-  }
-  if (!prog.quizResultats) prog.quizResultats = [];
-  return prog;
+export async function getProgressions(adherentEmail?: string): Promise<ProgressionComplet[]> {
+  let q = getSupabase().from("progressions").select("*");
+  if (adherentEmail) q = q.eq("adherent_email", adherentEmail.toLowerCase());
+  const { data: rows } = await q;
+  const quizRows = await getQuizResultats(adherentEmail);
+  return (rows ?? []).map(p => ({
+    adherentEmail: p.adherent_email,
+    coursId: p.cours_id,
+    modulesTermines: p.modules_termines ?? [],
+    dateDebut: p.date_debut,
+    quizResultats: quizRows
+      .filter(q => q.adherent_email === p.adherent_email && q.cours_id === p.cours_id)
+      .map(q => ({ moduleId: q.module_id, score: q.score, passe: q.passe })),
+  }));
 }
 
-export function marquerModuleTermine(adherentEmail: string, coursId: string, moduleId: string) {
+export async function marquerModuleTermine(adherentEmail: string, coursId: string, moduleId: string) {
   const email = adherentEmail.toLowerCase();
-  const prog = getOrCreateProgression(email, coursId);
+  const { data: existing } = await getSupabase().from("progressions").select("*").eq("adherent_email", email).eq("cours_id", coursId).maybeSingle();
+  const current = existing?.modules_termines ?? [];
+  const updated = current.includes(moduleId) ? current : [...current, moduleId];
+  await getSupabase().from("progressions").upsert({ adherent_email: email, cours_id: coursId, modules_termines: updated, date_debut: existing?.date_debut ?? new Date().toISOString().split("T")[0] });
 
-  if (!prog.modulesTermines.includes(moduleId)) {
-    prog.modulesTermines.push(moduleId);
-  }
-
-  const cours = s().cours.find(c => c.id === coursId);
-  const totalModules = cours?.modules.length ?? 1;
-  const pourcentage = Math.round((prog.modulesTermines.length / totalModules) * 100);
-
-  return { ...prog, pourcentage };
+  const { data: moduleRows } = await getSupabase().from("modules").select("id").eq("cours_id", coursId);
+  const total = moduleRows?.length ?? 1;
+  const pourcentage = Math.round((updated.length / total) * 100);
+  return { adherentEmail: email, coursId, modulesTermines: updated, dateDebut: existing?.date_debut ?? new Date().toISOString().split("T")[0], quizResultats: [], pourcentage };
 }
 
-export function enregistrerQuizResultat(adherentEmail: string, coursId: string, moduleId: string, score: number, passe: boolean) {
+export async function enregistrerQuizResultat(adherentEmail: string, coursId: string, moduleId: string, score: number, passe: boolean) {
   const email = adherentEmail.toLowerCase();
-  const prog = getOrCreateProgression(email, coursId);
+  await getSupabase().from("quiz_resultats").upsert({ adherent_email: email, cours_id: coursId, module_id: moduleId, score, passe });
 
-  const idx = prog.quizResultats.findIndex(q => q.moduleId === moduleId);
-  const resultat = { moduleId, score, passe };
-  if (idx === -1) prog.quizResultats.push(resultat);
-  else prog.quizResultats[idx] = resultat;
+  const { data: existing } = await getSupabase().from("progressions").select("*").eq("adherent_email", email).eq("cours_id", coursId).maybeSingle();
+  const current = existing?.modules_termines ?? [];
+  const updated = passe && !current.includes(moduleId) ? [...current, moduleId] : current;
+  await getSupabase().from("progressions").upsert({ adherent_email: email, cours_id: coursId, modules_termines: updated, date_debut: existing?.date_debut ?? new Date().toISOString().split("T")[0] });
 
-  if (passe && !prog.modulesTermines.includes(moduleId)) {
-    prog.modulesTermines.push(moduleId);
+  const { data: moduleRows } = await getSupabase().from("modules").select("id").eq("cours_id", coursId);
+  const total = moduleRows?.length ?? 1;
+  const pourcentage = Math.round((updated.length / total) * 100);
+  const { data: allQuiz } = await getSupabase().from("quiz_resultats").select("passe").eq("adherent_email", email).eq("cours_id", coursId);
+  const passedCount = (allQuiz ?? []).filter(q => q.passe).length;
+  const coursTermine = pourcentage === 100 && passedCount >= total;
+  return { adherentEmail: email, coursId, modulesTermines: updated, dateDebut: existing?.date_debut ?? new Date().toISOString().split("T")[0], quizResultats: [], pourcentage, coursTermine };
+}
+
+export async function getProgressionPourcentage(adherentEmail: string, coursId: string): Promise<number> {
+  const email = adherentEmail.toLowerCase();
+  const { data } = await getSupabase().from("progressions").select("modules_termines").eq("adherent_email", email).eq("cours_id", coursId).maybeSingle();
+  if (!data) return 0;
+  const { data: moduleRows } = await getSupabase().from("modules").select("id").eq("cours_id", coursId);
+  const total = moduleRows?.length ?? 1;
+  return Math.round(((data.modules_termines?.length ?? 0) / total) * 100);
+}
+
+export async function getCoursTermines(adherentEmail: string): Promise<string[]> {
+  const email = adherentEmail.toLowerCase();
+  const { data: progs } = await getSupabase().from("progressions").select("cours_id, modules_termines").eq("adherent_email", email);
+  if (!progs?.length) return [];
+  const results: string[] = [];
+  for (const p of progs) {
+    const { data: moduleRows } = await getSupabase().from("modules").select("id").eq("cours_id", p.cours_id);
+    const total = moduleRows?.length ?? 0;
+    if (!total) continue;
+    const { data: quizRows } = await getSupabase().from("quiz_resultats").select("passe").eq("adherent_email", email).eq("cours_id", p.cours_id).eq("passe", true);
+    if ((p.modules_termines?.length ?? 0) >= total && (quizRows?.length ?? 0) >= total) {
+      results.push(p.cours_id);
+    }
   }
-
-  const cours = s().cours.find(c => c.id === coursId);
-  const totalModules = cours?.modules.length ?? 1;
-  const pourcentage = Math.round((prog.modulesTermines.length / totalModules) * 100);
-  const coursTermine = pourcentage === 100 && prog.quizResultats.filter(q => q.passe).length >= totalModules;
-
-  return { ...prog, pourcentage, coursTermine };
+  return results;
 }
 
-export function getProgressionPourcentage(adherentEmail: string, coursId: string): number {
-  const prog = s().progressions.find(p => p.adherentEmail === adherentEmail.toLowerCase() && p.coursId === coursId);
-  if (!prog) return 0;
-  const cours = s().cours.find(c => c.id === coursId);
-  const totalModules = cours?.modules.length ?? 1;
-  return Math.round((prog.modulesTermines.length / totalModules) * 100);
+// ── Paiements ─────────────────────────────────────────────────────────────────
+
+export async function getPaiements(adherentEmail?: string): Promise<Paiement[]> {
+  let q = getSupabase().from("paiements").select("*").order("date", { ascending: false });
+  if (adherentEmail) q = q.eq("adherent_email", adherentEmail.toLowerCase());
+  const { data } = await q;
+  return (data ?? []).map(toPaiement);
 }
 
-// --- Paiements ---
-export function getPaiements(adherentEmail?: string): Paiement[] {
-  if (adherentEmail) return s().paiements.filter(p => p.adherentEmail === adherentEmail.toLowerCase());
-  return s().paiements;
+export async function getPaiementParSession(stripeSessionId: string): Promise<Paiement | null> {
+  const { data } = await getSupabase().from("paiements").select("*").eq("stripe_session_id", stripeSessionId).maybeSingle();
+  return data ? toPaiement(data) : null;
 }
 
-export function getPaiementParSession(stripeSessionId: string): Paiement | null {
-  return s().paiements.find(p => p.stripeSessionId === stripeSessionId) ?? null;
-}
-
-export function enregistrerPaiement(data: Omit<Paiement, "id" | "date" | "numerTransaction">): Paiement {
-  const num = String(s().paiements.length + 1).padStart(6, "0");
-  const paiement: Paiement = {
+export async function enregistrerPaiement(data: Omit<Paiement, "id" | "date" | "numerTransaction">): Promise<Paiement> {
+  const { count } = await getSupabase().from("paiements").select("id", { count: "exact", head: true });
+  const num = String((count ?? 0) + 1).padStart(6, "0");
+  const paiement = {
     id: `PAY-${Date.now()}`,
     date: new Date().toISOString().split("T")[0],
-    numerTransaction: `TXN-${new Date().getFullYear()}-${num}`,
-    ...data,
-    adherentEmail: data.adherentEmail.toLowerCase(),
+    numer_transaction: `TXN-${new Date().getFullYear()}-${num}`,
+    adherent_email: data.adherentEmail.toLowerCase(),
+    cours_id: data.coursId,
+    cours_titre: data.coursTitre,
+    montant: data.montant,
+    stripe_session_id: data.stripeSessionId,
   };
-  s().paiements.push(paiement);
-  return paiement;
+  await getSupabase().from("paiements").insert(paiement);
+  return toPaiement(paiement);
 }
 
-// --- Notifications ---
-export function getNotifications(adherentEmail: string): Notification[] {
-  return s().notifications
-    .filter(n => n.adherentEmail === adherentEmail.toLowerCase())
-    .sort((a, b) => b.date.localeCompare(a.date));
+// ── Notifications ─────────────────────────────────────────────────────────────
+
+export async function getNotifications(adherentEmail: string): Promise<Notification[]> {
+  const { data } = await getSupabase().from("notifications").select("*").eq("adherent_email", adherentEmail.toLowerCase()).order("date", { ascending: false });
+  return (data ?? []).map(toNotification);
 }
 
-export function getNonLuCount(adherentEmail: string): number {
-  return s().notifications.filter(n => n.adherentEmail === adherentEmail.toLowerCase() && !n.lue).length;
+export async function getNonLuCount(adherentEmail: string): Promise<number> {
+  const { count } = await getSupabase().from("notifications").select("id", { count: "exact", head: true }).eq("adherent_email", adherentEmail.toLowerCase()).eq("lue", false);
+  return count ?? 0;
 }
 
-export function addNotification(data: Omit<Notification, "id" | "date" | "lue">): Notification {
-  const notif: Notification = {
+export async function addNotification(data: Omit<Notification, "id" | "date" | "lue">): Promise<Notification> {
+  const notif = {
     id: `NOTIF-${Date.now()}`,
     date: new Date().toISOString(),
     lue: false,
-    ...data,
-    adherentEmail: data.adherentEmail.toLowerCase(),
+    adherent_email: data.adherentEmail.toLowerCase(),
+    type: data.type,
+    titre: data.titre,
+    message: data.message,
   };
-  s().notifications.push(notif);
-  return notif;
+  await getSupabase().from("notifications").insert(notif);
+  return toNotification(notif);
 }
 
-export function marquerNotificationsLues(adherentEmail: string): void {
-  s().notifications
-    .filter(n => n.adherentEmail === adherentEmail.toLowerCase())
-    .forEach(n => { n.lue = true; });
+export async function marquerNotificationsLues(adherentEmail: string): Promise<void> {
+  await getSupabase().from("notifications").update({ lue: true }).eq("adherent_email", adherentEmail.toLowerCase());
 }
 
-export function getCoursTermines(adherentEmail: string): string[] {
-  const email = adherentEmail.toLowerCase();
-  return s().progressions
-    .filter(p => {
-      if (p.adherentEmail !== email) return false;
-      const cours = s().cours.find(c => c.id === p.coursId);
-      if (!cours) return false;
-      const total = cours.modules.length;
-      return p.modulesTermines.length >= total && p.quizResultats.filter(q => q.passe).length >= total;
-    })
-    .map(p => p.coursId);
-}
-
-// --- Certificats ---
+// ── Certificats ───────────────────────────────────────────────────────────────
 
 function getProgrammeCode(titre: string): string {
   const t = titre.toUpperCase();
@@ -542,46 +620,42 @@ function getNiveauCode(niveau: string): string {
   return "L1";
 }
 
-export function getCertificatAdherent(email: string, coursId: string): CertificatEmis | null {
-  return s().certificatsEmis.find(
-    c => c.adherentEmail === email.toLowerCase() && c.coursId === coursId
-  ) ?? null;
+export async function getCertificatAdherent(email: string, coursId: string): Promise<CertificatEmis | null> {
+  const { data } = await getSupabase().from("certificats_emis").select("*").eq("adherent_email", email.toLowerCase()).eq("cours_id", coursId).maybeSingle();
+  if (!data) return null;
+  return { id: data.id, adherentEmail: data.adherent_email, coursId: data.cours_id, numero: data.numero, programmeCode: data.programme_code, niveauCode: data.niveau_code, annee: data.annee, dateEmission: data.date_emission };
 }
 
-export function getCertificatByNumero(numero: string): CertificatEmis | null {
-  return s().certificatsEmis.find(c => c.numero === numero) ?? null;
+export async function getCertificatByNumero(numero: string): Promise<CertificatEmis | null> {
+  const { data } = await getSupabase().from("certificats_emis").select("*").eq("numero", numero).maybeSingle();
+  if (!data) return null;
+  return { id: data.id, adherentEmail: data.adherent_email, coursId: data.cours_id, numero: data.numero, programmeCode: data.programme_code, niveauCode: data.niveau_code, annee: data.annee, dateEmission: data.date_emission };
 }
 
-export function genererCertificat(
-  email: string,
-  coursId: string,
-  coursTitre: string,
-  niveauCours: string,
-): CertificatEmis {
-  const existing = getCertificatAdherent(email, coursId);
+export async function genererCertificat(email: string, coursId: string, coursTitre: string, niveauCours: string): Promise<CertificatEmis> {
+  const existing = await getCertificatAdherent(email, coursId);
   if (existing) return existing;
 
   const programmeCode = getProgrammeCode(coursTitre);
   const niveauCode = getNiveauCode(niveauCours);
   const annee = new Date().getFullYear();
-  const key = `${programmeCode}-${niveauCode}-${annee}`;
-  const store = s();
-  const seq = (store.compteursCertificats[key] ?? 0) + 1;
-  store.compteursCertificats[key] = seq;
+  const cle = `${programmeCode}-${niveauCode}-${annee}`;
+
+  const { data: counter } = await getSupabase().from("compteurs_certificats").select("valeur").eq("cle", cle).maybeSingle();
+  const seq = (counter?.valeur ?? 0) + 1;
+  await getSupabase().from("compteurs_certificats").upsert({ cle, valeur: seq });
 
   const numero = `JCBO-${programmeCode}-${niveauCode}-${annee}-${String(seq).padStart(4, "0")}`;
-
-  const cert: CertificatEmis = {
+  const cert = {
     id: `CERT-${Date.now()}`,
-    adherentEmail: email.toLowerCase(),
-    coursId,
+    adherent_email: email.toLowerCase(),
+    cours_id: coursId,
     numero,
-    programmeCode,
-    niveauCode,
+    programme_code: programmeCode,
+    niveau_code: niveauCode,
     annee,
-    dateEmission: new Date().toISOString().split("T")[0],
+    date_emission: new Date().toISOString().split("T")[0],
   };
-
-  store.certificatsEmis.push(cert);
-  return cert;
+  await getSupabase().from("certificats_emis").insert(cert);
+  return { id: cert.id, adherentEmail: cert.adherent_email, coursId: cert.cours_id, numero, programmeCode, niveauCode, annee, dateEmission: cert.date_emission };
 }

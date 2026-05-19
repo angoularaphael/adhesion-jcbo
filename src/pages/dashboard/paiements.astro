@@ -2,10 +2,11 @@
 import AdherentLayout from "../../layouts/AdherentLayout.astro";
 import Card from "../../components/ui/Card.astro";
 import Badge from "../../components/ui/Badge.astro";
-import { getPaiements, getAdherentByEmail, getCours } from "../../lib/store";
+import { getPaiements, getAdherents, getCours } from "../../lib/store";
 
-const tousLesPaiements = getPaiements().sort((a, b) => b.date.localeCompare(a.date));
-const tousLesCours = getCours();
+const tousLesPaiements = (await getPaiements()).sort((a, b) => b.date.localeCompare(a.date));
+const tousLesCours = await getCours();
+const tousLesAdherents = await getAdherents();
 
 const totalRevenu = tousLesPaiements.reduce((sum, p) => sum + p.montant, 0);
 const paiementsParCours = tousLesCours.map(c => ({
@@ -68,7 +69,7 @@ const paiementsParCours = tousLesCours.map(c => ({
           </thead>
           <tbody>
             {tousLesPaiements.map(p => {
-              const adherent = getAdherentByEmail(p.adherentEmail);
+              const adherent = tousLesAdherents.find(a => a.email === p.adherentEmail);
               const dateFormatee = new Date(p.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
               return (
                 <tr style="border-bottom: 1px solid #f8f9fa;" class="hover:bg-gray-50 transition">
@@ -118,7 +119,7 @@ const paiementsParCours = tousLesCours.map(c => ({
                 <p class="text-xs text-gray-400 mt-1">{ps.length} inscription{ps.length > 1 ? "s" : ""}</p>
                 <div class="flex flex-wrap gap-1 mt-2">
                   {ps.slice(0, 3).map(p => {
-                    const a = getAdherentByEmail(p.adherentEmail);
+                    const a = tousLesAdherents.find(x => x.email === p.adherentEmail);
                     return (
                       <span class="text-xs px-2 py-0.5 rounded-full" style="background-color: rgba(11,31,58,0.06); color: #0b1f3a;">
                         {a ? `${a.prenom} ${a.nom}` : p.adherentEmail}

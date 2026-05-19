@@ -7,7 +7,7 @@ export const GET: APIRoute = async ({ locals }) => {
   if (!locals.session) {
     return new Response(JSON.stringify({ error: "Non autorisé" }), { status: 401 });
   }
-  return new Response(JSON.stringify(getRessources()), {
+  return new Response(JSON.stringify(await getRessources()), {
     status: 200,
     headers: { "Content-Type": "application/json" },
   });
@@ -33,12 +33,12 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
   const result = ressourceSchema.safeParse(body);
   if (!result.success) {
     return new Response(
-      JSON.stringify({ error: result.error.errors[0].message }),
+      JSON.stringify({ error: result.error.issues[0].message }),
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
 
-  const item = createRessource(result.data);
+  const item = await createRessource(result.data);
   return new Response(JSON.stringify(item), {
     status: 201,
     headers: { "Content-Type": "application/json" },

@@ -4,8 +4,8 @@ import Card from "../../components/ui/Card.astro";
 import Badge from "../../components/ui/Badge.astro";
 import { getAdherents, getCours } from "../../lib/store";
 
-const adherents = getAdherents();
-const cours = getCours().filter(c => c.statut === "Publié");
+const adherents = await getAdherents();
+const cours = (await getCours()).filter(c => c.statut === "Publié");
 
 const RAPPEL_PAIEMENT = "Bonjour,\n\nNous vous rappelons que votre cotisation annuelle est arrivée à échéance. Merci de procéder au règlement dans les meilleurs délais.\n\nCordialement,\nJCBO Conseil";
 ---

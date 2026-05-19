@@ -2,7 +2,7 @@
 import AdherentLayout from "../../layouts/AdherentLayout.astro";
 import { getConversations } from "../../lib/store";
 
-const conversations = getConversations();
+const conversations = await getConversations();
 ---
 
 <AdherentLayout titre="Messagerie">

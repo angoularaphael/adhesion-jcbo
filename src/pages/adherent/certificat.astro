@@ -4,12 +4,12 @@ import LogoJCBO from "../../components/ui/LogoJCBO.astro";
 import { getAdherentByEmail, getCoursTermines, getProgressions, getCours, genererCertificat } from "../../lib/store";
 import { mockCertificat } from "../../data/mock";
 
-const profil = getAdherentByEmail(Astro.locals.session?.email ?? "");
+const profil = await getAdherentByEmail(Astro.locals.session?.email ?? "");
 if (!profil) return Astro.redirect("/login");
 
-const coursTerminesIds = getCoursTermines(profil.email);
-const tousLesCours = getCours();
-const progressions = getProgressions(profil.email);
+const coursTerminesIds = await getCoursTermines(profil.email);
+const tousLesCours = await getCours();
+const progressions = await getProgressions(profil.email);
 
 // Cherche un cours MINDSET terminé en priorité, sinon le premier cours terminé
 const coursPrincipal = tousLesCours.find(c => coursTerminesIds.includes(c.id) && c.titre.includes("MINDSET"))
@@ -28,7 +28,7 @@ if (coursPrincipal) {
 
 // Générer (ou récupérer) le numéro de certificat premium
 const certEmis = coursPrincipal
-  ? genererCertificat(profil.email, coursPrincipal.id, coursPrincipal.titre, coursPrincipal.niveau)
+  ? await genererCertificat(profil.email, coursPrincipal.id, coursPrincipal.titre, coursPrincipal.niveau)
   : null;
 
 const nomParticipant = `${profil.prenom} ${profil.nom}`;

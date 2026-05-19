@@ -3,7 +3,7 @@ import AdherentLayout from "../../layouts/AdherentLayout.astro";
 import Badge from "../../components/ui/Badge.astro";
 import { getActualites } from "../../lib/store";
 
-const actualites = getActualites();
+const actualites = await getActualites();
 ---
 
 <AdherentLayout titre="Actualités">

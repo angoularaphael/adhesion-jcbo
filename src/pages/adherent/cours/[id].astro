@@ -5,13 +5,13 @@ import { getCours, getProgressions, getAdherentByEmail } from "../../../lib/stor
 import { mockQuizParModule } from "../../../data/mock";
 
 const { id } = Astro.params;
-const cours = getCours().find(c => c.id === id && c.statut === "Publié");
+const cours = (await getCours()).find(c => c.id === id && c.statut === "Publié");
 
 if (!cours) return Astro.redirect("/adherent/cours");
 
-const profil = getAdherentByEmail(Astro.locals.session?.email ?? "");
+const profil = await getAdherentByEmail(Astro.locals.session?.email ?? "");
 if (!profil) return Astro.redirect("/login");
-const progressions = getProgressions(profil.email);
+const progressions = await getProgressions(profil.email);
 const prog = progressions.find(p => p.coursId === cours.id);
 const modulesTermines: string[] = prog?.modulesTermines ?? [];
 const quizResultats = prog?.quizResultats ?? [];

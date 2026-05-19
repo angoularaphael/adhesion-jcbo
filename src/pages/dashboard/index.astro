@@ -3,9 +3,9 @@ import AdherentLayout from "../../layouts/AdherentLayout.astro";
 import Badge from "../../components/ui/Badge.astro";
 import { getStats, getActualites, getConversations } from "../../lib/store";
 
-const stats = getStats();
-const actualites = getActualites();
-const conversations = getConversations();
+const stats = await getStats();
+const actualites = await getActualites();
+const conversations = await getConversations();
 const nonLuTotal = conversations.reduce((acc, c) => acc + c.non_lu, 0);
 
 const statCards = [

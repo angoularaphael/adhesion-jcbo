@@ -19,15 +19,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const result = subscribeSchema.safeParse(body);
   if (!result.success) {
-    return new Response(JSON.stringify({ error: result.error.errors[0].message }), { status: 400 });
+    return new Response(JSON.stringify({ error: result.error.issues[0].message }), { status: 400 });
   }
 
-  const adherent = getAdherentByEmail(locals.session.email);
+  const adherent = await getAdherentByEmail(locals.session.email);
   if (!adherent) {
     return new Response(JSON.stringify({ error: "Adhérent introuvable" }), { status: 404 });
   }
 
-  const updated = setAbonnement(adherent.id, result.data.plan);
+  const updated = await setAbonnement(adherent.id, result.data.plan);
   return new Response(JSON.stringify(updated), {
     status: 200,
     headers: { "Content-Type": "application/json" },
@@ -39,12 +39,12 @@ export const DELETE: APIRoute = async ({ locals }) => {
     return new Response(JSON.stringify({ error: "Non autorisé" }), { status: 401 });
   }
 
-  const adherent = getAdherentByEmail(locals.session.email);
+  const adherent = await getAdherentByEmail(locals.session.email);
   if (!adherent) {
     return new Response(JSON.stringify({ error: "Adhérent introuvable" }), { status: 404 });
   }
 
-  const updated = cancelAbonnement(adherent.id);
+  const updated = await cancelAbonnement(adherent.id);
   if (!updated) {
     return new Response(JSON.stringify({ error: "Aucun abonnement actif" }), { status: 400 });
   }

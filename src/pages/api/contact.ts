@@ -26,14 +26,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const result = contactSchema.safeParse(body);
   if (!result.success) {
     return new Response(
-      JSON.stringify({ error: result.error.errors[0].message }),
+      JSON.stringify({ error: result.error.issues[0].message }),
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
 
   const { sujet, message } = result.data;
-  const conv = findOrCreateConversation(locals.session.email, sujet);
-  addMessage(conv.id, `[${sujet}] ${message}`, "adherent");
+  const conv = await findOrCreateConversation(locals.session.email, sujet);
+  await addMessage(conv.id, `[${sujet}] ${message}`, "adherent");
 
   return new Response(JSON.stringify({ success: true }), {
     status: 201,

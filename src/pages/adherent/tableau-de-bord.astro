@@ -4,11 +4,11 @@ import Card from "../../components/ui/Card.astro";
 import Badge from "../../components/ui/Badge.astro";
 import { getAdherentByEmail, getAdhesion, getActualites, getRessources } from "../../lib/store";
 
-const mockAdherent = getAdherentByEmail(Astro.locals.session?.email ?? "");
+const mockAdherent = await getAdherentByEmail(Astro.locals.session?.email ?? "");
 if (!mockAdherent) return Astro.redirect("/login");
 const mockAdhesion = getAdhesion();
-const mockActualites = getActualites();
-const mockRessources = getRessources();
+const mockActualites = await getActualites();
+const mockRessources = await getRessources();
 
 const dateFinFormatee = new Date(mockAdhesion.dateFin).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 const joursRestants = Math.ceil((new Date(mockAdhesion.dateFin).getTime() - Date.now()) / 86400000);

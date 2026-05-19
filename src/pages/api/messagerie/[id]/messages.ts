@@ -15,10 +15,9 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
   const { id } = params;
   if (!id) return new Response(JSON.stringify({ error: "ID manquant" }), { status: 400 });
 
-  const conv = getConversation(id);
+  const conv = await getConversation(id);
   if (!conv) return new Response(JSON.stringify({ error: "Conversation introuvable" }), { status: 404 });
 
-  // Un adhérent ne peut écrire que dans sa propre conversation
   if (locals.session.role === "adherent" && conv.email !== locals.session.email.toLowerCase()) {
     return new Response(JSON.stringify({ error: "Non autorisé" }), { status: 403 });
   }
@@ -29,11 +28,11 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
 
   const result = schema.safeParse(body);
   if (!result.success) {
-    return new Response(JSON.stringify({ error: result.error.errors[0].message }), { status: 400 });
+    return new Response(JSON.stringify({ error: result.error.issues[0].message }), { status: 400 });
   }
 
   const de = locals.session.role === "admin" ? "admin" : "adherent";
-  const msg = addMessage(id, result.data.texte, de);
+  const msg = await addMessage(id, result.data.texte, de);
 
   return new Response(JSON.stringify(msg), {
     status: 201,

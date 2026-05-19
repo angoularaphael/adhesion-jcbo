@@ -2,7 +2,7 @@
 import AdherentLayout from "../../layouts/AdherentLayout.astro";
 import { getStats } from "../../lib/store";
 
-const mockStats = getStats();
+const mockStats = await getStats();
 const progression = [
   { mois: "Jan", valeur: 38 },
   { mois: "Fév", valeur: 40 },

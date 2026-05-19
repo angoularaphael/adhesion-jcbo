@@ -4,7 +4,7 @@ import Card from "../../components/ui/Card.astro";
 import Badge from "../../components/ui/Badge.astro";
 import { getCours } from "../../lib/store";
 
-const cours = getCours();
+const cours = await getCours();
 ---
 
 <AdherentLayout titre="Cours">

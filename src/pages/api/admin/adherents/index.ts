@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { z } from "zod";
-import { getAdherents, createAdherent } from "../../../../lib/store";
+import { getAdherents, createAdherent, getAdherentByEmail } from "../../../../lib/store";
 
 const createSchema = z.object({
   prenom: z.string().min(1).max(100).trim(),
@@ -18,7 +18,7 @@ export const GET: APIRoute = async ({ locals }) => {
   if (!locals.session || locals.session.role !== "admin") {
     return new Response(JSON.stringify({ error: "Non autorisé" }), { status: 401 });
   }
-  return new Response(JSON.stringify(getAdherents()), {
+  return new Response(JSON.stringify(await getAdherents()), {
     status: 200,
     headers: { "Content-Type": "application/json" },
   });
@@ -35,16 +35,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const result = createSchema.safeParse(body);
   if (!result.success) {
-    return new Response(JSON.stringify({ error: result.error.errors[0].message }), { status: 400 });
+    return new Response(JSON.stringify({ error: result.error.issues[0].message }), { status: 400 });
   }
 
-  // Vérifier unicité email
-  const existing = getAdherents().find(a => a.email === result.data.email);
+  const existing = await getAdherentByEmail(result.data.email);
   if (existing) {
     return new Response(JSON.stringify({ error: "Cet e-mail est déjà utilisé." }), { status: 409 });
   }
 
-  const item = createAdherent(result.data);
+  const item = await createAdherent({ ...result.data, abonnement: null });
   return new Response(JSON.stringify(item), {
     status: 201,
     headers: { "Content-Type": "application/json" },

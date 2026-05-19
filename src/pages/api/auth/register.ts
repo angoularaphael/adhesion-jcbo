@@ -27,16 +27,16 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
 
   const result = schema.safeParse(body);
   if (!result.success) {
-    return new Response(JSON.stringify({ error: result.error.errors[0].message }), { status: 400 });
+    return new Response(JSON.stringify({ error: result.error.issues[0].message }), { status: 400 });
   }
 
   const { prenom, nom, email, motDePasse, entreprise, secteur, telephone } = result.data;
 
-  if (getAdherentByEmail(email)) {
+  if (await getAdherentByEmail(email)) {
     return new Response(JSON.stringify({ error: "Un compte avec cet e-mail existe déjà." }), { status: 409 });
   }
 
-  createAdherent({
+  await createAdherent({
     prenom, nom, email, motDePasse,
     telephone, entreprise, secteur,
     statut: "Actif",

@@ -1,6 +1,26 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
 const SITE_URL = "https://adhesion-jcbo.vercel.app";
+
+function createTransport() {
+  return nodemailer.createTransport({
+    host: import.meta.env.SMTP_HOST,
+    port: Number(import.meta.env.SMTP_PORT ?? 465),
+    secure: Number(import.meta.env.SMTP_PORT ?? 465) === 465,
+    auth: {
+      user: import.meta.env.SMTP_USER,
+      pass: import.meta.env.SMTP_PASS,
+    },
+  });
+}
+
+function isSmtpConfigured(): boolean {
+  return !!(
+    import.meta.env.SMTP_HOST &&
+    import.meta.env.SMTP_USER &&
+    import.meta.env.SMTP_PASS
+  );
+}
 
 export async function sendCredentialsEmail({
   to,
@@ -13,14 +33,11 @@ export async function sendCredentialsEmail({
   motDePasse: string;
   isReset?: boolean;
 }): Promise<{ ok: boolean; error?: string }> {
-  const apiKey = import.meta.env.RESEND_API_KEY;
-  if (!apiKey || apiKey.includes("REMPLACER")) {
-    return { ok: false, error: "Service email non configuré" };
+  if (!isSmtpConfigured()) {
+    return { ok: false, error: "Service email non configuré (SMTP)" };
   }
 
-  const resend = new Resend(apiKey);
-  const from = import.meta.env.FROM_EMAIL ?? "JCBO Conseil <onboarding@resend.dev>";
-
+  const from = import.meta.env.FROM_EMAIL ?? `JCBO Conseil <noreply@jcbo-conseil.fr>`;
   const subject = isReset
     ? "Réinitialisation de vos accès — JCBO Conseil"
     : "Vos identifiants d'accès — JCBO Conseil";
@@ -76,10 +93,11 @@ export async function sendCredentialsEmail({
 </html>`;
 
   try {
-    const { error } = await resend.emails.send({ from, to, subject, html });
-    if (error) return { ok: false, error: error.message };
+    const transporter = createTransport();
+    await transporter.sendMail({ from, to, subject, html });
     return { ok: true };
-  } catch {
-    return { ok: false, error: "Erreur d'envoi" };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Erreur d'envoi";
+    return { ok: false, error: message };
   }
 }

@@ -3,11 +3,11 @@ import AdherentMemberLayout from "../../layouts/AdherentMemberLayout.astro";
 import Card from "../../components/ui/Card.astro";
 import { getAdherentByEmail, getCours, getCoursTermines } from "../../lib/store";
 
-const profil = getAdherentByEmail(Astro.locals.session?.email ?? "");
+const profil = await getAdherentByEmail(Astro.locals.session?.email ?? "");
 if (!profil) return Astro.redirect("/login");
 
-const coursTerminesIds = getCoursTermines(profil.email);
-const tousLesCours = getCours();
+const coursTerminesIds = await getCoursTermines(profil.email);
+const tousLesCours = await getCours();
 const certificats = coursTerminesIds.map(coursId => {
   const c = tousLesCours.find(x => x.id === coursId);
   if (!c) return null;

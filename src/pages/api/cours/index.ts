@@ -7,7 +7,7 @@ export const GET: APIRoute = async ({ locals }) => {
   if (!locals.session) {
     return new Response(JSON.stringify({ error: "Non autorisé" }), { status: 401 });
   }
-  const cours = getCours();
+  const cours = await getCours();
   const data = locals.session.role === "admin"
     ? cours
     : cours.filter(c => c.statut === "Publié");
@@ -37,12 +37,12 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
   const result = coursSchema.safeParse(body);
   if (!result.success) {
     return new Response(
-      JSON.stringify({ error: result.error.errors[0].message, details: result.error.flatten() }),
+      JSON.stringify({ error: result.error.issues[0].message }),
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
 
-  const item = createCours(result.data);
+  const item = await createCours(result.data);
   return new Response(JSON.stringify(item), {
     status: 201,
     headers: { "Content-Type": "application/json" },
