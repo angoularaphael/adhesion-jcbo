@@ -58,7 +58,7 @@ const navLinks = [
 const currentPath = Astro.url.pathname;
 ---
 
-<aside id="sidebar" class="w-64 min-h-screen flex flex-col flex-shrink-0 fixed lg:static inset-y-0 left-0 z-30 -translate-x-full lg:translate-x-0 transition-transform duration-300" style="background-color: #0b1f3a;">
+<aside id="sidebar" class="w-64 min-h-screen flex flex-col flex-shrink-0 fixed lg:static inset-y-0 left-0 z-[60] -translate-x-full lg:translate-x-0 transition-transform duration-300" style="background-color: #0b1f3a;">
 
   <!-- Logo -->
   <div class="px-6 py-6 flex items-center gap-3" style="border-bottom: 1px solid rgba(212,167,98,0.15);">
@@ -121,5 +121,5 @@ const currentPath = Astro.url.pathname;
 </aside>
 
 <!-- Overlay mobile -->
-<div id="sidebar-overlay" class="fixed inset-0 z-20 bg-black/50 hidden lg:hidden" onclick="document.getElementById('sidebar').classList.add('-translate-x-full'); this.classList.add('hidden');"></div>
+<div id="sidebar-overlay" class="fixed inset-0 z-[50] bg-black/50 hidden lg:hidden" onclick="document.getElementById('sidebar').classList.add('-translate-x-full'); this.classList.add('hidden');"></div>
 
