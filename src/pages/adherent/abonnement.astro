@@ -2,10 +2,62 @@
 import AdherentMemberLayout from "../../layouts/AdherentMemberLayout.astro";
 import Card from "../../components/ui/Card.astro";
 import Badge from "../../components/ui/Badge.astro";
-import { getAdherentByEmail } from "../../lib/store";
+import Stripe from "stripe";
+import {
+  getAdherentByEmail, setAbonnement, enregistrerPaiement,
+  addNotification, getPaiementParSession,
+} from "../../lib/store";
 
-const profil = getAdherentByEmail(Astro.locals.session?.email ?? "");
+let profil = getAdherentByEmail(Astro.locals.session?.email ?? "");
 if (!profil) return Astro.redirect("/login");
+
+const sessionId = Astro.url.searchParams.get("session_id") ?? "";
+let abonnementActive = false;
+let planActive = "";
+
+// Fallback : traitement si webhook n'a pas encore tourné
+if (sessionId) {
+  const existingPaiement = getPaiementParSession(sessionId);
+  if (existingPaiement && existingPaiement.coursTitre.startsWith("Abonnement ")) {
+    abonnementActive = true;
+    planActive = existingPaiement.coursTitre.replace("Abonnement ", "");
+  } else if (!existingPaiement) {
+    const stripeKey = import.meta.env.STRIPE_SECRET_KEY;
+    if (stripeKey && !stripeKey.includes("REMPLACER")) {
+      try {
+        const stripe = new Stripe(stripeKey);
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+        if (
+          session.metadata?.type === "abonnement" &&
+          (session.payment_status === "paid" || session.status === "complete")
+        ) {
+          const { adherentEmail, planNom, montant } = session.metadata;
+          const email = (adherentEmail ?? profil.email).toLowerCase();
+          const adherentTarget = getAdherentByEmail(email);
+          if (adherentTarget) {
+            setAbonnement(adherentTarget.id, planNom);
+            enregistrerPaiement({
+              adherentEmail: email,
+              coursId: "",
+              coursTitre: `Abonnement ${planNom}`,
+              montant: Number(montant ?? 0),
+              stripeSessionId: sessionId,
+            });
+            addNotification({
+              adherentEmail: email,
+              type: "abonnement",
+              titre: "Abonnement activé",
+              message: `Votre abonnement Plan ${planNom} (${montant} €/mois) est maintenant actif. Profitez de tous vos avantages JCBO-CONSEIL.`,
+            });
+            profil = getAdherentByEmail(email)!;
+          }
+          abonnementActive = true;
+          planActive = planNom;
+        }
+      } catch { /* session invalide ou clés manquantes */ }
+    }
+  }
+}
 
 const abonnement = profil.abonnement;
 
@@ -48,8 +100,24 @@ const plans = [
     <p class="text-sm text-gray-500 mt-1">Choisissez le plan adapté à votre ambition.</p>
   </div>
 
+  <!-- Bandeau succès après paiement -->
+  {abonnementActive && (
+    <div class="flex items-center gap-4 p-5 rounded-2xl mb-8" style="background: linear-gradient(135deg, rgba(22,163,74,0.08) 0%, rgba(22,163,74,0.04) 100%); border: 1px solid rgba(22,163,74,0.2);">
+      <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: rgba(22,163,74,0.12);">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2.5">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <div>
+        <p class="text-sm font-bold" style="color: #15803d;">Abonnement activé avec succès</p>
+        <p class="text-xs text-gray-500 mt-0.5">Votre plan <strong>{planActive}</strong> est maintenant actif. Accédez à tous vos avantages.</p>
+      </div>
+    </div>
+  )}
+
+  <!-- Abonnement actuel -->
   {abonnement && abonnement.statut === "actif" && (
-    <div class="rounded-2xl p-5 mb-8 flex items-center justify-between" style="background: linear-gradient(135deg, #0b1f3a 0%, #162d4f 100%);">
+    <div class="rounded-2xl p-5 mb-8 flex items-center justify-between gap-4" style="background: linear-gradient(135deg, #0b1f3a 0%, #162d4f 100%);">
       <div>
         <p class="text-xs font-medium uppercase tracking-widest mb-1" style="color: rgba(212,167,98,0.7);">Abonnement actuel</p>
         <h3 class="text-xl font-bold text-white">{abonnement.plan}</h3>
@@ -69,9 +137,9 @@ const plans = [
       return (
         <div
           class="rounded-2xl p-6 flex flex-col relative"
-          style={`background-color: ${plan.bg}; border: 2px solid ${estActuel ? plan.couleur : plan.recommande ? "rgba(212,167,98,0.3)" : "#f1f3f5;"};`}
+          style={`background-color: ${plan.bg}; border: 2px solid ${estActuel ? plan.couleur : (plan as { recommande?: boolean }).recommande ? "rgba(212,167,98,0.3)" : "#f1f3f5;"};`}
         >
-          {plan.recommande && (
+          {(plan as { recommande?: boolean }).recommande && (
             <span class="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-bold px-3 py-1 rounded-full text-white" style="background-color: #d4a762;">
               Recommandé
             </span>
@@ -99,7 +167,7 @@ const plans = [
           ) : (
             <button
               class="btn-souscrire w-full py-2.5 rounded-xl text-sm font-semibold transition hover:opacity-90 active:scale-[0.98]"
-              style={`background-color: ${plan.couleur}; color: ${plan.couleur === "#0b1f3a" || plan.couleur === "#d4a762" ? (plan.couleur === "#d4a762" ? "#0b1f3a" : "white") : "white"};`}
+              style={`background-color: ${plan.couleur}; color: ${plan.couleur === "#0b1f3a" ? "white" : plan.couleur === "#d4a762" ? "#0b1f3a" : "white"};`}
               data-plan={plan.nom}
             >
               {plan.nom === "Découverte" ? "Choisir ce plan" : "S'abonner"}
@@ -110,49 +178,78 @@ const plans = [
     })}
   </div>
 
-  <p class="text-xs text-center text-gray-400">Simulation uniquement — aucun prélèvement n'est effectué.</p>
+  <p class="text-xs text-center text-gray-400">Paiement sécurisé via Stripe · Résiliation possible à tout moment.</p>
 
   <p id="sub-error" class="text-red-500 text-sm text-center mt-4 hidden"></p>
-  <p id="sub-success" class="text-green-600 text-sm text-center mt-4 hidden"></p>
 
 </AdherentMemberLayout>
 
 <script is:inline>
 (function() {
-  document.querySelectorAll(".btn-souscrire").forEach(btn => {
+  document.querySelectorAll(".btn-souscrire").forEach(function(btn) {
     btn.addEventListener("click", async function() {
-      const plan = this.dataset.plan;
-      const err = document.getElementById("sub-error");
-      const suc = document.getElementById("sub-success");
+      var plan = this.dataset.plan;
+      var err = document.getElementById("sub-error");
       err.classList.add("hidden");
-      suc.classList.add("hidden");
       this.disabled = true;
-      this.textContent = "Traitement…";
 
+      // Plan gratuit : activation directe
+      if (plan === "Découverte") {
+        this.textContent = "Activation…";
+        try {
+          var res = await fetch("/api/abonnement", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ plan: plan }),
+          });
+          var data = await res.json();
+          if (!res.ok) {
+            err.textContent = data.error || "Erreur";
+            err.classList.remove("hidden");
+            this.disabled = false;
+            this.textContent = "Choisir ce plan";
+            return;
+          }
+          window.location.reload();
+        } catch {
+          err.textContent = "Erreur réseau";
+          err.classList.remove("hidden");
+          this.disabled = false;
+          this.textContent = "Choisir ce plan";
+        }
+        return;
+      }
+
+      // Plans payants : redirection Stripe
+      this.textContent = "Redirection vers le paiement…";
       try {
-        const res = await fetch("/api/abonnement", {
+        var res2 = await fetch("/api/stripe/checkout", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ plan }),
+          body: JSON.stringify({ planNom: plan }),
         });
-        const data = await res.json();
-        if (!res.ok) { err.textContent = data.error || "Erreur"; err.classList.remove("hidden"); this.disabled = false; this.textContent = plan === "Découverte" ? "Choisir ce plan" : "S'abonner"; return; }
-        suc.textContent = `Vous êtes maintenant abonné au plan ${plan} !`;
-        suc.classList.remove("hidden");
-        setTimeout(() => location.reload(), 1200);
+        var data2 = await res2.json();
+        if (!res2.ok) {
+          err.textContent = data2.error || "Impossible d'initialiser le paiement";
+          err.classList.remove("hidden");
+          this.disabled = false;
+          this.textContent = "S'abonner";
+          return;
+        }
+        window.location.href = data2.url;
       } catch {
         err.textContent = "Erreur réseau";
         err.classList.remove("hidden");
         this.disabled = false;
+        this.textContent = "S'abonner";
       }
     });
   });
 
-  const cancelBtn = document.getElementById("btn-cancel");
+  var cancelBtn = document.getElementById("btn-cancel");
   if (cancelBtn) {
-    cancelBtn.addEventListener("click", async () => {
+    cancelBtn.addEventListener("click", async function() {
       if (!confirm("Confirmer la résiliation de votre abonnement ?")) return;
-      const res = await fetch("/api/abonnement", { method: "DELETE" });
-      if (res.ok) location.reload();
+      var res = await fetch("/api/abonnement", { method: "DELETE" });
+      if (res.ok) window.location.href = "/adherent/abonnement";
     });
   }
 })();
