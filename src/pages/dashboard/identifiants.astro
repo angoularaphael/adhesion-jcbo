@@ -8,15 +8,15 @@ const identifiants = getIdentifiants();
 
 <AdherentLayout titre="Identifiants">
 
-  <div class="flex items-center justify-between mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
     <p class="text-sm text-gray-400"><span id="count">{identifiants.length}</span> accès générés</p>
     <button id="btn-generer"
-      class="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white transition-all duration-200 hover:opacity-90 active:scale-[0.98]"
+      class="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98] self-start sm:self-auto"
       style="background-color: #0b1f3a;">
       <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
       </svg>
-      Générer un accès
+      Nouvel adhérent
     </button>
   </div>
 
@@ -30,7 +30,7 @@ const identifiants = getIdentifiants();
             <th class="text-left text-xs font-medium text-gray-400 uppercase tracking-widest px-6 py-4">E-mail</th>
             <th class="text-left text-xs font-medium text-gray-400 uppercase tracking-widest px-6 py-4">Créé le</th>
             <th class="text-left text-xs font-medium text-gray-400 uppercase tracking-widest px-6 py-4">Statut</th>
-            <th class="text-left text-xs font-medium text-gray-400 uppercase tracking-widest px-6 py-4">Action</th>
+            <th class="text-left text-xs font-medium text-gray-400 uppercase tracking-widest px-6 py-4">Actions</th>
           </tr>
         </thead>
         <tbody id="ident-tbody" class="divide-y divide-gray-50">
@@ -48,15 +48,25 @@ const identifiants = getIdentifiants();
                 </span>
               </td>
               <td class="px-6 py-4">
-                <button
-                  class="btn-toggle px-3 py-1.5 rounded-full text-xs font-medium transition hover:opacity-80"
-                  data-id={item.id}
-                  data-statut={item.statut}
-                  style={item.statut === "Actif"
-                    ? "background-color: rgba(239,68,68,0.08); color: #dc2626;"
-                    : "background-color: rgba(34,197,94,0.08); color: #16a34a;"}>
-                  {item.statut === "Actif" ? "Désactiver" : "Activer"}
-                </button>
+                <div class="flex items-center gap-2">
+                  <button
+                    class="btn-reset-acces px-3 py-1.5 rounded-full text-xs font-medium transition hover:opacity-80"
+                    data-id={item.id}
+                    data-nom={item.nom}
+                    data-email={item.email}
+                    style="background-color: rgba(212,167,98,0.1); color: #d4a762;">
+                    Régénérer
+                  </button>
+                  <button
+                    class="btn-toggle px-3 py-1.5 rounded-full text-xs font-medium transition hover:opacity-80"
+                    data-id={item.id}
+                    data-statut={item.statut}
+                    style={item.statut === "Actif"
+                      ? "background-color: rgba(239,68,68,0.08); color: #dc2626;"
+                      : "background-color: rgba(34,197,94,0.08); color: #16a34a;"}>
+                    {item.statut === "Actif" ? "Désactiver" : "Activer"}
+                  </button>
+                </div>
               </td>
             </tr>
           ))}
@@ -65,10 +75,10 @@ const identifiants = getIdentifiants();
     </div>
   </div>
 
-  <!-- Modal génération -->
-  <div id="modal-generer" class="fixed inset-0 z-50 hidden items-center justify-center" style="background-color: rgba(0,0,0,0.5);">
-    <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md mx-4">
-      <h2 class="text-lg font-semibold mb-6" style="color: #0b1f3a;">Générer un accès</h2>
+  <!-- Modal nouvel adhérent -->
+  <div id="modal-generer" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background-color: rgba(0,0,0,0.5);">
+    <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md">
+      <h2 class="text-lg font-semibold mb-6" style="color: #0b1f3a;">Créer un nouvel adhérent</h2>
       <form id="form-generer" class="flex flex-col gap-5">
         <div class="flex flex-col gap-2">
           <label class="text-xs font-medium text-gray-400 uppercase tracking-widest">Nom complet</label>
@@ -81,19 +91,26 @@ const identifiants = getIdentifiants();
             class="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm outline-none focus:border-[#d4a762] transition" style="color: #0b1f3a;" />
         </div>
 
-        <div id="result-genere" class="hidden rounded-xl p-4" style="background-color: rgba(212,167,98,0.06); border: 1px solid rgba(212,167,98,0.2);">
-          <p class="text-xs font-medium uppercase tracking-widest mb-3" style="color: #d4a762;">Identifiants générés</p>
-          <div class="flex flex-col gap-2">
-            <div class="flex items-center justify-between">
+        <!-- Résultat après génération -->
+        <div id="result-genere" class="hidden rounded-xl p-4" style="background-color: rgba(22,163,74,0.06); border: 1px solid rgba(22,163,74,0.2);">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: rgba(22,163,74,0.12);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <p class="text-sm font-semibold" style="color: #15803d;">Compte créé &amp; identifiants envoyés</p>
+          </div>
+          <p id="result-email-dest" class="text-xs text-gray-500 pl-11">Les identifiants ont été envoyés par e-mail à l'adhérent.</p>
+          <div id="result-fallback" class="hidden mt-3 pt-3" style="border-top: 1px solid rgba(22,163,74,0.15);">
+            <p class="text-xs font-medium mb-2" style="color: #d4a762;">⚠ Email non envoyé — communiquez ces accès manuellement :</p>
+            <div class="flex items-center justify-between mb-1">
               <span class="text-xs text-gray-400">E-mail</span>
-              <span id="res-email" class="text-sm font-semibold" style="color: #0b1f3a;"></span>
+              <span id="res-email" class="text-xs font-semibold" style="color: #0b1f3a;"></span>
             </div>
             <div class="flex items-center justify-between">
               <span class="text-xs text-gray-400">Mot de passe</span>
-              <span id="res-password" class="font-mono text-sm font-semibold" style="color: #d4a762;"></span>
+              <span id="res-password" class="font-mono text-sm font-bold" style="color: #d4a762;"></span>
             </div>
           </div>
-          <p class="text-xs text-gray-400 mt-3">Communiquez ces identifiants à l'adhérent de manière sécurisée.</p>
         </div>
 
         <p id="err-generer" class="hidden text-xs text-red-400"></p>
@@ -103,35 +120,79 @@ const identifiants = getIdentifiants();
             class="px-5 py-2.5 rounded-full text-sm font-medium text-gray-500 hover:bg-gray-100 transition">Fermer</button>
           <button type="submit" id="btn-submit-generer"
             class="px-5 py-2.5 rounded-full text-sm font-semibold text-white hover:opacity-90 transition disabled:opacity-60" style="background-color: #0b1f3a;">
-            Générer
+            Créer &amp; envoyer
           </button>
         </div>
       </form>
     </div>
   </div>
 
+  <!-- Modal régénération accès -->
+  <div id="modal-reset" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background-color: rgba(0,0,0,0.5);">
+    <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-sm text-center">
+      <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4" style="background-color: rgba(212,167,98,0.12);">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#d4a762" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+        </svg>
+      </div>
+      <h3 class="text-base font-bold mb-1" style="color: #0b1f3a;">Régénérer les accès</h3>
+      <p id="reset-nom" class="text-sm text-gray-500 mb-1"></p>
+      <p id="reset-email" class="text-xs text-gray-400 mb-5"></p>
+      <p class="text-xs text-gray-500 mb-5">Un nouveau mot de passe sera généré et envoyé directement par e-mail à l'adhérent.</p>
+
+      <div id="reset-result" class="hidden rounded-xl p-3 mb-4" style="background-color: rgba(22,163,74,0.06); border: 1px solid rgba(22,163,74,0.2);">
+        <p class="text-xs font-semibold" style="color: #15803d;">Nouveaux identifiants envoyés par e-mail.</p>
+        <div id="reset-fallback" class="hidden mt-2">
+          <p class="text-xs text-gray-400 mb-1">⚠ Email non envoyé — nouveau mot de passe :</p>
+          <p id="reset-password" class="font-mono text-sm font-bold" style="color: #d4a762;"></p>
+        </div>
+      </div>
+
+      <p id="reset-error" class="hidden text-xs text-red-400 mb-3"></p>
+
+      <div class="flex gap-3">
+        <button id="btn-annuler-reset" class="flex-1 py-2.5 rounded-full text-sm font-medium border transition hover:bg-gray-50" style="border-color: #e5e7eb; color: #6b7280;">
+          Annuler
+        </button>
+        <button id="btn-confirmer-reset" class="flex-1 py-2.5 rounded-full text-sm font-semibold text-white transition hover:opacity-90" style="background-color: #0b1f3a;">
+          Régénérer
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const modal = document.getElementById("modal-generer") as HTMLElement;
+    const modalReset = document.getElementById("modal-reset") as HTMLElement;
+    let resetId = "";
 
+    // Ouvrir modal création
     document.getElementById("btn-generer")!.addEventListener("click", () => {
       (document.getElementById("form-generer") as HTMLFormElement).reset();
       document.getElementById("result-genere")!.classList.add("hidden");
-      document.getElementById("btn-submit-generer")!.removeAttribute("disabled");
-      (document.getElementById("btn-submit-generer") as HTMLButtonElement).textContent = "Générer";
+      document.getElementById("result-fallback")!.classList.add("hidden");
+      document.getElementById("err-generer")!.classList.add("hidden");
+      const btn = document.getElementById("btn-submit-generer") as HTMLButtonElement;
+      btn.disabled = false;
+      btn.textContent = "Créer & envoyer";
       modal.classList.replace("hidden", "flex");
     });
+
     document.getElementById("btn-annuler")!.addEventListener("click", () => {
       modal.classList.replace("flex", "hidden");
       window.location.reload();
     });
-    modal.addEventListener("click", (e) => { if (e.target === modal) { modal.classList.replace("flex", "hidden"); window.location.reload(); } });
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) { modal.classList.replace("flex", "hidden"); window.location.reload(); }
+    });
 
+    // Soumission création
     document.getElementById("form-generer")!.addEventListener("submit", async (e) => {
       e.preventDefault();
       const btn = document.getElementById("btn-submit-generer") as HTMLButtonElement;
-      const errEl = document.getElementById("err-generer") as HTMLParagraphElement;
+      const errEl = document.getElementById("err-generer") as HTMLElement;
       btn.disabled = true;
-      btn.textContent = "Génération…";
+      btn.textContent = "Création en cours…";
       errEl.classList.add("hidden");
 
       const res = await fetch("/api/identifiants", {
@@ -145,27 +206,97 @@ const identifiants = getIdentifiants();
       const data = await res.json();
 
       if (res.ok) {
-        document.getElementById("res-email")!.textContent = data.email;
-        document.getElementById("res-password")!.textContent = data.motDePasse;
-        document.getElementById("result-genere")!.classList.remove("hidden");
-        btn.textContent = "Généré ✓";
+        const resultBox = document.getElementById("result-genere")!;
+        const dest = document.getElementById("result-email-dest")!;
+        const fallback = document.getElementById("result-fallback")!;
+
+        if (data.emailSent) {
+          dest.textContent = `Les identifiants ont été envoyés par e-mail à ${data.email}.`;
+          fallback.classList.add("hidden");
+        } else {
+          dest.textContent = "L'envoi e-mail a échoué. Communiquez les accès ci-dessous manuellement.";
+          (document.getElementById("res-email") as HTMLElement).textContent = data.email;
+          (document.getElementById("res-password") as HTMLElement).textContent = "— (non disponible, vérifiez RESEND_API_KEY)";
+          fallback.classList.remove("hidden");
+        }
+
+        resultBox.classList.remove("hidden");
+        btn.textContent = "Créé ✓";
+
+        // Mise à jour du compteur
+        const count = document.getElementById("count");
+        if (count) count.textContent = String(Number(count.textContent) + 1);
         return;
       }
-      errEl.textContent = data.error || "Erreur lors de la génération.";
+
+      errEl.textContent = data.error || "Erreur lors de la création.";
       errEl.classList.remove("hidden");
       btn.disabled = false;
-      btn.textContent = "Générer";
+      btn.textContent = "Créer & envoyer";
+    });
+
+    // Ouvrir modal régénération
+    document.querySelectorAll<HTMLButtonElement>(".btn-reset-acces").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        resetId = btn.dataset.id!;
+        (document.getElementById("reset-nom") as HTMLElement).textContent = btn.dataset.nom ?? "";
+        (document.getElementById("reset-email") as HTMLElement).textContent = btn.dataset.email ?? "";
+        (document.getElementById("reset-result") as HTMLElement).classList.add("hidden");
+        (document.getElementById("reset-fallback") as HTMLElement).classList.add("hidden");
+        (document.getElementById("reset-error") as HTMLElement).classList.add("hidden");
+        const confirmBtn = document.getElementById("btn-confirmer-reset") as HTMLButtonElement;
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = "Régénérer";
+        modalReset.classList.replace("hidden", "flex");
+      });
+    });
+
+    document.getElementById("btn-annuler-reset")!.addEventListener("click", () => {
+      modalReset.classList.replace("flex", "hidden");
+    });
+    modalReset.addEventListener("click", (e) => {
+      if (e.target === modalReset) modalReset.classList.replace("flex", "hidden");
+    });
+
+    document.getElementById("btn-confirmer-reset")!.addEventListener("click", async () => {
+      const btn = document.getElementById("btn-confirmer-reset") as HTMLButtonElement;
+      const errEl = document.getElementById("reset-error") as HTMLElement;
+      btn.disabled = true;
+      btn.textContent = "Envoi en cours…";
+      errEl.classList.add("hidden");
+
+      const res = await fetch("/api/identifiants", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: resetId }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        const resultBox = document.getElementById("reset-result")!;
+        const fallback = document.getElementById("reset-fallback")!;
+        if (!data.emailSent) {
+          fallback.classList.remove("hidden");
+          (document.getElementById("reset-password") as HTMLElement).textContent = "Vérifiez RESEND_API_KEY";
+        }
+        resultBox.classList.remove("hidden");
+        btn.textContent = "Envoyé ✓";
+        return;
+      }
+
+      errEl.textContent = data.error || "Erreur.";
+      errEl.classList.remove("hidden");
+      btn.disabled = false;
+      btn.textContent = "Régénérer";
     });
 
     // Toggle statut
-    document.querySelectorAll(".btn-toggle").forEach((btn) => {
+    document.querySelectorAll<HTMLButtonElement>(".btn-toggle").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        const b = btn as HTMLButtonElement;
-        const id = b.dataset.id!;
         const res = await fetch("/api/identifiants", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id }),
+          body: JSON.stringify({ id: btn.dataset.id }),
         });
         if (res.ok) window.location.reload();
       });

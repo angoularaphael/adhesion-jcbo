@@ -67,115 +67,47 @@ if (Astro.locals.session) {
           <LogoJCBO size={72} />
         </div>
 
-        <!-- Onglets Connexion / Inscription -->
-        <div class="flex rounded-xl overflow-hidden mb-8" style="background-color: rgba(255,255,255,0.05);">
-          <button id="tab-login" onclick="switchTab('login')"
-            class="flex-1 py-2.5 text-sm font-semibold transition-all duration-200"
-            style="background-color: #d4a762; color: #0b1f3a;">
-            Connexion
-          </button>
-          <button id="tab-register" onclick="switchTab('register')"
-            class="flex-1 py-2.5 text-sm font-semibold transition-all duration-200"
-            style="color: rgba(255,255,255,0.5);">
-            S'inscrire
-          </button>
+        <div class="mb-8">
+          <h2 class="text-xl font-bold text-white mb-1">Connexion</h2>
+          <p class="text-xs" style="color: rgba(255,255,255,0.3);">Vos identifiants vous ont été envoyés par e-mail.</p>
         </div>
 
-        <!-- FORMULAIRE CONNEXION -->
-        <div id="panel-login">
-          <form id="login-form" class="flex flex-col gap-5">
-            <div class="flex flex-col gap-2">
-              <label for="email" class="text-xs font-medium uppercase tracking-widest" style="color: rgba(255,255,255,0.4);">E-mail</label>
-              <input id="email" name="email" type="email" required placeholder="vous@exemple.fr"
-                class="w-full rounded-xl px-4 py-3.5 text-sm outline-none transition-all duration-200 text-white placeholder-white/20"
-                style="background-color: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);"
-                onfocus="this.style.borderColor='rgba(212,167,98,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'" />
-            </div>
-            <div class="flex flex-col gap-2">
+        <form id="login-form" class="flex flex-col gap-5">
+          <div class="flex flex-col gap-2">
+            <label for="email" class="text-xs font-medium uppercase tracking-widest" style="color: rgba(255,255,255,0.4);">E-mail</label>
+            <input id="email" name="email" type="email" required placeholder="vous@exemple.fr"
+              class="w-full rounded-xl px-4 py-3.5 text-sm outline-none transition-all duration-200 text-white placeholder-white/20"
+              style="background-color: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);"
+              onfocus="this.style.borderColor='rgba(212,167,98,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'" />
+          </div>
+          <div class="flex flex-col gap-2">
+            <div class="flex items-center justify-between">
               <label for="password" class="text-xs font-medium uppercase tracking-widest" style="color: rgba(255,255,255,0.4);">Mot de passe</label>
-              <div class="relative">
-                <input id="password" name="password" type="password" required placeholder="••••••••"
-                  class="w-full rounded-xl px-4 pr-11 py-3.5 text-sm outline-none transition-all duration-200 text-white placeholder-white/20"
-                  style="background-color: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);"
-                  onfocus="this.style.borderColor='rgba(212,167,98,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'" />
-                <button type="button" onclick="togglePwd('password', this)" class="absolute right-3 top-1/2 -translate-y-1/2 p-1.5" style="color: rgba(255,255,255,0.55);" tabindex="-1">
-                  <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                  <svg class="eye-off-icon hidden" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
-                </button>
-              </div>
+              <a href="mailto:contact@jcbo-conseil.fr" class="text-xs transition hover:opacity-80" style="color: rgba(212,167,98,0.5);">Mot de passe oublié ?</a>
             </div>
-            <p id="login-error" class="hidden text-xs text-red-400"></p>
-            <button id="login-btn" type="submit"
-              class="w-full py-3.5 rounded-xl text-sm font-bold transition-all duration-200 hover:brightness-110 active:scale-[0.98] mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
-              style="background-color: #d4a762; color: #0b1f3a; letter-spacing: 0.05em;">
-              SE CONNECTER
-            </button>
-          </form>
-          <p class="text-xs text-center mt-6" style="color: rgba(255,255,255,0.25);">
-            Problème de connexion ?
-            <a href="mailto:contact@jcbo-conseil.fr" class="underline" style="color: rgba(212,167,98,0.5);">Contactez-nous</a>
-          </p>
-        </div>
+            <div class="relative">
+              <input id="password" name="password" type="password" required placeholder="••••••••"
+                class="w-full rounded-xl px-4 pr-11 py-3.5 text-sm outline-none transition-all duration-200 text-white placeholder-white/20"
+                style="background-color: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);"
+                onfocus="this.style.borderColor='rgba(212,167,98,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'" />
+              <button type="button" onclick="togglePwd('password', this)" class="absolute right-3 top-1/2 -translate-y-1/2 p-1.5" style="color: rgba(255,255,255,0.55);" tabindex="-1">
+                <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                <svg class="eye-off-icon hidden" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+              </button>
+            </div>
+          </div>
+          <p id="login-error" class="hidden text-xs text-red-400"></p>
+          <button id="login-btn" type="submit"
+            class="w-full py-3.5 rounded-xl text-sm font-bold transition-all duration-200 hover:brightness-110 active:scale-[0.98] mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
+            style="background-color: #d4a762; color: #0b1f3a; letter-spacing: 0.05em;">
+            SE CONNECTER
+          </button>
+        </form>
 
-        <!-- FORMULAIRE INSCRIPTION -->
-        <div id="panel-register" class="hidden">
-          <form id="register-form" class="flex flex-col gap-4">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div class="flex flex-col gap-2">
-                <label class="text-xs font-medium uppercase tracking-widest" style="color: rgba(255,255,255,0.4);">Prénom</label>
-                <input id="reg-prenom" type="text" required placeholder="Marie"
-                  class="w-full rounded-xl px-4 py-3 text-sm outline-none text-white placeholder-white/20"
-                  style="background-color: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);"
-                  onfocus="this.style.borderColor='rgba(212,167,98,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'" />
-              </div>
-              <div class="flex flex-col gap-2">
-                <label class="text-xs font-medium uppercase tracking-widest" style="color: rgba(255,255,255,0.4);">Nom</label>
-                <input id="reg-nom" type="text" required placeholder="Dupont"
-                  class="w-full rounded-xl px-4 py-3 text-sm outline-none text-white placeholder-white/20"
-                  style="background-color: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);"
-                  onfocus="this.style.borderColor='rgba(212,167,98,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'" />
-              </div>
-            </div>
-            <div class="flex flex-col gap-2">
-              <label class="text-xs font-medium uppercase tracking-widest" style="color: rgba(255,255,255,0.4);">E-mail</label>
-              <input id="reg-email" type="email" required placeholder="vous@exemple.fr"
-                class="w-full rounded-xl px-4 py-3.5 text-sm outline-none text-white placeholder-white/20"
-                style="background-color: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);"
-                onfocus="this.style.borderColor='rgba(212,167,98,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'" />
-            </div>
-            <div class="flex flex-col gap-2">
-              <label class="text-xs font-medium uppercase tracking-widest" style="color: rgba(255,255,255,0.4);">Entreprise</label>
-              <input id="reg-entreprise" type="text" placeholder="Mon Entreprise"
-                class="w-full rounded-xl px-4 py-3.5 text-sm outline-none text-white placeholder-white/20"
-                style="background-color: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);"
-                onfocus="this.style.borderColor='rgba(212,167,98,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'" />
-            </div>
-            <div class="flex flex-col gap-2">
-              <label class="text-xs font-medium uppercase tracking-widest" style="color: rgba(255,255,255,0.4);">Mot de passe</label>
-              <div class="relative">
-                <input id="reg-password" type="password" required placeholder="Min. 6 caractères"
-                  class="w-full rounded-xl px-4 pr-11 py-3.5 text-sm outline-none text-white placeholder-white/20"
-                  style="background-color: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);"
-                  onfocus="this.style.borderColor='rgba(212,167,98,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'" />
-                <button type="button" onclick="togglePwd('reg-password', this)" class="absolute right-3 top-1/2 -translate-y-1/2 p-1.5" style="color: rgba(255,255,255,0.55);" tabindex="-1">
-                  <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                  <svg class="eye-off-icon hidden" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
-                </button>
-              </div>
-            </div>
-            <p id="register-error" class="hidden text-xs text-red-400"></p>
-            <p id="register-success" class="hidden text-xs text-green-400"></p>
-            <button id="register-btn" type="submit"
-              class="w-full py-3.5 rounded-xl text-sm font-bold transition-all duration-200 hover:brightness-110 active:scale-[0.98] mt-1 disabled:opacity-60 disabled:cursor-not-allowed"
-              style="background-color: #d4a762; color: #0b1f3a; letter-spacing: 0.05em;">
-              CRÉER MON COMPTE
-            </button>
-          </form>
-          <p class="text-xs text-center mt-4" style="color: rgba(255,255,255,0.25);">
-            Déjà membre ?
-            <button onclick="switchTab('login')" class="underline" style="color: rgba(212,167,98,0.5);">Se connecter</button>
-          </p>
-        </div>
+        <p class="text-xs text-center mt-6" style="color: rgba(255,255,255,0.2);">
+          Pas encore de compte ?
+          <a href="mailto:contact@jcbo-conseil.fr" class="underline" style="color: rgba(212,167,98,0.45);">Contactez-nous</a>
+        </p>
 
       </div>
     </div>
@@ -194,29 +126,10 @@ if (Astro.locals.session) {
           input.type = "password";
           eye.classList.remove("hidden");
           eyeOff.classList.add("hidden");
-          btn.style.color = "rgba(255,255,255,0.3)";
+          btn.style.color = "rgba(255,255,255,0.55)";
         }
       }
 
-      function switchTab(tab) {
-        var panelLogin = document.getElementById("panel-login");
-        var panelRegister = document.getElementById("panel-register");
-        var tabLogin = document.getElementById("tab-login");
-        var tabRegister = document.getElementById("tab-register");
-        if (tab === "login") {
-          panelLogin.classList.remove("hidden");
-          panelRegister.classList.add("hidden");
-          Object.assign(tabLogin.style, { backgroundColor: "#d4a762", color: "#0b1f3a" });
-          Object.assign(tabRegister.style, { backgroundColor: "transparent", color: "rgba(255,255,255,0.5)" });
-        } else {
-          panelLogin.classList.add("hidden");
-          panelRegister.classList.remove("hidden");
-          Object.assign(tabRegister.style, { backgroundColor: "#d4a762", color: "#0b1f3a" });
-          Object.assign(tabLogin.style, { backgroundColor: "transparent", color: "rgba(255,255,255,0.5)" });
-        }
-      }
-
-      // Connexion
       document.getElementById("login-form").addEventListener("submit", async function(e) {
         e.preventDefault();
         var loginError = document.getElementById("login-error");
@@ -241,40 +154,6 @@ if (Astro.locals.session) {
         }
         loginBtn.disabled = false;
         loginBtn.textContent = "SE CONNECTER";
-      });
-
-      // Inscription
-      document.getElementById("register-form").addEventListener("submit", async function(e) {
-        e.preventDefault();
-        var registerError = document.getElementById("register-error");
-        var registerSuccess = document.getElementById("register-success");
-        var registerBtn = document.getElementById("register-btn");
-        registerError.classList.add("hidden");
-        registerSuccess.classList.add("hidden");
-        registerBtn.disabled = true;
-        registerBtn.textContent = "Création…";
-        var body = {
-          prenom: document.getElementById("reg-prenom").value.trim(),
-          nom: document.getElementById("reg-nom").value.trim(),
-          email: document.getElementById("reg-email").value.trim(),
-          entreprise: document.getElementById("reg-entreprise").value.trim(),
-          motDePasse: document.getElementById("reg-password").value,
-        };
-        try {
-          var res = await fetch("/api/auth/register", {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
-          });
-          var data = await res.json();
-          if (res.ok) { window.location.href = data.redirectTo; return; }
-          registerError.textContent = data.error || "Erreur lors de la création du compte.";
-          registerError.classList.remove("hidden");
-        } catch(err) {
-          registerError.textContent = "Erreur réseau.";
-          registerError.classList.remove("hidden");
-        }
-        registerBtn.disabled = false;
-        registerBtn.textContent = "CRÉER MON COMPTE";
       });
     </script>
 

@@ -1,0 +1,85 @@
+import { Resend } from "resend";
+
+const SITE_URL = "https://adhesion-jcbo.vercel.app";
+
+export async function sendCredentialsEmail({
+  to,
+  nom,
+  motDePasse,
+  isReset = false,
+}: {
+  to: string;
+  nom: string;
+  motDePasse: string;
+  isReset?: boolean;
+}): Promise<{ ok: boolean; error?: string }> {
+  const apiKey = import.meta.env.RESEND_API_KEY;
+  if (!apiKey || apiKey.includes("REMPLACER")) {
+    return { ok: false, error: "Service email non configuré" };
+  }
+
+  const resend = new Resend(apiKey);
+  const from = import.meta.env.FROM_EMAIL ?? "JCBO Conseil <onboarding@resend.dev>";
+
+  const subject = isReset
+    ? "Réinitialisation de vos accès — JCBO Conseil"
+    : "Vos identifiants d'accès — JCBO Conseil";
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#f8f6f2;font-family:Georgia,serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f6f2;padding:40px 20px;">
+  <tr><td align="center">
+    <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid rgba(212,167,98,0.2);max-width:560px;">
+      <tr><td style="background:linear-gradient(135deg,#0b1f3a 0%,#162d4f 100%);padding:32px 40px;text-align:center;">
+        <p style="margin:0;font-size:11px;font-weight:600;letter-spacing:0.2em;color:rgba(212,167,98,0.7);text-transform:uppercase;">JCBO-CONSEIL</p>
+        <h1 style="margin:8px 0 0;font-size:20px;font-weight:700;color:#ffffff;">${isReset ? "Réinitialisation de vos accès" : "Vos identifiants d'accès"}</h1>
+      </td></tr>
+      <tr><td style="padding:36px 40px;">
+        <p style="margin:0 0 16px;font-size:15px;color:#374151;">Bonjour <strong style="color:#0b1f3a;">${nom}</strong>,</p>
+        <p style="margin:0 0 24px;font-size:14px;color:#6b7280;line-height:1.7;">${isReset
+          ? "Suite à votre demande, voici vos nouveaux identifiants de connexion à votre espace adhérent JCBO Conseil."
+          : "Votre compte adhérent vient d'être créé par l'équipe JCBO Conseil. Voici vos identifiants de connexion."
+        }</p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:rgba(212,167,98,0.06);border-radius:12px;border:1px solid rgba(212,167,98,0.2);margin-bottom:28px;">
+          <tr><td style="padding:20px 24px;">
+            <p style="margin:0 0 14px;font-size:10px;font-weight:700;letter-spacing:0.2em;color:#d4a762;text-transform:uppercase;">Identifiants de connexion</p>
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="padding:6px 0;font-size:13px;color:#6b7280;width:40%;">E-mail</td>
+                <td style="padding:6px 0;font-size:13px;font-weight:600;color:#0b1f3a;text-align:right;">${to}</td>
+              </tr>
+              <tr>
+                <td style="padding:6px 0;font-size:13px;color:#6b7280;">Mot de passe</td>
+                <td style="padding:6px 0;font-size:15px;font-weight:700;font-family:monospace;color:#d4a762;text-align:right;letter-spacing:0.05em;">${motDePasse}</td>
+              </tr>
+            </table>
+          </td></tr>
+        </table>
+        <p style="margin:0 0 28px;font-size:12px;color:#9ca3af;line-height:1.6;">Pour votre sécurité, nous vous recommandons de modifier votre mot de passe après votre première connexion.</p>
+        <table width="100%" cellpadding="0" cellspacing="0">
+          <tr><td align="center">
+            <a href="${SITE_URL}/login" style="display:inline-block;background:#0b1f3a;color:#ffffff;text-decoration:none;font-size:13px;font-weight:700;padding:13px 36px;border-radius:100px;letter-spacing:0.06em;">ACCÉDER À MON ESPACE</a>
+          </td></tr>
+        </table>
+      </td></tr>
+      <tr><td style="padding:20px 40px;text-align:center;border-top:1px solid #f1f3f5;">
+        <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:0.15em;color:#0b1f3a;text-transform:uppercase;">JCBO-CONSEIL</p>
+        <p style="margin:4px 0 0;font-size:11px;color:#d4a762;">Stratégie · Mindset · Performance</p>
+        <p style="margin:6px 0 0;font-size:10px;color:#9ca3af;">contact@jcbo-conseil.fr</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`;
+
+  try {
+    const { error } = await resend.emails.send({ from, to, subject, html });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "Erreur d'envoi" };
+  }
+}

@@ -235,6 +235,16 @@ export function createIdentifiant(data: { nom: string; email: string }) {
   return { ...created, nom: data.nom, motDePasse: password };
 }
 
+export function resetMotDePasse(adherentId: string): { email: string; nom: string; motDePasse: string } | null {
+  const a = s().adherents.find(a => a.id === adherentId);
+  if (!a) return null;
+  const charset = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#!";
+  let password = "";
+  for (let i = 0; i < 12; i++) password += charset[Math.floor(Math.random() * charset.length)];
+  a.motDePasse = password;
+  return { email: a.email, nom: `${a.prenom} ${a.nom}`, motDePasse: password };
+}
+
 export function toggleIdentifiantStatut(id: string) {
   const a = s().adherents.find(a => a.id === id);
   if (!a) return null;
