@@ -44,7 +44,7 @@ const typeNotifVariant: Record<string, "or" | "vert" | "gris"> = {
   </div>
 
   <!-- Onglets -->
-  <div class="flex gap-1 p-1 rounded-xl mb-8 w-fit" style="background-color: #f1f3f5;">
+  <div class="flex flex-wrap gap-1 p-1 rounded-xl mb-8" style="background-color: #f1f3f5;">
     {[
       { id: "paiements", label: "Paiements & reçus" },
       { id: "abonnement", label: "Abonnement" },
@@ -52,7 +52,7 @@ const typeNotifVariant: Record<string, "or" | "vert" | "gris"> = {
     ].map(t => (
       <a
         href={`?onglet=${t.id}`}
-        class="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+        class="px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap"
         style={onglet === t.id
           ? "background-color: white; color: #0b1f3a; box-shadow: 0 1px 3px rgba(0,0,0,0.08);"
           : "color: #6b7280;"}

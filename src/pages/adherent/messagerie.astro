@@ -36,7 +36,7 @@ const messages = conv.messages;
       </div>
 
       <!-- Zone de messages -->
-      <div id="messages-container" class="flex flex-col gap-3 min-h-64 max-h-96 overflow-y-auto px-1 pb-2">
+      <div id="messages-container" class="flex flex-col gap-3 min-h-48 max-h-[50vh] sm:min-h-64 sm:max-h-96 overflow-y-auto px-1 pb-2">
         {messages.length === 0 && (
           <div class="flex flex-col items-center justify-center py-16 text-center">
             <div class="w-14 h-14 rounded-full flex items-center justify-center mb-3" style="background-color: rgba(212,167,98,0.1);">
@@ -49,7 +49,7 @@ const messages = conv.messages;
         {messages.map(msg => (
           <div class={`flex ${msg.de === "adherent" ? "justify-end" : "justify-start"}`}>
             <div
-              class="max-w-xs lg:max-w-sm rounded-2xl px-4 py-2.5 text-sm"
+              class="max-w-[75%] sm:max-w-xs lg:max-w-sm rounded-2xl px-4 py-2.5 text-sm"
               style={msg.de === "adherent"
                 ? "background-color: #0b1f3a; color: white; border-bottom-right-radius: 4px;"
                 : "background-color: #f8f6f2; color: #374151; border-bottom-left-radius: 4px;"}
@@ -101,7 +101,7 @@ const messages = conv.messages;
     const now = new Date();
     const heure = now.getHours().toString().padStart(2,"0") + ":" + now.getMinutes().toString().padStart(2,"0");
     div.innerHTML = `
-      <div class="max-w-xs lg:max-w-sm rounded-2xl px-4 py-2.5 text-sm"
+      <div class="max-w-[75%] sm:max-w-xs lg:max-w-sm rounded-2xl px-4 py-2.5 text-sm"
         style="${de === "adherent"
           ? "background-color:#0b1f3a;color:white;border-bottom-right-radius:4px;"
           : "background-color:#f8f6f2;color:#374151;border-bottom-left-radius:4px;"}"

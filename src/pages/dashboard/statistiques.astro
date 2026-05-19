@@ -22,11 +22,11 @@ const kpis = [
 
 <AdherentLayout titre="Statistiques">
 
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
     {kpis.map((k) => (
-      <div class="bg-white rounded-xl p-6 shadow-sm" style="border: 1px solid #f1f3f5;">
+      <div class="bg-white rounded-xl p-4 sm:p-6 shadow-sm" style="border: 1px solid #f1f3f5;">
         <p class="text-xs font-medium text-gray-400 uppercase tracking-widest mb-3">{k.label}</p>
-        <p class="text-3xl font-bold" style={k.gold ? "color: #d4a762;" : "color: #0b1f3a;"}>{k.value}</p>
+        <p class="text-2xl sm:text-3xl font-bold" style={k.gold ? "color: #d4a762;" : "color: #0b1f3a;"}>{k.value}</p>
       </div>
     ))}
   </div>
@@ -43,7 +43,6 @@ const kpis = [
 
     <div class="flex items-end gap-3 lg:gap-6 px-4" style="height: 200px;">
       {progression.map((p) => {
-        const pct = Math.round((p.valeur / max) * 100);
         return (
           <div class="flex flex-col items-center gap-2 flex-1">
             <span class="text-xs font-semibold" style="color: #0b1f3a;">{p.valeur}</span>

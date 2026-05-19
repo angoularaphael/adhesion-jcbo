@@ -7,7 +7,7 @@ const conversations = getConversations();
 
 <AdherentLayout titre="Messagerie">
 
-  <div class="flex gap-4 h-[calc(100vh-10rem)]">
+  <div class="flex gap-4 h-[calc(100svh-6rem)] lg:h-[calc(100svh-10rem)]">
 
     <!-- Liste des conversations -->
     <div id="conv-sidebar" class="w-full lg:w-80 flex-shrink-0 bg-white rounded-xl shadow-sm flex flex-col overflow-hidden lg:flex">
@@ -96,7 +96,7 @@ const conversations = getConversations();
         return `
           <div class="flex items-end gap-2 ${isAdmin ? "justify-end" : "justify-start"}">
             ${!isAdmin ? `<div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mb-1" style="background-color: #0b1f3a;">${conv.adherent.split(" ").map(n => n[0]).join("").slice(0,2)}</div>` : ""}
-            <div class="max-w-xs lg:max-w-sm">
+            <div class="max-w-[75%] sm:max-w-xs lg:max-w-sm">
               <div class="px-4 py-3 text-sm leading-relaxed shadow-sm ${
                 isAdmin ? "rounded-2xl rounded-br-sm text-white" : "rounded-2xl rounded-bl-sm bg-gray-100"
               }" style="${isAdmin ? "background-color: #0b1f3a;" : "color: #0b1f3a;"}">
