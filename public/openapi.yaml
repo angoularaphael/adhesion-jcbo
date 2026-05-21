@@ -1,0 +1,1196 @@
+openapi: 3.0.3
+info:
+  title: JCBO-CONSEIL — API REST
+  description: |
+    Documentation complète des endpoints de la plateforme d'adhésion JCBO-CONSEIL.
+
+    **Authentification** : session JWT via cookie HTTPOnly `jcbo_session`.
+    - Rôle `adherent` : accès aux routes `/api/profil`, `/api/cours`, `/api/messagerie`, etc.
+    - Rôle `admin` : accès aux routes `/api/admin/*` et toutes les routes adhérent.
+  version: "1.0.0"
+  contact:
+    email: contact@jcbo-conseil.fr
+
+servers:
+  - url: https://adhesion-jcbo.vercel.app
+    description: Production
+  - url: http://localhost:4321
+    description: Développement local
+
+tags:
+  - name: Authentification
+    description: Connexion, déconnexion, mot de passe
+  - name: Profil
+    description: Profil de l'adhérent connecté
+  - name: Actualités
+    description: Gestion des actualités
+  - name: Cours
+    description: Gestion des formations
+  - name: Ressources
+    description: Documents et fichiers
+  - name: Progression
+    description: Suivi de la progression dans les cours
+  - name: Quiz
+    description: Évaluations des modules
+  - name: Messagerie
+    description: Conversations et messages
+  - name: Abonnement
+    description: Plans d'abonnement
+  - name: Contact
+    description: Formulaire de contact
+  - name: Identifiants
+    description: Gestion des accès adhérents (admin)
+  - name: Admin — Adhérents
+    description: CRUD des adhérents (admin uniquement)
+  - name: Paiement
+    description: Checkout Stripe et webhook
+
+paths:
+
+  # ─── AUTHENTIFICATION ────────────────────────────────────────────
+  /api/auth/login:
+    post:
+      tags: [Authentification]
+      summary: Connexion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: marie.dupont@exemple.fr
+                password:
+                  type: string
+                  example: motdepasse123
+      responses:
+        "200":
+          description: Connexion réussie — cookie de session défini
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  role: { type: string, enum: [admin, adherent] }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /api/auth/logout:
+    post:
+      tags: [Authentification]
+      summary: Déconnexion
+      responses:
+        "200":
+          description: Cookie de session supprimé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+
+  /api/auth/password:
+    put:
+      tags: [Authentification]
+      summary: Changer le mot de passe
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ancien, nouveau]
+              properties:
+                ancien:
+                  type: string
+                  example: ancien_motdepasse
+                nouveau:
+                  type: string
+                  minLength: 6
+                  example: nouveau_motdepasse
+      responses:
+        "200":
+          description: Mot de passe modifié
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ─── PROFIL ──────────────────────────────────────────────────────
+  /api/profil:
+    get:
+      tags: [Profil]
+      summary: Récupérer son profil
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Profil de l'adhérent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Adherent"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    put:
+      tags: [Profil]
+      summary: Mettre à jour son profil
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                telephone:
+                  type: string
+                  example: "+33 6 12 34 56 78"
+                entreprise:
+                  type: string
+                  example: "Ma Société SAS"
+                secteur:
+                  type: string
+                  example: "Marketing digital"
+      responses:
+        "200":
+          description: Profil mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Adherent"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ─── ACTUALITÉS ──────────────────────────────────────────────────
+  /api/actualites:
+    get:
+      tags: [Actualités]
+      summary: Lister les actualités
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Liste des actualités
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Actualite"
+    post:
+      tags: [Actualités]
+      summary: Créer une actualité (admin)
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActualiteInput"
+      responses:
+        "201":
+          description: Actualité créée
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Actualite"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/actualites/{id}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    put:
+      tags: [Actualités]
+      summary: Modifier une actualité (admin)
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActualiteInput"
+      responses:
+        "200":
+          description: Actualité modifiée
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Actualités]
+      summary: Supprimer une actualité (admin)
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Supprimée
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ─── COURS ───────────────────────────────────────────────────────
+  /api/cours:
+    get:
+      tags: [Cours]
+      summary: Lister les cours
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Liste des cours
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Cours"
+    post:
+      tags: [Cours]
+      summary: Créer un cours (admin)
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CoursInput"
+      responses:
+        "201":
+          description: Cours créé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cours"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/cours/{id}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    put:
+      tags: [Cours]
+      summary: Modifier un cours (admin)
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CoursInput"
+      responses:
+        "200":
+          description: Cours modifié
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Cours]
+      summary: Supprimer un cours (admin)
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Supprimé
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ─── RESSOURCES ──────────────────────────────────────────────────
+  /api/ressources:
+    get:
+      tags: [Ressources]
+      summary: Lister les ressources
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Liste des ressources
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Ressource"
+    post:
+      tags: [Ressources]
+      summary: Ajouter une ressource (admin)
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [titre, categorie, fichier]
+              properties:
+                titre:
+                  type: string
+                  example: "Guide du mindset entrepreneurial"
+                categorie:
+                  type: string
+                  enum: [Guide, Modèle, Outil, Vidéo, Autre]
+                fichier:
+                  type: string
+                  description: Fichier encodé en base64 (data URL)
+                nom_fichier:
+                  type: string
+                  example: "guide-mindset.pdf"
+      responses:
+        "201":
+          description: Ressource créée
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/ressources/{id}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      tags: [Ressources]
+      summary: Récupérer une ressource
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Détail de la ressource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ressource"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Ressources]
+      summary: Modifier une ressource (admin)
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                titre: { type: string }
+                categorie:
+                  type: string
+                  enum: [Guide, Modèle, Outil, Vidéo, Autre]
+                fichier: { type: string }
+                nom_fichier: { type: string }
+      responses:
+        "200":
+          description: Ressource modifiée
+    delete:
+      tags: [Ressources]
+      summary: Supprimer une ressource (admin)
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Supprimée
+
+  # ─── PROGRESSION ─────────────────────────────────────────────────
+  /api/progression:
+    get:
+      tags: [Progression]
+      summary: Récupérer ses progressions
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Liste des progressions par cours
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Progression"
+    post:
+      tags: [Progression]
+      summary: Marquer un module comme terminé
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [coursId, moduleId]
+              properties:
+                coursId:
+                  type: string
+                  example: "COURS-001"
+                moduleId:
+                  type: string
+                  example: "M01"
+      responses:
+        "200":
+          description: Module marqué comme terminé
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  # ─── QUIZ ────────────────────────────────────────────────────────
+  /api/quiz:
+    post:
+      tags: [Quiz]
+      summary: Soumettre les réponses d'un quiz
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [coursId, moduleId, reponses]
+              properties:
+                coursId:
+                  type: string
+                  example: "COURS-001"
+                moduleId:
+                  type: string
+                  example: "M01"
+                reponses:
+                  type: array
+                  items:
+                    type: integer
+                  description: Index de la réponse choisie pour chaque question
+                  example: [0, 2, 1]
+      responses:
+        "200":
+          description: Résultat du quiz
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  score:
+                    type: integer
+                    description: Score en pourcentage
+                    example: 80
+                  bonnes:
+                    type: integer
+                    example: 4
+                  total:
+                    type: integer
+                    example: 5
+                  passe:
+                    type: boolean
+                    example: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  # ─── MESSAGERIE ──────────────────────────────────────────────────
+  /api/messagerie:
+    get:
+      tags: [Messagerie]
+      summary: Lister les conversations (admin) ou récupérer sa conversation (adhérent)
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Conversation"
+    post:
+      tags: [Messagerie]
+      summary: Marquer les messages comme lus
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [conversationId]
+              properties:
+                conversationId:
+                  type: string
+                  example: "conv-001"
+      responses:
+        "200":
+          description: Messages marqués comme lus
+
+  /api/messagerie/{id}/messages:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID de la conversation
+        schema:
+          type: string
+    post:
+      tags: [Messagerie]
+      summary: Envoyer un message dans une conversation
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [texte]
+              properties:
+                texte:
+                  type: string
+                  maxLength: 2000
+                  example: "Bonjour, j'ai une question concernant ma formation."
+      responses:
+        "201":
+          description: Message envoyé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ─── ABONNEMENT ──────────────────────────────────────────────────
+  /api/abonnement:
+    post:
+      tags: [Abonnement]
+      summary: Activer un plan gratuit (Découverte)
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [plan]
+              properties:
+                plan:
+                  type: string
+                  enum: [Découverte]
+                  example: "Découverte"
+      responses:
+        "200":
+          description: Abonnement activé
+        "400":
+          $ref: "#/components/responses/BadRequest"
+    delete:
+      tags: [Abonnement]
+      summary: Résilier son abonnement
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Abonnement résilié
+
+  # ─── CONTACT ─────────────────────────────────────────────────────
+  /api/contact:
+    post:
+      tags: [Contact]
+      summary: Envoyer un message de contact
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sujet, message]
+              properties:
+                sujet:
+                  type: string
+                  minLength: 3
+                  maxLength: 100
+                  example: "Question sur ma formation"
+                message:
+                  type: string
+                  minLength: 10
+                  maxLength: 2000
+                  example: "Bonjour, je souhaite avoir des informations sur..."
+      responses:
+        "200":
+          description: Message envoyé
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  # ─── IDENTIFIANTS ────────────────────────────────────────────────
+  /api/identifiants:
+    get:
+      tags: [Identifiants]
+      summary: Lister les accès adhérents (admin)
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Liste des identifiants
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Identifiant"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags: [Identifiants]
+      summary: Créer un nouvel adhérent avec envoi des identifiants par e-mail (admin)
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nom, email]
+              properties:
+                nom:
+                  type: string
+                  example: "Marie Dupont"
+                email:
+                  type: string
+                  format: email
+                  example: "marie.dupont@exemple.fr"
+      responses:
+        "201":
+          description: Compte créé, identifiants envoyés par e-mail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  email: { type: string }
+                  emailSent: { type: boolean }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          description: E-mail déjà utilisé
+    put:
+      tags: [Identifiants]
+      summary: Régénérer le mot de passe d'un adhérent (admin)
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+                  example: "adh-001"
+      responses:
+        "200":
+          description: Nouveau mot de passe envoyé par e-mail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  emailSent: { type: boolean }
+    patch:
+      tags: [Identifiants]
+      summary: Activer / désactiver un compte adhérent (admin)
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+                  example: "adh-001"
+      responses:
+        "200":
+          description: Statut basculé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statut:
+                    type: string
+                    enum: [Actif, Inactif]
+
+  # ─── ADMIN — ADHÉRENTS ───────────────────────────────────────────
+  /api/admin/adherents:
+    get:
+      tags: [Admin — Adhérents]
+      summary: Lister tous les adhérents
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Liste des adhérents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Adherent"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags: [Admin — Adhérents]
+      summary: Créer un adhérent
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdherentInput"
+      responses:
+        "201":
+          description: Adhérent créé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Adherent"
+        "409":
+          description: E-mail déjà utilisé
+
+  /api/admin/adherents/{id}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      tags: [Admin — Adhérents]
+      summary: Récupérer un adhérent par ID
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Adhérent trouvé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Adherent"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Admin — Adhérents]
+      summary: Modifier un adhérent
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdherentInput"
+      responses:
+        "200":
+          description: Adhérent modifié
+    delete:
+      tags: [Admin — Adhérents]
+      summary: Supprimer un adhérent
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Supprimé
+
+  /api/admin/adherents/{id}/cours:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    put:
+      tags: [Admin — Adhérents]
+      summary: Attribuer des cours à un adhérent
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [coursInscrits]
+              properties:
+                coursInscrits:
+                  type: array
+                  items:
+                    type: string
+                  example: ["COURS-001", "COURS-002"]
+      responses:
+        "200":
+          description: Cours mis à jour
+
+  /api/admin/adherents/{id}/message:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    post:
+      tags: [Admin — Adhérents]
+      summary: Envoyer un message à un adhérent
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [texte]
+              properties:
+                texte:
+                  type: string
+                  maxLength: 2000
+                  example: "Bonjour, votre cotisation est arrivée à échéance."
+      responses:
+        "200":
+          description: Message envoyé
+
+  # ─── PAIEMENT ────────────────────────────────────────────────────
+  /api/stripe/checkout:
+    post:
+      tags: [Paiement]
+      summary: Créer une session de paiement Stripe
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                coursId:
+                  type: string
+                  description: ID du cours à acheter (achat unique)
+                  example: "COURS-002"
+                planNom:
+                  type: string
+                  description: Nom du plan d'abonnement (Standard ou Premium)
+                  enum: [Standard, Premium]
+              oneOf:
+                - required: [coursId]
+                - required: [planNom]
+      responses:
+        "200":
+          description: URL de redirection Stripe
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    format: uri
+                    example: "https://checkout.stripe.com/pay/cs_test_..."
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          description: Stripe non configuré
+
+  /api/stripe/webhook:
+    post:
+      tags: [Paiement]
+      summary: Webhook Stripe (usage interne)
+      description: |
+        Endpoint appelé automatiquement par Stripe après un paiement.
+        Requiert le header `stripe-signature`.
+        Ne pas appeler manuellement.
+      parameters:
+        - in: header
+          name: stripe-signature
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Événement traité
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  recu: { type: boolean, example: true }
+        "400":
+          description: Signature invalide
+
+# ─── COMPONENTS ──────────────────────────────────────────────────────────────
+components:
+
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: jcbo_session
+
+  parameters:
+    id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+      example: "adh-001"
+
+  responses:
+    BadRequest:
+      description: Données invalides
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Erreur"
+    Unauthorized:
+      description: Non authentifié
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Erreur"
+    Forbidden:
+      description: Accès refusé (rôle insuffisant)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Erreur"
+    NotFound:
+      description: Ressource introuvable
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Erreur"
+
+  schemas:
+
+    Erreur:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Non autorisé"
+
+    Adherent:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "adh-001"
+        numeroAdherent:
+          type: string
+          example: "JCBO-2025-001"
+        prenom:
+          type: string
+          example: "Marie"
+        nom:
+          type: string
+          example: "Dupont"
+        email:
+          type: string
+          format: email
+          example: "marie.dupont@exemple.fr"
+        telephone:
+          type: string
+          example: "+33 6 12 34 56 78"
+        entreprise:
+          type: string
+          example: "Ma Société SAS"
+        secteur:
+          type: string
+          example: "Marketing digital"
+        statut:
+          type: string
+          enum: [Actif, Inactif]
+        coursInscrits:
+          type: array
+          items:
+            type: string
+          example: ["COURS-001"]
+        abonnement:
+          nullable: true
+          type: object
+          properties:
+            plan: { type: string, example: "Standard" }
+            statut: { type: string, enum: [actif, annulé] }
+            dateDebut: { type: string, format: date-time }
+        dateInscription:
+          type: string
+          format: date-time
+
+    AdherentInput:
+      type: object
+      required: [prenom, nom, email]
+      properties:
+        prenom: { type: string, example: "Marie" }
+        nom: { type: string, example: "Dupont" }
+        email: { type: string, format: email }
+        motDePasse: { type: string, minLength: 6 }
+        telephone: { type: string }
+        entreprise: { type: string }
+        secteur: { type: string }
+        statut:
+          type: string
+          enum: [Actif, Inactif]
+          default: Actif
+
+    Actualite:
+      type: object
+      properties:
+        id: { type: string }
+        titre: { type: string, example: "Lancement du programme Mindset 2025" }
+        contenu: { type: string }
+        statut:
+          type: string
+          enum: [Publié, Brouillon]
+        date: { type: string, format: date-time }
+
+    ActualiteInput:
+      type: object
+      required: [titre, contenu, statut]
+      properties:
+        titre:
+          type: string
+          minLength: 3
+          maxLength: 200
+        contenu:
+          type: string
+          minLength: 10
+          maxLength: 5000
+        statut:
+          type: string
+          enum: [Publié, Brouillon]
+
+    Cours:
+      type: object
+      properties:
+        id: { type: string, example: "COURS-001" }
+        titre: { type: string, example: "Mindset Entrepreneurial™" }
+        description: { type: string }
+        duree: { type: string, example: "6h" }
+        niveau:
+          type: string
+          enum: [Débutant, Intermédiaire, Avancé]
+        statut:
+          type: string
+          enum: [Publié, Brouillon]
+        prix:
+          type: number
+          nullable: true
+          example: 149
+        modules:
+          type: array
+          items:
+            $ref: "#/components/schemas/Module"
+
+    CoursInput:
+      type: object
+      required: [titre, description, duree, niveau, statut]
+      properties:
+        titre: { type: string }
+        description: { type: string }
+        duree: { type: string, example: "6h" }
+        niveau:
+          type: string
+          enum: [Débutant, Intermédiaire, Avancé]
+        statut:
+          type: string
+          enum: [Publié, Brouillon]
+
+    Module:
+      type: object
+      properties:
+        id: { type: string, example: "M01" }
+        titre: { type: string }
+        duree: { type: string, example: "45 min" }
+        type:
+          type: string
+          enum: [Vidéo, Document, Quiz]
+        ordre: { type: integer, example: 1 }
+
+    Ressource:
+      type: object
+      properties:
+        id: { type: string }
+        titre: { type: string, example: "Guide du Mindset Entrepreneurial" }
+        categorie:
+          type: string
+          enum: [Guide, Modèle, Outil, Vidéo, Autre]
+        fichier: { type: string, description: "URL ou data URL du fichier" }
+        nom_fichier: { type: string, example: "guide-mindset.pdf" }
+        date: { type: string, format: date-time }
+
+    Progression:
+      type: object
+      properties:
+        coursId: { type: string, example: "COURS-001" }
+        modulesTermines:
+          type: array
+          items:
+            type: string
+          example: ["M01", "M02"]
+        quizResultats:
+          type: array
+          items:
+            type: object
+            properties:
+              moduleId: { type: string }
+              score: { type: integer }
+              passe: { type: boolean }
+
+    Conversation:
+      type: object
+      properties:
+        id: { type: string }
+        adherent: { type: string, example: "Marie Dupont" }
+        email: { type: string, format: email }
+        dernier_message: { type: string }
+        non_lu: { type: integer, example: 2 }
+        date: { type: string, format: date-time }
+
+    Message:
+      type: object
+      properties:
+        id: { type: string }
+        texte: { type: string }
+        de:
+          type: string
+          enum: [admin, adherent]
+        date: { type: string, format: date-time }
+
+    Identifiant:
+      type: object
+      properties:
+        id: { type: string }
+        nom: { type: string, example: "Marie Dupont" }
+        email: { type: string, format: email }
+        statut:
+          type: string
+          enum: [Actif, Inactif]
+        cree_le: { type: string, format: date-time }
