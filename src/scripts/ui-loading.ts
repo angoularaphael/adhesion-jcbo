@@ -9,12 +9,18 @@ export function runWhenReady(fn: () => void): void {
 
 export function showPageLoader(): void {
   const el = document.getElementById("jcbo-page-loader");
-  if (el) el.classList.remove("hidden");
+  if (el) {
+    el.classList.add("jcbo-page-loader-visible");
+    el.setAttribute("aria-busy", "true");
+  }
 }
 
 export function hidePageLoader(): void {
   const el = document.getElementById("jcbo-page-loader");
-  if (el) el.classList.add("hidden");
+  if (el) {
+    el.classList.remove("jcbo-page-loader-visible");
+    el.setAttribute("aria-busy", "false");
+  }
 }
 
 export function setButtonLoading(el: HTMLElement | null, loading: boolean, loadingLabel = "Chargement…"): void {

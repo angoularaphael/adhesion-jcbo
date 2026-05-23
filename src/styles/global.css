@@ -50,11 +50,15 @@ button .jcbo-spinner {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   background: rgba(248, 246, 242, 0.75);
   backdrop-filter: blur(2px);
+}
+
+#jcbo-page-loader.jcbo-page-loader-visible {
+  display: flex;
 }
 
 #jcbo-page-loader .jcbo-page-loader-inner {
