@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 import { loginSchema } from "../../../lib/validation";
 import { checkRateLimit, resetRateLimit, isBlacklisted } from "../../../lib/rateLimit";
 import { createSession } from "../../../lib/session";
-import { verifyAdminLogin } from "../../../lib/store-admin";
+import { verifyAdminLogin, syncSuperAdminProfile } from "../../../lib/store-admin";
 import { getAdherentByEmail } from "../../../lib/store";
 import { verifyPassword } from "../../../lib/password";
 
@@ -69,6 +69,9 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
     role = "admin";
     adminId = admin.id;
     adminRole = admin.role;
+    if (admin.role === "super_admin") {
+      await syncSuperAdminProfile();
+    }
   } else {
     const adherent = await getAdherentByEmail(emailLower);
     if (adherent && adherent.statut === "Actif" && (await verifyPassword(password, adherent.motDePasse))) {

@@ -24,7 +24,7 @@ const roleLabel = admin.role === "super_admin" ? "Super Admin" : "Administrateur
         {admin.photoUrl ? (
           <img src={admin.photoUrl} alt="Photo" class="w-full h-full object-cover" />
         ) : (
-          <span>{admin.prenom[0]}{admin.nom[0]}</span>
+          <span>{admin.prenom[0]?.toUpperCase()}{admin.nom[0]?.toUpperCase()}</span>
         )}
       </div>
       <div>

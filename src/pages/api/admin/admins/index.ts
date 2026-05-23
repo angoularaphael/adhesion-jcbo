@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import { z } from "zod";
 import { requireSuperAdminSession, getSessionEmail } from "../../../../lib/admin-auth";
-import { createAdminAccount, listAdmins } from "../../../../lib/store-admin";
+import { createAdminAccount, listManagedAdmins } from "../../../../lib/store-admin";
 import { sendCredentialsEmail } from "../../../../lib/email";
 
 const createSchema = z.object({
@@ -16,7 +16,7 @@ export const GET: APIRoute = async ({ locals }) => {
   const denied = await requireSuperAdminSession(locals);
   if (denied) return denied;
 
-  const admins = await listAdmins();
+  const admins = await listManagedAdmins();
   return new Response(JSON.stringify({ admins }), {
     headers: { "Content-Type": "application/json" },
   });

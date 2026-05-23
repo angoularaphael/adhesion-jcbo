@@ -1,4 +1,13 @@
 ﻿---
+import { getAdminByEmail } from "../../lib/store-admin";
+
+const sessionEmail = Astro.locals.session?.email ?? "";
+const currentAdmin = sessionEmail ? await getAdminByEmail(sessionEmail) : null;
+const headerName = currentAdmin ? `${currentAdmin.prenom} ${currentAdmin.nom}` : "Administrateur";
+const headerInitials = currentAdmin
+  ? `${currentAdmin.prenom.charAt(0)}${currentAdmin.nom.charAt(0)}`.toUpperCase()
+  : "AR";
+const headerRole = currentAdmin?.role === "super_admin" ? "Super Admin" : "Administrateur";
 ---
 
 <header class="h-16 flex items-center justify-between px-8 bg-white border-b border-gray-200 flex-shrink-0">
@@ -9,11 +18,11 @@
   <!-- Profil admin -->
   <div class="flex items-center gap-3">
     <div class="text-right">
-      <p class="text-sm font-semibold" style="color: #0b1f3a;">Super Admin</p>
-      <p class="text-xs text-gray-400">JCBO Conseil</p>
+      <p class="text-sm font-semibold" style="color: #0b1f3a;">{headerName}</p>
+      <p class="text-xs text-gray-400">{headerRole}</p>
     </div>
     <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold" style="background-color: #0b1f3a;">
-      SA
+      {headerInitials}
     </div>
   </div>
 

@@ -2,6 +2,10 @@ import { getSupabase } from "./supabase";
 import { hashPassword, generatePassword, verifyPassword } from "./password";
 import { slugify, uniqueSlug } from "./slug";
 
+/** Identité du super administrateur principal (non listé dans « Administrateurs »). */
+export const SUPER_ADMIN_PRENOM = "Angoula";
+export const SUPER_ADMIN_NOM = "Raphael";
+
 export type AdminProfil = {
   id?: string;
   email: string;
@@ -76,7 +80,10 @@ export async function ensureAdminsBootstrapped(): Promise<void> {
     .from("admins")
     .select("id", { count: "exact", head: true });
 
-  if ((count ?? 0) > 0) return;
+  if ((count ?? 0) > 0) {
+    await syncSuperAdminProfile();
+    return;
+  }
 
   await syncAdminPasswordFromEnv();
   let hash = await getConfigValue("admin_mot_de_passe");
@@ -98,8 +105,8 @@ export async function ensureAdminsBootstrapped(): Promise<void> {
     id: `ADM-${Date.now()}`,
     email,
     mot_de_passe: hash,
-    prenom: prenom || "Jean-Christophe",
-    nom: nom || "Boyang",
+    prenom: prenom || SUPER_ADMIN_PRENOM,
+    nom: nom || SUPER_ADMIN_NOM,
     telephone: telephone || "",
     photo_url: photoUrl || "",
     role: "super_admin",
@@ -108,8 +115,27 @@ export async function ensureAdminsBootstrapped(): Promise<void> {
   });
 }
 
+/** Met à jour nom + rôle super admin (Angoula Raphael, non listé côté « Administrateurs »). */
+export async function syncSuperAdminProfile(): Promise<void> {
+  const email = getAdminEmail();
+  await getSupabase()
+    .from("admins")
+    .update({
+      prenom: SUPER_ADMIN_PRENOM,
+      nom: SUPER_ADMIN_NOM,
+      role: "super_admin",
+    })
+    .eq("email", email);
+
+  await setConfigValue("admin_prenom", SUPER_ADMIN_PRENOM);
+  await setConfigValue("admin_nom", SUPER_ADMIN_NOM);
+}
+
 export async function getAdminByEmail(email: string): Promise<AdminRecord | null> {
   await ensureAdminsBootstrapped();
+  if (email.toLowerCase() === getAdminEmail()) {
+    await syncSuperAdminProfile();
+  }
   const { data } = await getSupabase()
     .from("admins")
     .select("*")
@@ -123,6 +149,20 @@ export async function listAdmins(): Promise<AdminRecord[]> {
   const { data } = await getSupabase()
     .from("admins")
     .select("*")
+    .order("cree_le", { ascending: true });
+  return (data ?? []).map((r) => mapAdminRow(r as AdminRow));
+}
+
+/** Admins créés par le super admin (le super admin n’apparaît pas). */
+export async function listManagedAdmins(): Promise<AdminRecord[]> {
+  await ensureAdminsBootstrapped();
+  await syncSuperAdminProfile();
+  const superEmail = getAdminEmail();
+  const { data } = await getSupabase()
+    .from("admins")
+    .select("*")
+    .eq("role", "admin")
+    .neq("email", superEmail)
     .order("cree_le", { ascending: true });
   return (data ?? []).map((r) => mapAdminRow(r as AdminRow));
 }
@@ -266,8 +306,8 @@ export async function getAdminProfil(email?: string): Promise<AdminProfil> {
   ]);
   return {
     email: targetEmail,
-    prenom: prenom || "Jean-Christophe",
-    nom: nom || "Boyang",
+    prenom: prenom || SUPER_ADMIN_PRENOM,
+    nom: nom || SUPER_ADMIN_NOM,
     telephone,
     photoUrl,
     role: "super_admin",

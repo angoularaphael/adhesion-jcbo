@@ -1,7 +1,7 @@
 ---
 import AdherentLayout from "../../layouts/AdherentLayout.astro";
 import Badge from "../../components/ui/Badge.astro";
-import { listAdmins, getAdminByEmail } from "../../lib/store-admin";
+import { listManagedAdmins, getAdminByEmail } from "../../lib/store-admin";
 
 const sessionEmail = Astro.locals.session?.email ?? "";
 const current = await getAdminByEmail(sessionEmail);
@@ -10,7 +10,7 @@ if (!current || current.role !== "super_admin") {
   return Astro.redirect("/dashboard");
 }
 
-const admins = await listAdmins();
+const admins = await listManagedAdmins();
 ---
 
 <AdherentLayout titre="Administrateurs">
@@ -18,7 +18,7 @@ const admins = await listAdmins();
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
     <div>
       <h2 class="text-2xl font-bold" style="color: #0b1f3a;">Administrateurs</h2>
-      <p class="text-sm text-gray-500 mt-1">Créez et gérez les comptes admin du tableau de bord.</p>
+      <p class="text-sm text-gray-500 mt-1">Créez et gérez les comptes administrateurs (le super admin n’apparaît pas ici).</p>
     </div>
     <button
       id="btn-new-admin"
@@ -40,26 +40,26 @@ const admins = await listAdmins();
           <tr style="border-bottom: 1px solid #f1f3f5; background-color: #fafafa;">
             <th class="text-left text-xs font-medium text-gray-400 uppercase tracking-widest px-6 py-4">Nom</th>
             <th class="text-left text-xs font-medium text-gray-400 uppercase tracking-widest px-6 py-4">E-mail</th>
-            <th class="text-left text-xs font-medium text-gray-400 uppercase tracking-widest px-6 py-4">Rôle</th>
             <th class="text-left text-xs font-medium text-gray-400 uppercase tracking-widest px-6 py-4">Statut</th>
             <th class="text-left text-xs font-medium text-gray-400 uppercase tracking-widest px-6 py-4">Actions</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-50">
-          {admins.map((a) => (
-            <tr class="hover:bg-gray-50" data-id={a.id} data-email={a.email}>
-              <td class="px-6 py-4 text-sm font-medium" style="color: #0b1f3a;">{a.prenom} {a.nom}</td>
-              <td class="px-6 py-4 text-sm text-gray-500">{a.email}</td>
-              <td class="px-6 py-4">
-                <Badge variant={a.role === "super_admin" ? "or" : "gris"}>
-                  {a.role === "super_admin" ? "Super admin" : "Admin"}
-                </Badge>
+          {admins.length === 0 ? (
+            <tr>
+              <td colspan="4" class="px-6 py-12 text-center text-sm text-gray-400">
+                Aucun administrateur pour le moment. Cliquez sur « Nouvel administrateur » pour en créer un.
               </td>
-              <td class="px-6 py-4">
-                <Badge variant={a.statut === "Actif" ? "vert" : "gris"}>{a.statut}</Badge>
-              </td>
-              <td class="px-6 py-4">
-                {a.email !== sessionEmail && (
+            </tr>
+          ) : (
+            admins.map((a) => (
+              <tr class="hover:bg-gray-50" data-id={a.id} data-email={a.email}>
+                <td class="px-6 py-4 text-sm font-medium" style="color: #0b1f3a;">{a.prenom} {a.nom}</td>
+                <td class="px-6 py-4 text-sm text-gray-500">{a.email}</td>
+                <td class="px-6 py-4">
+                  <Badge variant={a.statut === "Actif" ? "vert" : "gris"}>{a.statut}</Badge>
+                </td>
+                <td class="px-6 py-4">
                   <div class="flex flex-wrap gap-2">
                     <button
                       type="button"
@@ -69,27 +69,22 @@ const admins = await listAdmins();
                     >
                       Régénérer MDP
                     </button>
-                    {a.role !== "super_admin" && (
-                      <button
-                        type="button"
-                        class="btn-toggle-statut px-3 py-1.5 rounded-full text-xs font-medium"
-                        data-id={a.id}
-                        data-statut={a.statut}
-                        style={a.statut === "Actif"
-                          ? "background-color: rgba(239,68,68,0.08); color: #dc2626;"
-                          : "background-color: rgba(34,197,94,0.08); color: #16a34a;"}
-                      >
-                        {a.statut === "Actif" ? "Désactiver" : "Activer"}
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      class="btn-toggle-statut px-3 py-1.5 rounded-full text-xs font-medium"
+                      data-id={a.id}
+                      data-statut={a.statut}
+                      style={a.statut === "Actif"
+                        ? "background-color: rgba(239,68,68,0.08); color: #dc2626;"
+                        : "background-color: rgba(34,197,94,0.08); color: #16a34a;"}
+                    >
+                      {a.statut === "Actif" ? "Désactiver" : "Activer"}
+                    </button>
                   </div>
-                )}
-                {a.email === sessionEmail && (
-                  <span class="text-xs text-gray-400">Votre compte</span>
-                )}
-              </td>
-            </tr>
-          ))}
+                </td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>

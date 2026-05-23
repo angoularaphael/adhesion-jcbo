@@ -16,8 +16,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS actualites_slug_idx ON actualites(slug) WHERE 
 -- Admin profil (config clés supplémentaires)
 INSERT INTO config (cle, valeur) VALUES
   ('admin_email', 'angoularaphael05@gmail.com'),
-  ('admin_prenom', 'Jean-Christophe'),
-  ('admin_nom', 'Boyang'),
+  ('admin_prenom', 'Angoula'),
+  ('admin_nom', 'Raphael'),
   ('admin_telephone', ''),
   ('admin_photo_url', '')
 ON CONFLICT (cle) DO NOTHING;

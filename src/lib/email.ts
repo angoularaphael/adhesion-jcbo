@@ -3,10 +3,11 @@ import nodemailer from "nodemailer";
 const SITE_URL = import.meta.env.PUBLIC_ADHESION_URL ?? "https://adhesion-jcbo.vercel.app";
 
 function createTransport() {
+  const port = Number(import.meta.env.SMTP_PORT ?? 587);
   return nodemailer.createTransport({
     host: import.meta.env.SMTP_HOST,
-    port: Number(import.meta.env.SMTP_PORT ?? 465),
-    secure: Number(import.meta.env.SMTP_PORT ?? 465) === 465,
+    port,
+    secure: port === 465,
     auth: {
       user: import.meta.env.SMTP_USER,
       pass: import.meta.env.SMTP_PASS,
