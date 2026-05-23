@@ -2,7 +2,7 @@
 import AdherentMemberLayout from "../../../layouts/AdherentMemberLayout.astro";
 import Badge from "../../../components/ui/Badge.astro";
 import { getCours, getProgressions, getAdherentByEmail } from "../../../lib/store";
-import { mockQuizParModule } from "../../../data/mock";
+import { getQuizQuestions } from "../../../lib/store-admin";
 
 const { id } = Astro.params;
 const cours = (await getCours()).find(c => c.id === id && c.statut === "Publié");
@@ -44,12 +44,19 @@ const modulesIds = cours.modules.map(m => m.id);
 const firstUndoneIndex = modulesIds.findIndex(mid => !modulesTermines.includes(mid));
 const defaultOpenId = firstUndoneIndex >= 0 ? modulesIds[firstUndoneIndex] : modulesIds[modulesIds.length - 1];
 
-// Passer les quiz côté client
-const quizData = Object.fromEntries(
-  cours.modules.map(m => [m.id, (mockQuizParModule[m.id] ?? []).map(q => ({
-    id: q.id, question: q.question, options: q.options, correcte: q.correcte,
-  }))])
+const quizByModule = await Promise.all(
+  cours.modules.map(async (m) => [m.id, await getQuizQuestions(m.id)] as const)
 );
+const quizData = Object.fromEntries(
+  quizByModule.map(([id, questions]) => [
+    id,
+    questions.map((q) => ({ id: q.id, question: q.question, options: q.options, correcte: q.correcte })),
+  ])
+) as Record<string, { id: string; question: string; options: string[]; correcte: number }[]>;
+
+function moduleHasQuiz(moduleId: string): boolean {
+  return (quizData[moduleId] ?? []).length > 0;
+}
 ---
 
 <AdherentMemberLayout titre={cours.titre}>
@@ -68,7 +75,7 @@ const quizData = Object.fromEntries(
         const quizRes = quizResultats.find(q => q.moduleId === mod.id);
         const isOpen = mod.id === defaultOpenId;
         const contenu = contenuParModule[mod.id];
-        const hasQuiz = (mockQuizParModule[mod.id] ?? []).length > 0;
+        const hasQuiz = moduleHasQuiz(mod.id);
         return (
           <div
             class="module-item rounded-2xl overflow-hidden transition-all"

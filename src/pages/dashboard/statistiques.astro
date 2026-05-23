@@ -2,21 +2,21 @@
 import AdherentLayout from "../../layouts/AdherentLayout.astro";
 import { getStats } from "../../lib/store";
 
-const mockStats = await getStats();
-const progression = [
-  { mois: "Jan", valeur: 38 },
-  { mois: "Fév", valeur: 40 },
-  { mois: "Mar", valeur: 41 },
-  { mois: "Avr", valeur: 44 },
-  { mois: "Mai", valeur: 47 },
-];
-const max = Math.max(...progression.map((p) => p.valeur));
+const stats = await getStats();
+const progression = stats.progressionMensuelle?.length
+  ? stats.progressionMensuelle
+  : [{ mois: "—", valeur: 0 }];
+const max = Math.max(...progression.map((p) => p.valeur), 1);
 
 const kpis = [
-  { label: "Total adhérents", value: mockStats.totalAdherents },
-  { label: "Adhérents actifs", value: mockStats.adherentsActifs },
-  { label: "Nouveaux ce mois", value: `+${mockStats.nouveauxCeMois}`, gold: true },
-  { label: "Taux renouvellement", value: `${mockStats.tauxRenouvellement}%` },
+  { label: "Total adhérents", value: stats.totalAdherents },
+  { label: "Adhérents actifs", value: stats.adherentsActifs },
+  { label: "Nouveaux ce mois", value: `+${stats.nouveauxCeMois}`, gold: true },
+  { label: "Taux renouvellement", value: `${stats.tauxRenouvellement}%` },
+  { label: "CA ce mois (€)", value: Math.round(stats.caMois ?? 0) },
+  { label: "Diagnostics reçus", value: stats.diagnosticsRecus ?? 0 },
+  { label: "Messages non lus", value: stats.messagesNonLus ?? 0 },
+  { label: "Inscriptions cours", value: stats.inscriptionsCours ?? 0 },
 ];
 ---
 
@@ -31,29 +31,23 @@ const kpis = [
     ))}
   </div>
 
-  <!-- Graphique -->
   <div class="bg-white rounded-xl shadow-sm p-6 lg:p-8" style="border: 1px solid #f1f3f5;">
     <div class="flex items-center justify-between mb-8">
       <div>
-        <h2 class="text-base font-semibold" style="color: #0b1f3a;">Progression des adhésions</h2>
-        <p class="text-xs text-gray-400 mt-0.5">Janvier – Mai 2025</p>
+        <h2 class="text-base font-semibold" style="color: #0b1f3a;">Nouvelles adhésions par mois</h2>
+        <p class="text-xs text-gray-400 mt-0.5">6 derniers mois</p>
       </div>
-      <span class="text-xs font-medium px-3 py-1.5 rounded-full" style="background-color: rgba(212,167,98,0.1); color: #d4a762;">+23.7% sur la période</span>
     </div>
 
     <div class="flex items-end gap-3 lg:gap-6 px-4" style="height: 200px;">
-      {progression.map((p) => {
-        return (
-          <div class="flex flex-col items-center gap-2 flex-1">
-            <span class="text-xs font-semibold" style="color: #0b1f3a;">{p.valeur}</span>
-            <div class="w-full rounded-t-lg transition-all duration-500 hover:opacity-80" style={`height: ${Math.round((p.valeur / max) * 160)}px; background: linear-gradient(180deg, #d4a762 0%, #0b1f3a 100%); min-height: 4px;`}></div>
-            <span class="text-xs text-gray-400 font-medium">{p.mois}</span>
-          </div>
-        );
-      })}
+      {progression.map((p) => (
+        <div class="flex flex-col items-center gap-2 flex-1">
+          <span class="text-xs font-semibold" style="color: #0b1f3a;">{p.valeur}</span>
+          <div class="w-full rounded-t-lg transition-all duration-500 hover:opacity-80" style={`height: ${Math.round((p.valeur / max) * 160)}px; background: linear-gradient(180deg, #d4a762 0%, #0b1f3a 100%); min-height: 4px;`}></div>
+          <span class="text-xs text-gray-400 font-medium">{p.mois}</span>
+        </div>
+      ))}
     </div>
   </div>
 
 </AdherentLayout>
-
-

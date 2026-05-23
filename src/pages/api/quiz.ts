@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { z } from "zod";
-import { mockQuizParModule } from "../../data/mock";
+import { getQuizQuestions } from "../../lib/store-admin";
 import { enregistrerQuizResultat } from "../../lib/store";
 
 const schema = z.object({
@@ -15,8 +15,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   let body: unknown;
-  try { body = await request.json(); }
-  catch { return new Response(JSON.stringify({ error: "Corps invalide" }), { status: 400 }); }
+  try {
+    body = await request.json();
+  } catch {
+    return new Response(JSON.stringify({ error: "Corps invalide" }), { status: 400 });
+  }
 
   const result = schema.safeParse(body);
   if (!result.success) {
@@ -24,9 +27,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   const { coursId, moduleId, reponses } = result.data;
-  const questions = mockQuizParModule[moduleId];
+  const questions = await getQuizQuestions(moduleId);
 
-  if (!questions || questions.length === 0) {
+  if (!questions.length) {
     return new Response(JSON.stringify({ error: "Quiz introuvable pour ce module." }), { status: 404 });
   }
 
@@ -40,12 +43,18 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const score = Math.round((bonnes / questions.length) * 100);
   const passe = score >= 80;
 
-  const progression = await enregistrerQuizResultat(locals.session.email, coursId, moduleId, score, passe);
+  const progression = await enregistrerQuizResultat(
+    locals.session.email,
+    coursId,
+    moduleId,
+    score,
+    passe
+  );
 
-  return new Response(JSON.stringify({ score, passe, bonnes, total: questions.length, details, progression }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
+  return new Response(
+    JSON.stringify({ score, passe, bonnes, total: questions.length, details, progression }),
+    { status: 200, headers: { "Content-Type": "application/json" } }
+  );
 };
 
 export const GET: APIRoute = async ({ url, locals }) => {
@@ -56,7 +65,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
   if (!moduleId) {
     return new Response(JSON.stringify({ error: "moduleId requis" }), { status: 400 });
   }
-  const questions = (mockQuizParModule[moduleId] ?? []).map(q => ({
+  const questions = (await getQuizQuestions(moduleId)).map((q) => ({
     id: q.id,
     question: q.question,
     options: q.options,

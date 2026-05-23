@@ -1,7 +1,17 @@
 import { defineMiddleware } from "astro:middleware";
 import { verifySession } from "./lib/session";
+import { isSuperAdminEmail } from "./lib/admin-auth";
 
-const PUBLIC_PATHS = ["/login", "/api/auth/", "/api/stripe/webhook", "/verification/"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/api/auth/",
+  "/api/stripe/webhook",
+  "/api/fapshi/webhook",
+  "/api/public/",
+  "/api/diagnostic/",
+  "/api/newsletter",
+  "/verification/",
+];
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const path = new URL(context.request.url).pathname;
@@ -27,6 +37,21 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // Contrôle d'accès par rôle
   if (path.startsWith("/dashboard") && session.role !== "admin") {
     return context.redirect("/adherent/tableau-de-bord");
+  }
+
+  const superAdminOnly =
+    path.startsWith("/dashboard/admins") || path.startsWith("/api/admin/admins");
+  if (superAdminOnly && session.role === "admin") {
+    const allowed = await isSuperAdminEmail(session.email);
+    if (!allowed) {
+      if (path.startsWith("/api/")) {
+        return new Response(JSON.stringify({ error: "Accès réservé au super administrateur." }), {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      return context.redirect("/dashboard");
+    }
   }
 
   if ((path.startsWith("/adherent") || path.startsWith("/paiement")) && session.role !== "adherent") {

@@ -9,6 +9,8 @@ if (!profil) return Astro.redirect("/login");
 const conv = await findOrCreateConversation(profil.email, "Messagerie adhérent");
 await markAsReadAdherent(conv.id);
 const messages = conv.messages;
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL ?? "";
+const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? "";
 ---
 
 <AdherentMemberLayout titre="Messagerie">
@@ -144,5 +146,14 @@ const messages = conv.messages;
   input.addEventListener("keydown", e => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   });
+  window.addEventListener("jcbo:new-message", () => location.reload());
 })();
 </script>
+{supabaseUrl && supabaseAnonKey && (
+  <>
+    <script is:inline define:vars={{ supabaseUrl, supabaseAnonKey }}>
+      window.__JCBO_REALTIME__ = { url: supabaseUrl, anonKey: supabaseAnonKey };
+    </script>
+    <script src="/js/realtime-messaging.js" defer></script>
+  </>
+)}

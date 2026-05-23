@@ -6,7 +6,8 @@ import { getAdherentByEmail, getAdhesion, getActualites, getRessources } from ".
 
 const mockAdherent = await getAdherentByEmail(Astro.locals.session?.email ?? "");
 if (!mockAdherent) return Astro.redirect("/login");
-const mockAdhesion = await getAdhesion();
+const mockAdhesion = await getAdhesion(Astro.locals.session?.email ?? "");
+if (!mockAdhesion) return Astro.redirect("/login");
 const mockActualites = await getActualites();
 const mockRessources = await getRessources();
 

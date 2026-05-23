@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 
-const SITE_URL = "https://adhesion-jcbo.vercel.app";
+const SITE_URL = import.meta.env.PUBLIC_ADHESION_URL ?? "https://adhesion-jcbo.vercel.app";
 
 function createTransport() {
   return nodemailer.createTransport({
@@ -99,5 +99,85 @@ export async function sendCredentialsEmail({
   } catch (err) {
     const message = err instanceof Error ? err.message : "Erreur d'envoi";
     return { ok: false, error: message };
+  }
+}
+
+export async function sendDiagnosticCredentialsEmail({
+  to,
+  nom,
+  motDePasse,
+  loginUrl,
+}: {
+  to: string;
+  nom: string;
+  motDePasse: string;
+  loginUrl: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  if (!isSmtpConfigured()) {
+    return { ok: false, error: "Service email non configuré (SMTP)" };
+  }
+  const from = import.meta.env.FROM_EMAIL ?? `JCBO Conseil <noreply@jcbo-conseil.fr>`;
+  const html = `<!DOCTYPE html><html lang="fr"><body style="font-family:Georgia,serif;padding:24px;">
+    <p>Bonjour <strong>${nom}</strong>,</p>
+    <p>Voici vos identifiants pour accéder au formulaire de diagnostic JCBO Conseil (usage unique, valables 7 jours) :</p>
+    <p><strong>E-mail :</strong> ${to}<br/><strong>Mot de passe :</strong> <code>${motDePasse}</code></p>
+    <p><a href="${loginUrl}" style="background:#0b1f3a;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;">Accéder au diagnostic</a></p>
+    <p style="color:#6b7280;font-size:12px;">Après soumission du formulaire, ces identifiants seront automatiquement révoqués.</p>
+  </body></html>`;
+  try {
+    await createTransport().sendMail({
+      from,
+      to,
+      subject: "Vos accès au diagnostic — JCBO Conseil",
+      html,
+    });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Erreur d'envoi" };
+  }
+}
+
+export async function sendDiagnosticNotificationEmail({
+  adminEmail,
+  soumissionId,
+  email,
+  nom,
+}: {
+  adminEmail: string;
+  soumissionId: string;
+  email: string;
+  nom: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  if (!isSmtpConfigured()) return { ok: false, error: "SMTP non configuré" };
+  const from = import.meta.env.FROM_EMAIL ?? `JCBO Conseil <noreply@jcbo-conseil.fr>`;
+  const dashUrl = `${SITE_URL}/dashboard/diagnostics`;
+  try {
+    await createTransport().sendMail({
+      from,
+      to: adminEmail,
+      subject: `[JCBO] Nouveau diagnostic — ${nom}`,
+      html: `<p>Un nouveau formulaire de diagnostic a été soumis.</p>
+        <p><strong>Nom :</strong> ${nom}<br/><strong>E-mail :</strong> ${email}<br/><strong>Réf. :</strong> ${soumissionId}</p>
+        <p><a href="${dashUrl}">Voir dans le dashboard</a></p>`,
+    });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Erreur" };
+  }
+}
+
+export async function sendNewsletterConfirmation(to: string): Promise<{ ok: boolean; error?: string }> {
+  if (!isSmtpConfigured()) return { ok: false, error: "SMTP non configuré" };
+  const from = import.meta.env.FROM_EMAIL ?? `JCBO Conseil <noreply@jcbo-conseil.fr>`;
+  try {
+    await createTransport().sendMail({
+      from,
+      to,
+      subject: "Inscription newsletter — JCBO Conseil",
+      html: `<p>Merci pour votre inscription à la newsletter JCBO Conseil.</p>`,
+    });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Erreur" };
   }
 }

@@ -2,8 +2,9 @@ import type { APIRoute } from "astro";
 import { loginSchema } from "../../../lib/validation";
 import { checkRateLimit, resetRateLimit, isBlacklisted } from "../../../lib/rateLimit";
 import { createSession } from "../../../lib/session";
-import { mockAdmin } from "../../../data/mock";
-import { getAdminMotDePasse, getAdherentByEmail } from "../../../lib/store";
+import { verifyAdminLogin } from "../../../lib/store-admin";
+import { getAdherentByEmail } from "../../../lib/store";
+import { verifyPassword } from "../../../lib/password";
 
 export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
   const ip = clientAddress || "unknown";
@@ -50,8 +51,9 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
   }
 
   const { email, password } = result.data;
+  const emailLower = email.toLowerCase();
 
-  if (isBlacklisted(email)) {
+  if (isBlacklisted(emailLower)) {
     return new Response(JSON.stringify({ error: "Accès refusé." }), {
       status: 403,
       headers: { "Content-Type": "application/json" },
@@ -59,12 +61,17 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
   }
 
   let role: "admin" | "adherent" | null = null;
+  let adminId: string | undefined;
+  let adminRole: "super_admin" | "admin" | undefined;
 
-  if (email === mockAdmin.email.toLowerCase() && password === await getAdminMotDePasse()) {
+  const admin = await verifyAdminLogin(emailLower, password);
+  if (admin) {
     role = "admin";
+    adminId = admin.id;
+    adminRole = admin.role;
   } else {
-    const adherent = await getAdherentByEmail(email);
-    if (adherent && adherent.statut === "Actif" && password === adherent.motDePasse) {
+    const adherent = await getAdherentByEmail(emailLower);
+    if (adherent && adherent.statut === "Actif" && (await verifyPassword(password, adherent.motDePasse))) {
       role = "adherent";
     }
   }
@@ -78,7 +85,11 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
 
   resetRateLimit(`login:${ip}`);
 
-  const token = await createSession({ email, role });
+  const token = await createSession({
+    email: emailLower,
+    role,
+    ...(role === "admin" ? { adminId, adminRole } : {}),
+  });
 
   cookies.set("session", token, {
     httpOnly: true,

@@ -31,6 +31,10 @@ export const actualiteSchema = z.object({
   titre: z.string().min(3, "Titre trop court").max(200, "Titre trop long").trim(),
   contenu: z.string().min(10, "Contenu trop court").max(5000, "Contenu trop long").trim(),
   statut: z.enum(["Publié", "Brouillon"], "Statut invalide"),
+  categorie: z.string().max(50).optional(),
+  extrait: z.string().max(500).optional(),
+  image_url: z.string().url().optional().nullable(),
+  slug: z.string().max(120).optional(),
 });
 
 export const identifiantSchema = z.object({

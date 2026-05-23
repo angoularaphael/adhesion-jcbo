@@ -12,11 +12,13 @@ const RAPPEL_PAIEMENT = "Bonjour,\n\nNous vous rappelons que votre cotisation an
 
 <AdherentLayout titre="Adhérents">
 
-  <div class="mb-6 flex items-center justify-between">
+  <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
       <h2 class="text-2xl font-bold" style="color: #0b1f3a;">Adhérents</h2>
       <p class="text-sm text-gray-500 mt-1">Gérez les adhérents, leurs cours et leurs accès.</p>
     </div>
+    <input id="search-adherents" type="search" placeholder="Rechercher nom, e-mail, n° adhérent…"
+      class="border border-gray-200 rounded-lg px-4 py-2 text-sm w-full sm:w-72" />
     <button
       id="btn-ajouter"
       class="px-4 py-2 rounded-lg text-sm font-semibold text-white"
@@ -416,6 +418,14 @@ const RAPPEL_PAIEMENT = "Bonjour,\n\nNous vous rappelons que votre cotisation an
     } catch {
       alert("Erreur réseau");
     }
+  });
+
+  document.getElementById("search-adherents")?.addEventListener("input", (e) => {
+    const q = (e.target as HTMLInputElement).value.toLowerCase();
+    document.querySelectorAll("#tbody-adherents tr").forEach((row) => {
+      const text = row.textContent?.toLowerCase() ?? "";
+      (row as HTMLElement).style.display = text.includes(q) ? "" : "none";
+    });
   });
 
   // Boutons modifier

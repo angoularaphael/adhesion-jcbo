@@ -1,0 +1,49 @@
+---
+import AdherentLayout from "../../layouts/AdherentLayout.astro";
+import Badge from "../../components/ui/Badge.astro";
+import { getDiagnosticSoumissions } from "../../lib/store-admin";
+
+const soumissions = await getDiagnosticSoumissions();
+---
+
+<AdherentLayout titre="Diagnostics reçus">
+
+  <p class="text-sm text-gray-400 mb-6">{soumissions.length} soumission(s)</p>
+
+  <div class="flex flex-col gap-4">
+    {soumissions.map((s) => (
+      <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100" data-id={s.id}>
+        <div class="flex items-start justify-between gap-4 mb-3">
+          <div>
+            <h3 class="font-semibold" style="color:#0b1f3a;">{s.nom}</h3>
+            <p class="text-sm text-gray-500">{s.email}</p>
+            <p class="text-xs text-gray-400 mt-1">
+              {new Date(s.soumisLe).toLocaleString("fr-FR")}
+            </p>
+          </div>
+          <Badge variant={s.lu ? "gris" : "vert"}>{s.lu ? "Lu" : "Nouveau"}</Badge>
+        </div>
+        <details class="text-sm text-gray-600">
+          <summary class="cursor-pointer font-medium" style="color:#d4a762;">Voir les réponses</summary>
+          <pre class="mt-3 p-4 bg-gray-50 rounded-lg overflow-auto text-xs">{JSON.stringify(s.donnees, null, 2)}</pre>
+        </details>
+        {!s.lu && (
+          <button class="btn-marquer-lu mt-3 text-xs px-3 py-1.5 rounded-full font-medium" data-id={s.id}
+            style="background:rgba(212,167,98,0.1);color:#d4a762;">
+            Marquer comme lu
+          </button>
+        )}
+      </div>
+    ))}
+  </div>
+
+  <script>
+    document.querySelectorAll(".btn-marquer-lu").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = (btn as HTMLButtonElement).dataset.id;
+        await fetch(`/api/diagnostic/soumissions/${id}`, { method: "PATCH" });
+        location.reload();
+      });
+    });
+  </script>
+</AdherentLayout>

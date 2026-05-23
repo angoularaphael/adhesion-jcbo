@@ -1,7 +1,10 @@
 ---
 import AdherentMemberLayout from "../../layouts/AdherentMemberLayout.astro";
 import Card from "../../components/ui/Card.astro";
-import { mockAdherent } from "../../data/mock";
+import { getAdherentByEmail } from "../../lib/store";
+
+const adherent = await getAdherentByEmail(Astro.locals.session?.email ?? "");
+if (!adherent) return Astro.redirect("/login");
 ---
 
 <AdherentMemberLayout titre="Contact">
@@ -93,8 +96,8 @@ import { mockAdherent } from "../../data/mock";
 
       <Card>
         <p class="text-xs text-gray-400 mb-1">Connecté en tant que</p>
-        <p class="text-sm font-semibold" style="color: #0b1f3a;">{mockAdherent.prenom} {mockAdherent.nom}</p>
-        <p class="text-xs text-gray-400 mt-0.5">{mockAdherent.email}</p>
+        <p class="text-sm font-semibold" style="color: #0b1f3a;">{adherent.prenom} {adherent.nom}</p>
+        <p class="text-xs text-gray-400 mt-0.5">{adherent.email}</p>
       </Card>
     </div>
 

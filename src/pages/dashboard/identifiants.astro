@@ -2,12 +2,20 @@
 import AdherentLayout from "../../layouts/AdherentLayout.astro";
 import Badge from "../../components/ui/Badge.astro";
 import { getIdentifiants } from "../../lib/store";
+import { getDiagnosticAccesList } from "../../lib/store-admin";
 
 const identifiants = await getIdentifiants();
+const diagnostics = await getDiagnosticAccesList();
 ---
 
 <AdherentLayout titre="Identifiants">
 
+  <div class="flex gap-2 mb-6">
+    <button type="button" data-tab="adherents" class="tab-btn px-4 py-2 rounded-full text-sm font-semibold text-white" style="background:#0b1f3a;">Adhérents</button>
+    <button type="button" data-tab="diagnostic" class="tab-btn px-4 py-2 rounded-full text-sm font-medium text-gray-500 bg-gray-100">Diagnostic</button>
+  </div>
+
+  <section id="panel-adherents">
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
     <p class="text-sm text-gray-400"><span id="count">{identifiants.length}</span> accès générés</p>
     <button id="btn-generer"
@@ -72,6 +80,39 @@ const identifiants = await getIdentifiants();
           ))}
         </tbody>
       </table>
+    </div>
+  </div>
+  </section>
+
+  <section id="panel-diagnostic" class="hidden">
+    <div class="flex justify-between items-center mb-6">
+      <p class="text-sm text-gray-400">{diagnostics.length} accès diagnostic</p>
+      <button id="btn-diag-generer" class="px-5 py-2.5 rounded-full text-sm font-semibold text-white" style="background:#0b1f3a;">Générer accès diagnostic</button>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+      <table class="w-full text-sm">
+        <thead><tr class="bg-gray-50 text-xs text-gray-400 uppercase"><th class="px-6 py-3 text-left">E-mail</th><th class="px-6 py-3 text-left">Nom</th><th class="px-6 py-3 text-left">Expire</th><th class="px-6 py-3 text-left">Statut</th></tr></thead>
+        <tbody class="divide-y">
+          {diagnostics.map((d) => (
+            <tr><td class="px-6 py-3">{d.email}</td><td class="px-6 py-3">{d.nom}</td><td class="px-6 py-3">{new Date(d.expireLe).toLocaleDateString("fr-FR")}</td><td class="px-6 py-3"><Badge variant={d.utilise ? "gris" : "vert"}>{d.utilise ? "Utilisé" : "Actif"}</Badge></td></tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div id="modal-diag" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,0.5);">
+    <div class="bg-white rounded-2xl p-8 max-w-md w-full">
+      <h2 class="text-lg font-semibold mb-4" style="color:#0b1f3a;">Accès formulaire diagnostic</h2>
+      <form id="form-diag" class="flex flex-col gap-4">
+        <input id="diag-email" type="email" required placeholder="E-mail du candidat" class="border rounded-lg px-4 py-3 text-sm" />
+        <input id="diag-nom" type="text" placeholder="Nom (optionnel)" class="border rounded-lg px-4 py-3 text-sm" />
+        <p id="diag-err" class="hidden text-xs text-red-500"></p>
+        <div class="flex gap-2 justify-end">
+          <button type="button" id="diag-cancel" class="px-4 py-2 text-sm text-gray-500">Annuler</button>
+          <button type="submit" class="px-5 py-2 rounded-full text-sm font-semibold text-white" style="background:#0b1f3a;">Envoyer par e-mail</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -162,6 +203,40 @@ const identifiants = await getIdentifiants();
   </div>
 
   <script>
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const tab = (btn as HTMLButtonElement).dataset.tab;
+        document.getElementById("panel-adherents")!.classList.toggle("hidden", tab !== "adherents");
+        document.getElementById("panel-diagnostic")!.classList.toggle("hidden", tab !== "diagnostic");
+        document.querySelectorAll(".tab-btn").forEach((b) => {
+          const active = (b as HTMLButtonElement).dataset.tab === tab;
+          (b as HTMLButtonElement).style.background = active ? "#0b1f3a" : "";
+          (b as HTMLButtonElement).style.color = active ? "#fff" : "";
+          (b as HTMLButtonElement).classList.toggle("bg-gray-100", !active);
+        });
+      });
+    });
+
+    const modalDiag = document.getElementById("modal-diag") as HTMLElement;
+    document.getElementById("btn-diag-generer")?.addEventListener("click", () => modalDiag.classList.replace("hidden", "flex"));
+    document.getElementById("diag-cancel")?.addEventListener("click", () => modalDiag.classList.replace("flex", "hidden"));
+    document.getElementById("form-diag")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const res = await fetch("/api/diagnostic/acces", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: (document.getElementById("diag-email") as HTMLInputElement).value,
+          nom: (document.getElementById("diag-nom") as HTMLInputElement).value,
+        }),
+      });
+      if (res.ok) { location.reload(); return; }
+      const d = await res.json();
+      const err = document.getElementById("diag-err")!;
+      err.textContent = d.error || "Erreur";
+      err.classList.remove("hidden");
+    });
+
     const modal = document.getElementById("modal-generer") as HTMLElement;
     const modalReset = document.getElementById("modal-reset") as HTMLElement;
     let resetId = "";

@@ -1,10 +1,9 @@
 import type { APIRoute } from "astro";
 import { z } from "zod";
 import { checkRateLimit } from "../../../lib/rateLimit";
-import {
-  getAdminMotDePasse, setAdminMotDePasse,
-  getAdherentByEmail, updateProfil,
-} from "../../../lib/store";
+import { verifyAdminLogin, setAdminPasswordForEmail } from "../../../lib/store-admin";
+import { getAdherentByEmail, updateProfil } from "../../../lib/store";
+import { verifyPassword } from "../../../lib/password";
 
 const schema = z.object({
   ancienMotDePasse: z.string().min(1, "Mot de passe actuel requis"),
@@ -44,13 +43,14 @@ export const PUT: APIRoute = async ({ request, locals }) => {
   const { ancienMotDePasse, nouveauMotDePasse } = result.data;
 
   if (locals.session.role === "admin") {
-    if (ancienMotDePasse !== await getAdminMotDePasse()) {
+    const admin = await verifyAdminLogin(locals.session.email, ancienMotDePasse);
+    if (!admin) {
       return new Response(JSON.stringify({ error: "Mot de passe actuel incorrect." }), { status: 401 });
     }
-    await setAdminMotDePasse(nouveauMotDePasse);
+    await setAdminPasswordForEmail(locals.session.email, nouveauMotDePasse);
   } else {
     const adherent = await getAdherentByEmail(locals.session.email);
-    if (!adherent || ancienMotDePasse !== adherent.motDePasse) {
+    if (!adherent || !(await verifyPassword(ancienMotDePasse, adherent.motDePasse))) {
       return new Response(JSON.stringify({ error: "Mot de passe actuel incorrect." }), { status: 401 });
     }
     await updateProfil(locals.session.email, { motDePasse: nouveauMotDePasse });

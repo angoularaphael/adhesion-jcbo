@@ -1,0 +1,135 @@
+---
+import AdherentLayout from "../../layouts/AdherentLayout.astro";
+import Badge from "../../components/ui/Badge.astro";
+import { listAdmins, getAdminByEmail } from "../../lib/store-admin";
+
+const sessionEmail = Astro.locals.session?.email ?? "";
+const current = await getAdminByEmail(sessionEmail);
+
+if (!current || current.role !== "super_admin") {
+  return Astro.redirect("/dashboard");
+}
+
+const admins = await listAdmins();
+---
+
+<AdherentLayout titre="Administrateurs">
+
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <div>
+      <h2 class="text-2xl font-bold" style="color: #0b1f3a;">Administrateurs</h2>
+      <p class="text-sm text-gray-500 mt-1">Créez et gérez les comptes admin du tableau de bord.</p>
+    </div>
+    <button
+      id="btn-new-admin"
+      type="button"
+      class="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white self-start sm:self-auto"
+      style="background-color: #0b1f3a;"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+      </svg>
+      Nouvel administrateur
+    </button>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm overflow-hidden" style="border: 1px solid #f1f3f5;">
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead>
+          <tr style="border-bottom: 1px solid #f1f3f5; background-color: #fafafa;">
+            <th class="text-left text-xs font-medium text-gray-400 uppercase tracking-widest px-6 py-4">Nom</th>
+            <th class="text-left text-xs font-medium text-gray-400 uppercase tracking-widest px-6 py-4">E-mail</th>
+            <th class="text-left text-xs font-medium text-gray-400 uppercase tracking-widest px-6 py-4">Rôle</th>
+            <th class="text-left text-xs font-medium text-gray-400 uppercase tracking-widest px-6 py-4">Statut</th>
+            <th class="text-left text-xs font-medium text-gray-400 uppercase tracking-widest px-6 py-4">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50">
+          {admins.map((a) => (
+            <tr class="hover:bg-gray-50" data-id={a.id} data-email={a.email}>
+              <td class="px-6 py-4 text-sm font-medium" style="color: #0b1f3a;">{a.prenom} {a.nom}</td>
+              <td class="px-6 py-4 text-sm text-gray-500">{a.email}</td>
+              <td class="px-6 py-4">
+                <Badge variant={a.role === "super_admin" ? "or" : "gris"}>
+                  {a.role === "super_admin" ? "Super admin" : "Admin"}
+                </Badge>
+              </td>
+              <td class="px-6 py-4">
+                <Badge variant={a.statut === "Actif" ? "vert" : "gris"}>{a.statut}</Badge>
+              </td>
+              <td class="px-6 py-4">
+                {a.email !== sessionEmail && (
+                  <div class="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      class="btn-reset-pwd px-3 py-1.5 rounded-full text-xs font-medium"
+                      data-id={a.id}
+                      style="background-color: rgba(212,167,98,0.1); color: #d4a762;"
+                    >
+                      Régénérer MDP
+                    </button>
+                    {a.role !== "super_admin" && (
+                      <button
+                        type="button"
+                        class="btn-toggle-statut px-3 py-1.5 rounded-full text-xs font-medium"
+                        data-id={a.id}
+                        data-statut={a.statut}
+                        style={a.statut === "Actif"
+                          ? "background-color: rgba(239,68,68,0.08); color: #dc2626;"
+                          : "background-color: rgba(34,197,94,0.08); color: #16a34a;"}
+                      >
+                        {a.statut === "Actif" ? "Désactiver" : "Activer"}
+                      </button>
+                    )}
+                  </div>
+                )}
+                {a.email === sessionEmail && (
+                  <span class="text-xs text-gray-400">Votre compte</span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal création -->
+  <div id="modal-create" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background: rgba(0,0,0,0.5);">
+    <div class="bg-white rounded-2xl p-8 max-w-md w-full">
+      <h3 class="text-lg font-semibold mb-4" style="color: #0b1f3a;">Nouvel administrateur</h3>
+      <form id="form-create" class="flex flex-col gap-4">
+        <input id="ca-prenom" type="text" required placeholder="Prénom" class="border rounded-lg px-4 py-3 text-sm" />
+        <input id="ca-nom" type="text" required placeholder="Nom" class="border rounded-lg px-4 py-3 text-sm" />
+        <input id="ca-email" type="email" required placeholder="E-mail" class="border rounded-lg px-4 py-3 text-sm" />
+        <input id="ca-tel" type="text" placeholder="Téléphone (optionnel)" class="border rounded-lg px-4 py-3 text-sm" />
+        <label class="flex items-center gap-2 text-sm text-gray-500">
+          <input id="ca-send-email" type="checkbox" checked class="accent-[#d4a762]" />
+          Envoyer les identifiants par e-mail
+        </label>
+        <p id="ca-err" class="hidden text-xs text-red-500"></p>
+        <div class="flex gap-2 justify-end">
+          <button type="button" id="ca-cancel" class="px-4 py-2 text-sm text-gray-500">Annuler</button>
+          <button type="submit" class="px-5 py-2 rounded-full text-sm font-semibold text-white" style="background: #0b1f3a;">Créer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal mot de passe généré -->
+  <div id="modal-pwd" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background: rgba(0,0,0,0.5);">
+    <div class="bg-white rounded-2xl p-8 max-w-md w-full text-center">
+      <h3 class="text-lg font-semibold mb-2" style="color: #0b1f3a;">Mot de passe généré</h3>
+      <p class="text-sm text-gray-500 mb-4">Communiquez ce mot de passe à l'administrateur (il pourra le changer dans Paramètres).</p>
+      <p id="pwd-display" class="font-mono text-lg font-bold py-3 px-4 rounded-xl bg-gray-50 mb-4" style="color: #0b1f3a;"></p>
+      <p id="pwd-email-note" class="text-xs text-gray-400 mb-4 hidden"></p>
+      <button type="button" id="pwd-close" class="px-6 py-2 rounded-full text-sm font-semibold text-white" style="background: #0b1f3a;">Fermer</button>
+    </div>
+  </div>
+
+</AdherentLayout>
+
+<script>
+  import "../../scripts/admins-page.ts";
+</script>

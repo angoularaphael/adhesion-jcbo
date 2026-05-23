@@ -209,21 +209,12 @@ const catalogue = coursAvecInfos.filter(c => !c.inscrit);
       </div>
     </div>
 
-    <div class="flex gap-3">
-      <button
-        id="btn-annuler"
-        class="flex-1 py-2.5 rounded-xl text-sm font-semibold transition hover:opacity-80"
-        style="background-color: #f1f3f5; color: #6b7280;"
-      >
-        Annuler
-      </button>
-      <button
-        id="btn-payer"
-        class="flex-1 py-2.5 rounded-xl text-sm font-semibold transition hover:opacity-90"
-        style="background-color: #0b1f3a; color: white;"
-      >
-        Procéder au paiement
-      </button>
+    <div class="flex flex-col gap-2">
+      <div class="flex gap-3">
+        <button id="btn-annuler" class="flex-1 py-2.5 rounded-xl text-sm font-semibold" style="background-color: #f1f3f5; color: #6b7280;">Annuler</button>
+        <button id="btn-payer" class="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style="background-color: #0b1f3a;">Carte bancaire</button>
+      </div>
+      <button id="btn-payer-fapshi" class="w-full py-2.5 rounded-xl text-sm font-semibold border" style="border-color:#0b1f3a;color:#0b1f3a;">OM / MoMo (Fapshi)</button>
     </div>
 
     <p id="modal-erreur" class="text-xs text-red-500 text-center mt-3 hidden"></p>
@@ -262,33 +253,37 @@ const catalogue = coursAvecInfos.filter(c => !c.inscrit);
     }
   });
 
-  document.getElementById("btn-payer")?.addEventListener("click", async () => {
-    const btn = document.getElementById("btn-payer") as HTMLButtonElement;
+  async function payer(methode: "stripe" | "fapshi") {
+    const btn = document.getElementById(methode === "fapshi" ? "btn-payer-fapshi" : "btn-payer") as HTMLButtonElement;
     const erreur = document.getElementById("modal-erreur")!;
     btn.disabled = true;
-    btn.textContent = "Redirection...";
     erreur.classList.add("hidden");
-
+    const body: { coursId: string; phone?: string } = { coursId: coursIdSelectionne };
+    if (methode === "fapshi") {
+      const phone = prompt("Numéro Mobile Money (optionnel) :");
+      if (phone) body.phone = phone;
+    }
     try {
-      const res = await fetch("/api/stripe/checkout", {
+      const res = await fetch(methode === "fapshi" ? "/api/fapshi/checkout" : "/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ coursId: coursIdSelectionne }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok || !data.url) {
-        erreur.textContent = data.error ?? "Erreur lors du paiement. Réessayez.";
+      if (!res.ok) {
+        erreur.textContent = data.error ?? "Erreur paiement";
         erreur.classList.remove("hidden");
         btn.disabled = false;
-        btn.textContent = "Procéder au paiement";
         return;
       }
-      window.location.href = data.url;
+      if (data.url) window.location.href = data.url;
+      else { alert("Paiement initié sur votre téléphone."); location.reload(); }
     } catch {
-      erreur.textContent = "Erreur réseau. Réessayez.";
+      erreur.textContent = "Erreur réseau.";
       erreur.classList.remove("hidden");
       btn.disabled = false;
-      btn.textContent = "Procéder au paiement";
     }
-  });
+  }
+  document.getElementById("btn-payer")?.addEventListener("click", () => payer("stripe"));
+  document.getElementById("btn-payer-fapshi")?.addEventListener("click", () => payer("fapshi"));
 </script>

@@ -2,116 +2,125 @@
 import AdherentLayout from "../../layouts/AdherentLayout.astro";
 import Card from "../../components/ui/Card.astro";
 import Badge from "../../components/ui/Badge.astro";
-import { mockAdmin } from "../../data/mock";
+import { getAdminProfil } from "../../lib/store-admin";
+
+const sessionEmail = Astro.locals.session?.email ?? "";
+const admin = await getAdminProfil(sessionEmail);
+const roleLabel = admin.role === "super_admin" ? "Super Admin" : "Administrateur";
 ---
 
-<AdherentLayout titre="Mon profil">
+<AdherentLayout titre="Paramètres">
 
   <div class="mb-8">
-    <h2 class="text-2xl font-bold" style="color: #0b1f3a;">Mon profil</h2>
-    <p class="text-sm text-gray-500 mt-1">Informations du compte administrateur.</p>
+    <h2 class="text-2xl font-bold" style="color: #0b1f3a;">Paramètres</h2>
+    <p class="text-sm text-gray-500 mt-1">Profil administrateur et sécurité du compte.</p>
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-    <!-- Carte identité -->
     <Card class="flex flex-col items-center text-center gap-4">
-      <div
-        class="w-20 h-20 rounded-full flex items-center justify-center text-xl font-bold"
-        style="background: linear-gradient(135deg, #0b1f3a 0%, #162d4f 100%); color: #d4a762;"
-      >
-        {mockAdmin.prenom[0]}{mockAdmin.nom[0]}
+      <div id="avatar-preview" class="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center text-xl font-bold"
+        style="background: linear-gradient(135deg, #0b1f3a 0%, #162d4f 100%); color: #d4a762;">
+        {admin.photoUrl ? (
+          <img src={admin.photoUrl} alt="Photo" class="w-full h-full object-cover" />
+        ) : (
+          <span>{admin.prenom[0]}{admin.nom[0]}</span>
+        )}
       </div>
       <div>
-        <p class="font-semibold text-lg" style="color: #0b1f3a;">{mockAdmin.prenom} {mockAdmin.nom}</p>
+        <p class="font-semibold text-lg" style="color: #0b1f3a;">{admin.prenom} {admin.nom}</p>
         <p class="text-xs text-gray-400 mt-0.5">JCBO Conseil</p>
       </div>
-      <Badge variant="or">Super Admin</Badge>
-      <p class="text-xs text-gray-400">{mockAdmin.email}</p>
+      <Badge variant={admin.role === "super_admin" ? "or" : "gris"}>{roleLabel}</Badge>
+      <p class="text-xs text-gray-400">{admin.email}</p>
+      <label class="cursor-pointer text-xs font-medium px-4 py-2 rounded-full border transition hover:opacity-80"
+        style="border-color: #d4a762; color: #d4a762;">
+        Changer la photo
+        <input type="file" id="photo-input" accept="image/*" class="hidden" />
+      </label>
     </Card>
 
-    <!-- Informations + mot de passe -->
     <div class="lg:col-span-2 flex flex-col gap-6">
-
       <Card>
-        <h3 class="text-sm font-semibold mb-5" style="color: #0b1f3a;">Informations du compte</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          {[
-            { label: "Prénom", valeur: mockAdmin.prenom },
-            { label: "Nom", valeur: mockAdmin.nom },
-            { label: "E-mail", valeur: mockAdmin.email },
-            { label: "Rôle", valeur: "Super Administrateur" },
-          ].map((c) => (
-            <div>
-              <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">{c.label}</p>
-              <p class="text-sm font-medium" style="color: #0b1f3a;">{c.valeur}</p>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      <!-- Changer le mot de passe -->
-      <Card>
-        <h3 class="text-sm font-semibold mb-5" style="color: #0b1f3a;">Changer le mot de passe</h3>
-        <form id="form-mdp" class="flex flex-col gap-4">
-          <div class="flex flex-col gap-1.5">
-            <label class="text-xs font-medium text-gray-400 uppercase tracking-wide">Mot de passe actuel</label>
-            <input id="mdp-ancien" type="password" placeholder="••••••••"
-              class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none transition focus:border-[#d4a762]"
-              style="color: #0b1f3a;" />
+        <h3 class="text-sm font-semibold mb-5" style="color: #0b1f3a;">Informations</h3>
+        <form id="form-profil" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="text-xs text-gray-400 uppercase tracking-widest">Prénom</label>
+            <input id="prenom" type="text" value={admin.prenom} class="w-full mt-1 border rounded-lg px-3 py-2 text-sm" />
           </div>
-          <div class="flex flex-col gap-1.5">
-            <label class="text-xs font-medium text-gray-400 uppercase tracking-wide">Nouveau mot de passe</label>
-            <input id="mdp-nouveau" type="password" placeholder="Min. 8 caractères, 1 majuscule, 1 chiffre"
-              class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none transition focus:border-[#d4a762]"
-              style="color: #0b1f3a;" />
+          <div>
+            <label class="text-xs text-gray-400 uppercase tracking-widest">Nom</label>
+            <input id="nom" type="text" value={admin.nom} class="w-full mt-1 border rounded-lg px-3 py-2 text-sm" />
           </div>
-          <p id="mdp-error" class="hidden text-xs text-red-400"></p>
-          <p id="mdp-success" class="hidden text-xs font-medium" style="color: #16a34a;">Mot de passe mis à jour. Reconnectez-vous avec le nouveau mot de passe.</p>
-          <button type="submit" id="btn-mdp"
-            class="self-start px-6 py-2.5 rounded-full text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
-            style="background-color: #0b1f3a;">
-            Mettre à jour
-          </button>
+          <div class="sm:col-span-2">
+            <label class="text-xs text-gray-400 uppercase tracking-widest">Téléphone</label>
+            <input id="telephone" type="text" value={admin.telephone} class="w-full mt-1 border rounded-lg px-3 py-2 text-sm" />
+          </div>
+          <div class="sm:col-span-2">
+            <button type="submit" class="px-5 py-2.5 rounded-full text-sm font-semibold text-white" style="background:#0b1f3a;">Enregistrer</button>
+          </div>
         </form>
+        <p id="msg-profil" class="hidden text-xs mt-3 text-green-600"></p>
       </Card>
 
+      <Card>
+        <h3 class="text-sm font-semibold mb-5" style="color: #0b1f3a;">Mot de passe</h3>
+        <form id="form-password" class="flex flex-col gap-4 max-w-md">
+          <input id="new-password" type="password" placeholder="Nouveau mot de passe (min. 8)" class="border rounded-lg px-3 py-2 text-sm" />
+          <button type="submit" class="self-start px-5 py-2.5 rounded-full text-sm font-semibold text-white" style="background:#d4a762;">Mettre à jour</button>
+        </form>
+        <p id="msg-pwd" class="hidden text-xs mt-3"></p>
+      </Card>
     </div>
-
   </div>
 
-</AdherentLayout>
-
-<script>
-  document.getElementById("form-mdp")!.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById("btn-mdp") as HTMLButtonElement;
-    const errEl = document.getElementById("mdp-error") as HTMLParagraphElement;
-    const okEl = document.getElementById("mdp-success") as HTMLParagraphElement;
-    errEl.classList.add("hidden");
-    okEl.classList.add("hidden");
-    btn.disabled = true;
-    btn.textContent = "Mise à jour…";
-
-    const ancienMotDePasse = (document.getElementById("mdp-ancien") as HTMLInputElement).value;
-    const nouveauMotDePasse = (document.getElementById("mdp-nouveau") as HTMLInputElement).value;
-
-    const res = await fetch("/api/auth/password", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ancienMotDePasse, nouveauMotDePasse }),
+  <script>
+    const photoInput = document.getElementById("photo-input") as HTMLInputElement;
+    photoInput?.addEventListener("change", async () => {
+      const file = photoInput.files?.[0];
+      if (!file) return;
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("bucket", "profils");
+      fd.append("path", "admin");
+      const up = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await up.json();
+      if (!up.ok) return alert(data.error || "Erreur upload");
+      await fetch("/api/admin/profil", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ photoUrl: data.url }),
+      });
+      location.reload();
     });
-    const data = await res.json();
 
-    if (res.ok) {
-      okEl.classList.remove("hidden");
-      (document.getElementById("mdp-ancien") as HTMLInputElement).value = "";
-      (document.getElementById("mdp-nouveau") as HTMLInputElement).value = "";
-    } else {
-      errEl.textContent = data.error || "Erreur.";
-      errEl.classList.remove("hidden");
-    }
-    btn.disabled = false;
-    btn.textContent = "Mettre à jour";
-  });
-</script>
+    document.getElementById("form-profil")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const res = await fetch("/api/admin/profil", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prenom: (document.getElementById("prenom") as HTMLInputElement).value,
+          nom: (document.getElementById("nom") as HTMLInputElement).value,
+          telephone: (document.getElementById("telephone") as HTMLInputElement).value,
+        }),
+      });
+      const msg = document.getElementById("msg-profil")!;
+      msg.textContent = res.ok ? "Profil mis à jour." : "Erreur.";
+      msg.classList.remove("hidden");
+    });
+
+    document.getElementById("form-password")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const pwd = (document.getElementById("new-password") as HTMLInputElement).value;
+      const res = await fetch("/api/admin/profil", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: pwd }),
+      });
+      const msg = document.getElementById("msg-pwd")!;
+      msg.textContent = res.ok ? "Mot de passe mis à jour." : "Erreur.";
+      msg.className = `text-xs mt-3 ${res.ok ? "text-green-600" : "text-red-500"}`;
+    });
+  </script>
+</AdherentLayout>

@@ -165,20 +165,33 @@ const plans = [
               Plan actuel
             </div>
           ) : (
-            <button
-              class="btn-souscrire w-full py-2.5 rounded-xl text-sm font-semibold transition hover:opacity-90 active:scale-[0.98]"
-              style={`background-color: ${plan.couleur}; color: ${plan.couleur === "#0b1f3a" ? "white" : plan.couleur === "#d4a762" ? "#0b1f3a" : "white"};`}
-              data-plan={plan.nom}
-            >
-              {plan.nom === "Découverte" ? "Choisir ce plan" : "S'abonner"}
-            </button>
+            <div class="flex flex-col gap-2">
+              <button
+                class="btn-souscrire w-full py-2.5 rounded-xl text-sm font-semibold transition hover:opacity-90"
+                style={`background-color: ${plan.couleur}; color: ${plan.couleur === "#0b1f3a" ? "white" : plan.couleur === "#d4a762" ? "#0b1f3a" : "white"};`}
+                data-plan={plan.nom}
+                data-methode="stripe"
+              >
+                {plan.nom === "Découverte" ? "Choisir ce plan" : "Carte bancaire"}
+              </button>
+              {plan.nom !== "Découverte" && (
+                <button
+                  class="btn-souscrire w-full py-2.5 rounded-xl text-sm font-semibold border transition hover:opacity-90"
+                  style="border-color:#0b1f3a;color:#0b1f3a;"
+                  data-plan={plan.nom}
+                  data-methode="fapshi"
+                >
+                  OM / MoMo (Fapshi)
+                </button>
+              )}
+            </div>
           )}
         </div>
       );
     })}
   </div>
 
-  <p class="text-xs text-center text-gray-400">Paiement sécurisé via Stripe · Résiliation possible à tout moment.</p>
+  <p class="text-xs text-center text-gray-400">Paiement par carte (Stripe) ou OM/MoMo (Fapshi) · Résiliation possible à tout moment.</p>
 
   <p id="sub-error" class="text-red-500 text-sm text-center mt-4 hidden"></p>
 
@@ -219,22 +232,29 @@ const plans = [
         return;
       }
 
-      // Plans payants : redirection Stripe
+      var methode = (this.dataset.methode || "stripe");
       this.textContent = "Redirection vers le paiement…";
       try {
-        var res2 = await fetch("/api/stripe/checkout", {
+        var endpoint = methode === "fapshi" ? "/api/fapshi/checkout" : "/api/stripe/checkout";
+        var body = { planNom: plan };
+        if (methode === "fapshi") {
+          var phone = prompt("Numéro Mobile Money (ex: 670000000) — laissez vide pour lien de paiement :");
+          if (phone) body.phone = phone;
+        }
+        var res2 = await fetch(endpoint, {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ planNom: plan }),
+          body: JSON.stringify(body),
         });
         var data2 = await res2.json();
         if (!res2.ok) {
           err.textContent = data2.error || "Impossible d'initialiser le paiement";
           err.classList.remove("hidden");
           this.disabled = false;
-          this.textContent = "S'abonner";
+          this.textContent = methode === "fapshi" ? "OM / MoMo" : "Carte bancaire";
           return;
         }
-        window.location.href = data2.url;
+        if (data2.url) window.location.href = data2.url;
+        else { alert("Demande de paiement envoyée sur votre téléphone."); window.location.reload(); }
       } catch {
         err.textContent = "Erreur réseau";
         err.classList.remove("hidden");

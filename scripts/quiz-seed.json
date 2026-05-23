@@ -1,0 +1,947 @@
+{
+  "M01": [
+    {
+      "id": "Q1",
+      "question": "Selon le programme MINDSET ENTREPRENEURIAL™, quelles sont les trois attitudes fondamentales de l'entrepreneur performant ?",
+      "options": [
+        "Responsabilité totale, pensée orientée solutions, discipline de l'action quotidienne",
+        "Optimisme naïf, prise de risque maximale, indépendance absolue",
+        "Spécialisation technique, conformité aux normes, évitement du conflit",
+        "Délégation systématique, croissance rapide, diversification immédiate"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q2",
+      "question": "Quelle caractéristique définit le mieux une vision entrepreneuriale efficace ?",
+      "options": [
+        "Elle décrit uniquement les objectifs financiers du premier trimestre",
+        "Elle est inspirante, ambitieuse, claire et orientée vers l'avenir",
+        "Elle reste volontairement vague pour s'adapter à toute situation",
+        "Elle se limite à reproduire le modèle d'un concurrent performant"
+      ],
+      "correcte": 1
+    },
+    {
+      "id": "Q3",
+      "question": "Quel principe fondamental ouvre le module sur la vision et la mission entrepreneuriale ?",
+      "options": [
+        "Une entreprise solide naît toujours d'une vision claire et inspirante",
+        "La rentabilité prime sur toute considération stratégique",
+        "L'entrepreneur doit toujours suivre les tendances du marché",
+        "La mission se définit après cinq ans d'activité minimum"
+      ],
+      "correcte": 0
+    }
+  ],
+  "M02": [
+    {
+      "id": "Q1",
+      "question": "Quels sont les trois piliers de la posture professionnelle selon JCBO ?",
+      "options": [
+        "Cohérence discours/actes, maîtrise émotionnelle, image professionnelle numérique",
+        "Rapidité de réponse, volume de publications, prix compétitifs",
+        "Réseau étendu, certifications multiples, présence en événements",
+        "Autorité hiérarchique, ancienneté, taille de l'équipe"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q2",
+      "question": "Pourquoi la posture professionnelle précède-t-elle toute relation commerciale ou partenariale ?",
+      "options": [
+        "Parce qu'elle se construit dans les détails de présentation, communication et gestion de l'énergie",
+        "Parce qu'elle remplace la nécessité d'avoir une offre claire",
+        "Parce qu'elle garantit automatiquement des ventes",
+        "Parce qu'elle évite toute négociation avec les clients"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q3",
+      "question": "Quel exercice pratique est recommandé pour renforcer sa crédibilité en ligne ?",
+      "options": [
+        "Publier quotidiennement sans stratégie éditoriale",
+        "Faire auditer son profil LinkedIn et appliquer 3 améliorations concrètes",
+        "Supprimer toute présence numérique pendant six mois",
+        "Copier le profil d'un leader d'opinion reconnu"
+      ],
+      "correcte": 1
+    }
+  ],
+  "M03": [
+    {
+      "id": "Q1",
+      "question": "Structurer son activité, c'est principalement passer de quelle logique à quelle autre ?",
+      "options": [
+        "De la réaction permanente à la logique de pilotage",
+        "De la croissance à la réduction des coûts",
+        "Du digital au physique",
+        "De l'innovation à la standardisation"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q2",
+      "question": "Quels sont les trois outils essentiels de structuration stratégique ?",
+      "options": [
+        "Modèle économique formalisé, plan stratégique 90 jours, tableau de bord de pilotage",
+        "Site web, réseaux sociaux, campagne publicitaire",
+        "Contrat de travail, bail commercial, assurance RC Pro",
+        "Comptabilité, paie, facturation"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q3",
+      "question": "Combien d'indicateurs clés le tableau de bord de pilotage doit-il idéalement suivre chaque semaine ?",
+      "options": [
+        "1 à 2 indicateurs",
+        "5 à 7 indicateurs",
+        "15 à 20 indicateurs",
+        "Autant que possible pour ne rien manquer"
+      ],
+      "correcte": 1
+    }
+  ],
+  "M04": [
+    {
+      "id": "Q1",
+      "question": "Que signifie l'acronyme OODA dans le cadre de prise de décision entrepreneurial ?",
+      "options": [
+        "Observe, Orient, Decide, Act",
+        "Organize, Optimize, Deploy, Analyze",
+        "Offer, Operate, Deliver, Adjust",
+        "Objective, Opportunity, Design, Achieve"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q2",
+      "question": "Quelle est la différence entre indicateurs avancés et indicateurs retardés ?",
+      "options": [
+        "Les avancés prédisent les résultats futurs, les retardés constatent les résultats passés",
+        "Les avancés concernent la trésorerie, les retardés concernent le chiffre d'affaires",
+        "Les avancés sont financiers, les retardés sont opérationnels",
+        "Il n'y a aucune différence significative"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q3",
+      "question": "Quelle posture caractérise l'entrepreneur performant face à la décision ?",
+      "options": [
+        "Il analyse indéfiniment avant toute action",
+        "Il décide vite, agit, mesure et ajuste",
+        "Il délègue toutes les décisions stratégiques",
+        "Il évite toute décision difficile ou engageante"
+      ],
+      "correcte": 1
+    }
+  ],
+  "M05": [
+    {
+      "id": "Q1",
+      "question": "Comment le programme JCBO définit-il le leadership ?",
+      "options": [
+        "Comme un titre hiérarchique obtenu après cinq ans d'expérience",
+        "Comme un comportement quotidien manifesté par les engagements et la gestion des tensions",
+        "Comme une compétence réservée aux grandes entreprises",
+        "Comme la capacité à imposer ses décisions sans discussion"
+      ],
+      "correcte": 1
+    },
+    {
+      "id": "Q2",
+      "question": "Sur quelles trois pratiques repose la discipline opérationnelle ?",
+      "options": [
+        "Planification hebdomadaire, rituels quotidiens d'exécution, revue de performance régulière",
+        "Recrutement massif, automatisation totale, externalisation",
+        "Formation continue, veille concurrentielle, benchmarking",
+        "Réunions quotidiennes, reporting mensuel, audit annuel"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q3",
+      "question": "Quel piège le programme identifie-t-il comme ennemi de l'exécution ?",
+      "options": [
+        "Le perfectionnisme",
+        "La planification",
+        "La délégation",
+        "La mesure de performance"
+      ],
+      "correcte": 0
+    }
+  ],
+  "M06": [
+    {
+      "id": "Q1",
+      "question": "Quel horizon temporel la vision business doit-elle idéalement couvrir ?",
+      "options": [
+        "3 à 5 ans",
+        "6 mois",
+        "10 ans minimum",
+        "Uniquement le trimestre en cours"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q2",
+      "question": "Sur quels trois niveaux la performance d'une entreprise se mesure-t-elle ?",
+      "options": [
+        "Financier, opérationnel et stratégique",
+        "Commercial, marketing et RH",
+        "Local, national et international",
+        "Court terme, moyen terme et long terme uniquement"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q3",
+      "question": "Quel est le livrable « Big Picture » demandé dans ce module ?",
+      "options": [
+        "Un business plan de 50 pages",
+        "Une description en 300 mots de l'activité dans 3 ans",
+        "Un organigramme complet de l'entreprise",
+        "Un audit comptable détaillé"
+      ],
+      "correcte": 1
+    }
+  ],
+  "M07": [
+    {
+      "id": "Q1",
+      "question": "Qu'est-ce qui distingue la communication d'impact de la simple éloquence ?",
+      "options": [
+        "Son orientation vers le résultat",
+        "L'utilisation d'un vocabulaire technique",
+        "La durée plus longue des interventions",
+        "L'absence de préparation"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q2",
+      "question": "Quels sont les trois piliers de la crédibilité professionnelle ?",
+      "options": [
+        "Expertise démontrable, cohérence comportementale, valeur ajoutée visible",
+        "Ancienneté, diplômes, chiffre d'affaires",
+        "Réseau, notoriété, présence médiatique",
+        "Prix bas, livraison rapide, garantie étendue"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q3",
+      "question": "Ce module M07 clôt quel programme de formation ?",
+      "options": [
+        "MINDSET ENTREPRENEURIAL™",
+        "Optimisation fiscale pour TPE/PME",
+        "VENDEUR ATTITUDE™",
+        "Structuration stratégique"
+      ],
+      "correcte": 0
+    }
+  ],
+  "M08": [
+    {
+      "id": "Q1",
+      "question": "Quels sont les trois documents comptables fondamentaux ?",
+      "options": [
+        "Compte de résultat, bilan, tableau de flux de trésorerie",
+        "Facture, devis, bon de commande",
+        "Bulletin de paie, déclaration URSSAF, liasse fiscale",
+        "Budget prévisionnel, business plan, contrat commercial"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q2",
+      "question": "Que représente le compte de résultat ?",
+      "options": [
+        "La situation patrimoniale à un instant T",
+        "La performance de l'entreprise sur une période",
+        "Les mouvements de liquidités",
+        "Le stock de matières premières"
+      ],
+      "correcte": 1
+    },
+    {
+      "id": "Q3",
+      "question": "Pourquoi maîtriser la comptabilité de base est-il un avantage concurrentiel ?",
+      "options": [
+        "Parce que cela permet de piloter, anticiper et dialoguer avec les partenaires financiers",
+        "Parce que cela dispense de l'expert-comptable",
+        "Parce que cela garantit l'exonération fiscale",
+        "Parce que cela remplace la stratégie commerciale"
+      ],
+      "correcte": 0
+    }
+  ],
+  "M09": [
+    {
+      "id": "Q1",
+      "question": "De quoi se compose le bilan comptable ?",
+      "options": [
+        "De l'actif et du passif",
+        "Des produits et des charges",
+        "Des entrées et sorties de trésorerie",
+        "Des ventes et des achats"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q2",
+      "question": "Quelle métaphore le programme utilise-t-il pour décrire le bilan ?",
+      "options": [
+        "Un film de l'activité sur l'année",
+        "Une photographie de l'entreprise à une date donnée",
+        "Un GPS de la croissance",
+        "Un contrat entre actionnaires"
+      ],
+      "correcte": 1
+    },
+    {
+      "id": "Q3",
+      "question": "Quels signaux d'alerte peut-on détecter en lisant un bilan ?",
+      "options": [
+        "Ratio d'endettement excessif, manque de fonds propres, immobilisations mal financées",
+        "Trop de clients satisfaits",
+        "Un chiffre d'affaires en croissance",
+        "Une trésorerie positive"
+      ],
+      "correcte": 0
+    }
+  ],
+  "M10": [
+    {
+      "id": "Q1",
+      "question": "Quelle est la différence entre optimisation fiscale légale et fraude fiscale ?",
+      "options": [
+        "L'optimisation utilise les dispositifs prévus par la loi, la fraude les contourne illégalement",
+        "Il n'y a aucune différence juridique",
+        "L'optimisation concerne uniquement les grandes entreprises",
+        "La fraude est autorisée pour les TPE"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q2",
+      "question": "Quel levier d'optimisation fiscale est cité dans le programme ?",
+      "options": [
+        "Le choix de la forme juridique et du régime fiscal adapté",
+        "La dissimulation de revenus",
+        "Le non-paiement de la TVA",
+        "La création de sociétés fictives"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q3",
+      "question": "Comment considérer un expert-comptable compétent selon JCBO ?",
+      "options": [
+        "Comme une dépense inutile",
+        "Comme un investissement pouvant faire économiser plusieurs milliers d'euros par an",
+        "Comme un substitut à la direction générale",
+        "Comme un simple prestataire administratif"
+      ],
+      "correcte": 1
+    }
+  ],
+  "M11": [
+    {
+      "id": "Q1",
+      "question": "Quelles compétences synthétise l'évaluation finale du cours fiscal ?",
+      "options": [
+        "Lecture des états financiers, TVA, charges déductibles et stratégie fiscale",
+        "Techniques de vente et prospection",
+        "Leadership d'équipe et gestion de crise",
+        "Création de site web et SEO"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q2",
+      "question": "Le compte de résultat mesure principalement :",
+      "options": [
+        "La performance sur une période",
+        "Le patrimoine à une date fixe",
+        "Les flux de trésorerie",
+        "La valeur des immobilisations uniquement"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q3",
+      "question": "L'optimisation fiscale légale vise à :",
+      "options": [
+        "Minimiser la charge fiscale dans le cadre de la loi",
+        "Éviter toute déclaration fiscale",
+        "Augmenter artificiellement les charges non déductibles",
+        "Remplacer la comptabilité par la trésorerie"
+      ],
+      "correcte": 0
+    }
+  ],
+  "M12": [
+    {
+      "id": "Q1",
+      "question": "Le module « La psychologie de l'acheteur » appartient à quel programme ?",
+      "options": [
+        "VENDEUR ATTITUDE™",
+        "MINDSET ENTREPRENEURIAL™",
+        "Leadership & Performance",
+        "Optimisation fiscale TPE/PME"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q2",
+      "question": "Comprendre la psychologie d'achat permet principalement de :",
+      "options": [
+        "Manipuler le client coûte que coûte",
+        "Adapter son approche commerciale aux motivations réelles de l'acheteur",
+        "Réduire le prix systématiquement",
+        "Éviter toute négociation"
+      ],
+      "correcte": 1
+    },
+    {
+      "id": "Q3",
+      "question": "Dans VENDEUR ATTITUDE™, le premier niveau vise à développer :",
+      "options": [
+        "Le mindset commercial et une posture crédible",
+        "La gestion comptable avancée",
+        "Le recrutement de masse",
+        "La structuration juridique de l'entreprise"
+      ],
+      "correcte": 0
+    }
+  ],
+  "M13": [
+    {
+      "id": "Q1",
+      "question": "La posture commerciale impactante repose notamment sur :",
+      "options": [
+        "Une communication claire, cohérente et orientée client",
+        "Un discours agressif pour imposer l'offre",
+        "L'absence de préparation avant chaque rendez-vous",
+        "La sous-traitance systématique de la négociation"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q2",
+      "question": "Pourquoi la communication commerciale doit-elle être alignée avec la posture professionnelle ?",
+      "options": [
+        "Parce que le client observe la cohérence entre discours et comportement",
+        "Parce que la loi l'impose pour toute vente B2B",
+        "Parce que cela remplace la qualité du produit",
+        "Parce que le prix n'a plus d'importance"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q3",
+      "question": "Un vendeur crédible se distingue par :",
+      "options": [
+        "Sa maîtrise émotionnelle et sa cohérence",
+        "Son volume de parole maximal",
+        "Son refus de toute objection",
+        "Sa promesse de remise immédiate"
+      ],
+      "correcte": 0
+    }
+  ],
+  "M14": [
+    {
+      "id": "Q1",
+      "question": "Une prospection efficace se caractérise par :",
+      "options": [
+        "Une ciblage pertinent et un message de valeur clair",
+        "Un contact aléatoire sans préparation",
+        "Une multiplication des relances sans personnalisation",
+        "L'envoi massif de messages identiques"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q2",
+      "question": "Avant de prospecter, le commercial performant doit idéalement :",
+      "options": [
+        "Connaître son offre, son client cible et sa proposition de valeur",
+        "Attendre que le client appelle en premier",
+        "Proposer immédiatement une remise maximale",
+        "Éviter toute recherche sur le prospect"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q3",
+      "question": "Le module « Techniques de prospection efficaces » fait partie du parcours :",
+      "options": [
+        "VENDEUR ATTITUDE™",
+        "Structuration stratégique",
+        "Optimisation fiscale",
+        "MINDSET ENTREPRENEURIAL™ uniquement"
+      ],
+      "correcte": 0
+    }
+  ],
+  "M15": [
+    {
+      "id": "Q1",
+      "question": "Face à une objection client, la bonne posture consiste à :",
+      "options": [
+        "Écouter, clarifier le fond du blocage et reformuler la valeur",
+        "Couper la parole pour imposer l'argumentaire",
+        "Abandonner immédiatement la vente",
+        "Baisser le prix sans analyser l'objection"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q2",
+      "question": "Une objection est le plus souvent :",
+      "options": [
+        "Un signal d'intérêt nécessitant une réponse structurée",
+        "Un refus définitif sans suite possible",
+        "Une preuve que l'offre est inadaptée",
+        "Une excuse pour ne pas conclure"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q3",
+      "question": "Traiter les objections fait partie de quelle étape du cycle de vente ?",
+      "options": [
+        "Avant la conclusion, pour lever les freins restants",
+        "Uniquement après la signature",
+        "Jamais, car cela affaiblit la vente",
+        "Uniquement en B2C, jamais en B2B"
+    ],
+      "correcte": 0
+    }
+  ],
+  "M16": [
+    {
+      "id": "Q1",
+      "question": "Conclure une vente exige notamment :",
+      "options": [
+        "Proposer une prochaine étape claire et obtenir un engagement",
+        "Attendre que le client décide seul sans relance",
+        "Changer d'offre à chaque hésitation",
+        "Abandonner dès la première hésitation"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q2",
+      "question": "La fidélisation commerciale vise à :",
+      "options": [
+        "Renforcer la relation après la vente pour créer de la récurrence",
+        "Ne plus jamais contacter le client après signature",
+        "Réduire systématiquement le prix à chaque achat",
+        "Supprimer tout suivi post-vente"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q3",
+      "question": "Le module « Conclure et fidéliser » clôt la phase opérationnelle de :",
+      "options": [
+        "VENDEUR ATTITUDE™ avant l'évaluation M17",
+        "Leadership & Performance",
+        "Optimisation fiscale",
+        "Structuration stratégique"
+      ],
+      "correcte": 0
+    }
+  ],
+  "M17": [
+    {
+      "id": "Q1",
+      "question": "L'évaluation VENDEUR ATTITUDE™ valide la maîtrise de :",
+      "options": [
+        "Prospection, posture, objections, conclusion et fidélisation",
+        "Comptabilité générale et TVA",
+        "Plan d'action 90 jours",
+        "Analyse de bilan comptable"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q2",
+      "question": "Quel score minimum est généralement requis pour valider un quiz JCBO ?",
+      "options": [
+        "80%",
+        "50%",
+        "100% obligatoire",
+        "Aucun score minimum n'est jamais exigé"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q3",
+      "question": "VENDEUR ATTITUDE™ couvre le cycle de vente de :",
+      "options": [
+        "La prospection à la conclusion et la fidélisation",
+        "La création d'entreprise uniquement",
+        "La fiscalité des TPE",
+        "La gestion de crise uniquement"
+      ],
+      "correcte": 0
+    }
+  ],
+  "M18": [
+    {
+      "id": "Q1",
+      "question": "Le leadership moderne selon JCBO se définit d'abord comme :",
+      "options": [
+        "Un comportement quotidien, pas seulement un titre",
+        "Un privilège réservé aux PDG",
+        "Une compétence innée non développable",
+        "La capacité à imposer sa volonté sans écoute"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q2",
+      "question": "Les fondements du leadership reposent notamment sur :",
+      "options": [
+        "Vision, exemplarité, responsabilité et capacité à fédérer",
+        "Contrôle permanent et micro-management",
+        "Évitement de toute prise de décision",
+        "Délégation totale sans cadre"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q3",
+      "question": "Le module M18 appartient au cours :",
+      "options": [
+        "Leadership & Performance",
+        "VENDEUR ATTITUDE™",
+        "Optimisation fiscale",
+        "Structuration stratégique"
+      ],
+      "correcte": 0
+    }
+  ],
+  "M19": [
+    {
+      "id": "Q1",
+      "question": "Mobiliser et fédérer une équipe exige prioritairement :",
+      "options": [
+        "Une vision claire, de la reconnaissance et des objectifs partagés",
+        "Des sanctions immédiates à chaque erreur",
+        "L'absence de feedback pour préserver l'autonomie",
+        "Un turnover élevé pour renouveler les talents"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q2",
+      "question": "Un leader performant crée les conditions pour que les autres :",
+      "options": [
+        "Progressent et prennent des responsabilités",
+        "Exécutent sans comprendre la stratégie",
+        "Évitent toute initiative personnelle",
+        "Travaillent uniquement sur consigne écrite"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q3",
+      "question": "La cohérence entre discours et actes du leader :",
+      "options": [
+        "Renforce la confiance et l'engagement de l'équipe",
+        "Est secondaire par rapport au chiffre d'affaires",
+        "Doit être réservée aux clients externes uniquement",
+        "Ralentit nécessairement la prise de décision"
+      ],
+      "correcte": 0
+    }
+  ],
+  "M20": [
+    {
+      "id": "Q1",
+      "question": "La gestion de la performance repose sur le suivi :",
+      "options": [
+        "D'indicateurs clés (KPIs) alignés sur les objectifs stratégiques",
+        "Exclusivement du chiffre d'affaires mensuel",
+        "Uniquement d'indicateurs RH sans lien avec les objectifs métier",
+        "De rapports annuels sans fréquence intermédiaire"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q2",
+      "question": "Quelle pratique soutient la discipline opérationnelle d'une équipe ?",
+      "options": [
+        "Planification hebdomadaire et revue régulière des résultats",
+        "Changement permanent de priorités sans cadre",
+        "Absence de rituels pour favoriser la spontanéité",
+        "Suppression de toute mesure individuelle"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q3",
+      "question": "Pilotez-vous de préférence sur :",
+      "options": [
+        "Les indicateurs avancés prédictifs",
+        "Uniquement les résultats passés",
+        "Des impressions subjectives sans données",
+        "Le ressenti du marché sans KPI"
+      ],
+      "correcte": 0
+    }
+  ],
+  "M21": [
+    {
+      "id": "Q1",
+      "question": "En situation de crise, le leader doit prioritairement :",
+      "options": [
+        "Communiquer avec transparence, décider et sécuriser l'essentiel",
+        "Disparaître pour laisser l'équipe improviser",
+        "Multiplier les messages contradictoires",
+        "Reporter toutes les décisions sine die"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q2",
+      "question": "La résilience entrepreneuriale en crise repose sur :",
+      "options": [
+        "Discipline, clarté des priorités et capacité d'ajustement",
+        "Le déni de la situation",
+        "L'arrêt total de l'activité",
+        "Le blâme systématique des équipes"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q3",
+      "question": "Le module « Leadership en situation de crise » précède :",
+      "options": [
+        "L'évaluation Leadership & Performance (M22)",
+        "L'évaluation VENDEUR ATTITUDE™",
+        "Le module comptabilité M08",
+        "Le plan d'action 90 jours M26"
+      ],
+      "correcte": 0
+    }
+  ],
+  "M22": [
+    {
+      "id": "Q1",
+      "question": "L'évaluation Leadership & Performance valide notamment :",
+      "options": [
+        "Mobilisation d'équipe, pilotage KPI, leadership en crise",
+        "Techniques de prospection et traitement des objections",
+        "Lecture de bilan et optimisation fiscale",
+        "Création de business model Canvas uniquement"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q2",
+      "question": "Le leadership n'est pas un titre mais :",
+      "options": [
+        "Un comportement quotidien",
+        "Un grade obtenu après certification RH",
+        "Une fonction réservée au comité de direction",
+        "Un rôle purement symbolique"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q3",
+      "question": "Quel cours comprend les modules M18 à M22 ?",
+      "options": [
+        "Leadership & Performance",
+        "VENDEUR ATTITUDE™",
+        "Optimisation fiscale TPE/PME",
+        "MINDSET ENTREPRENEURIAL™"
+      ],
+      "correcte": 0
+    }
+  ],
+  "M23": [
+    {
+      "id": "Q1",
+      "question": "Clarifier sa vision et ses objectifs, c'est d'abord :",
+      "options": [
+        "Donner une direction mesurable à l'action sur le moyen et long terme",
+        "Fixer uniquement des objectifs financiers du mois",
+        "Copier la vision d'un concurrent leader",
+        "Reporter toute planification après la première année"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q2",
+      "question": "Une vision efficace doit être :",
+      "options": [
+        "Inspirante, ambitieuse, claire et orientée avenir",
+        "Secrète et connue du dirigeant seul",
+        "Modifiée chaque semaine selon l'humeur",
+        "Centrée uniquement sur la réduction des coûts"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q3",
+      "question": "Le module M23 ouvre le parcours :",
+      "options": [
+        "Structuration stratégique",
+        "VENDEUR ATTITUDE™",
+        "Optimisation fiscale",
+        "Leadership en crise"
+      ],
+      "correcte": 0
+    }
+  ],
+  "M24": [
+    {
+      "id": "Q1",
+      "question": "Construire son business model consiste à formaliser :",
+      "options": [
+        "Qui paie quoi, pourquoi et comment l'entreprise crée de la valeur",
+        "Uniquement le logo et la charte graphique",
+        "Le planning des congés de l'équipe",
+        "La politique de recrutement sur cinq ans"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q2",
+      "question": "Sans modèle économique formalisé, l'entrepreneur risque de :",
+      "options": [
+        "Travailler dans son activité plutôt que sur son activité",
+        "Automatiquement doubler son chiffre d'affaires",
+        "Ne plus avoir besoin de pilotage",
+        "Éviter toute concurrence"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q3",
+      "question": "Le livrable structuration demande d'identifier notamment :",
+      "options": [
+        "Les 3 offres principales, leur prix, valeur perçue et canal de distribution",
+        "Uniquement le nombre de salariés prévus",
+        "La couleur des locaux commerciaux",
+        "Le nom de domaine internet"
+      ],
+      "correcte": 0
+    }
+  ],
+  "M25": [
+    {
+      "id": "Q1",
+      "question": "Définir son offre et son positionnement implique de clarifier :",
+      "options": [
+        "La promesse de valeur et la différenciation face au marché",
+        "Uniquement le prix le plus bas possible",
+        "La copie conforme de l'offre du leader du secteur",
+        "L'élargissement maximal de l'offre sans ciblage"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q2",
+      "question": "Un positionnement fort répond à la question :",
+      "options": [
+        "Pourquoi un client vous choisirait plutôt qu'un concurrent ?",
+        "Combien de bureaux ouvrir dans les 30 prochains jours ?",
+        "Quel logiciel comptable utiliser ?",
+        "Quelle couleur de logo adopter ?"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q3",
+      "question": "La proposition de valeur doit être :",
+      "options": [
+        "Claire, crédible et alignée avec les besoins du client cible",
+        "Volontairement floue pour toucher tout le monde",
+        "Identique pour tous les segments sans adaptation",
+        "Basée uniquement sur des promesses non vérifiables"
+      ],
+      "correcte": 0
+    }
+  ],
+  "M26": [
+    {
+      "id": "Q1",
+      "question": "Le plan d'action 90 jours doit contenir :",
+      "options": [
+        "Des objectifs précis, mesurables et réalistes",
+        "Uniquement des intentions générales sans échéance",
+        "Des objectifs impossibles pour forcer la performance",
+        "Aucune priorisation entre les actions"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q2",
+      "question": "Structurer la croissance et assurer la pérennité exige notamment :",
+      "options": [
+        "Vision, modèle économique, pilotage et plan d'action structuré",
+        "La croissance rapide sans cadre ni indicateurs",
+        "L'absence de revue de performance",
+        "Le changement de stratégie chaque semaine"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q3",
+      "question": "Combien d'indicateurs le tableau de bord hebdomadaire doit-il idéalement suivre ?",
+      "options": [
+        "5 à 7 indicateurs clés",
+        "1 seul indicateur global",
+        "Plus de 30 pour tout couvrir",
+        "Aucun indicateur chiffré"
+      ],
+      "correcte": 0
+    }
+  ],
+  "M27": [
+    {
+      "id": "Q1",
+      "question": "L'évaluation Structuration stratégique valide la maîtrise de :",
+      "options": [
+        "Vision, business model, offre/positionnement et plan 90 jours",
+        "Prospection téléphonique et traitement des objections",
+        "TVA et charges déductibles",
+        "Leadership en situation de crise uniquement"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q2",
+      "question": "Sans structure, l'entrepreneur est condamné à :",
+      "options": [
+        "Travailler dans son activité plutôt que sur son activité",
+        "Automatiquement scaler son entreprise",
+        "Ne plus avoir besoin de vision",
+        "Éviter toute prise de décision"
+      ],
+      "correcte": 0
+    },
+    {
+      "id": "Q3",
+      "question": "Le cours Structuration stratégique comprend les modules :",
+      "options": [
+        "M23 à M27",
+        "M12 à M17",
+        "M01 à M07",
+        "M08 à M11"
+      ],
+      "correcte": 0
+    }
+  ]
+}

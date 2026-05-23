@@ -1,4 +1,5 @@
 import { getSupabase } from "./supabase";
+import { hashPassword } from "./password";
 
 // ── Re-exported types (unchanged surface for callers) ─────────────────────────
 
@@ -23,6 +24,8 @@ export type Paiement = {
   date: string;
   stripeSessionId: string;
   numerTransaction: string;
+  provider?: string;
+  fapshiTransactionId?: string;
 };
 
 export type AdherentComplet = {
@@ -107,8 +110,10 @@ function toPaiement(row: any): Paiement {
     coursTitre: row.cours_titre,
     montant: Number(row.montant),
     date: row.date,
-    stripeSessionId: row.stripe_session_id,
+    stripeSessionId: row.stripe_session_id ?? "",
     numerTransaction: row.numer_transaction,
+    provider: row.provider,
+    fapshiTransactionId: row.fapshi_transaction_id,
   };
 }
 
@@ -132,6 +137,9 @@ function toCours(row: any, modules: any[] = []) {
         duree: m.duree,
         type: m.type as "Vidéo" | "Document" | "Quiz",
         ordre: m.ordre,
+        fichierUrl: m.fichier_url ?? undefined,
+        videoUrl: m.video_url ?? undefined,
+        contenuMd: m.contenu_md ?? undefined,
       })),
   };
 }
@@ -143,13 +151,47 @@ export async function getActualites() {
   return data ?? [];
 }
 
-export async function createActualite(data: { titre: string; contenu: string; statut: "Publié" | "Brouillon" }) {
-  const item = { id: `ACT-${Date.now()}`, ...data, date: new Date().toISOString().split("T")[0] };
+export async function createActualite(data: {
+  titre: string;
+  contenu: string;
+  statut: "Publié" | "Brouillon";
+  categorie?: string;
+  extrait?: string;
+  image_url?: string;
+  slug?: string;
+}) {
+  const { uniqueSlug } = await import("./store-admin");
+  const slug = data.slug ?? await uniqueSlug(data.titre, async (s) => {
+    const { data: ex } = await getSupabase().from("actualites").select("id").eq("slug", s).maybeSingle();
+    return !!ex;
+  });
+  const item = {
+    id: `ACT-${Date.now()}`,
+    titre: data.titre,
+    contenu: data.contenu,
+    statut: data.statut,
+    categorie: data.categorie ?? "Actualité",
+    extrait: data.extrait ?? data.contenu.slice(0, 200),
+    image_url: data.image_url ?? null,
+    slug,
+    date: new Date().toISOString().split("T")[0],
+  };
   await getSupabase().from("actualites").insert(item);
   return item;
 }
 
-export async function updateActualite(id: string, data: { titre?: string; contenu?: string; statut?: string }) {
+export async function updateActualite(
+  id: string,
+  data: {
+    titre?: string;
+    contenu?: string;
+    statut?: string;
+    categorie?: string;
+    extrait?: string;
+    image_url?: string | null;
+    slug?: string;
+  }
+) {
   const { data: row } = await getSupabase().from("actualites").update(data).eq("id", id).select().single();
   return row ?? null;
 }
@@ -186,7 +228,7 @@ export async function createAdherent(data: Omit<AdherentComplet, "id" | "numeroA
     prenom: data.prenom,
     nom: data.nom,
     email: data.email.toLowerCase(),
-    mot_de_passe: data.motDePasse,
+    mot_de_passe: await hashPassword(data.motDePasse),
     telephone: data.telephone ?? "",
     entreprise: data.entreprise ?? "",
     secteur: data.secteur ?? "",
@@ -205,7 +247,7 @@ export async function updateAdherent(id: string, data: Partial<Omit<AdherentComp
   if (data.prenom !== undefined) patch.prenom = data.prenom;
   if (data.nom !== undefined) patch.nom = data.nom;
   if (data.email !== undefined) patch.email = data.email.toLowerCase();
-  if (data.motDePasse !== undefined) patch.mot_de_passe = data.motDePasse;
+  if (data.motDePasse !== undefined) patch.mot_de_passe = await hashPassword(data.motDePasse);
   if (data.telephone !== undefined) patch.telephone = data.telephone;
   if (data.entreprise !== undefined) patch.entreprise = data.entreprise;
   if (data.secteur !== undefined) patch.secteur = data.secteur;
@@ -271,7 +313,7 @@ export async function resetMotDePasse(adherentId: string): Promise<{ email: stri
   const charset = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#!";
   let password = "";
   for (let i = 0; i < 12; i++) password += charset[Math.floor(Math.random() * charset.length)];
-  await getSupabase().from("adherents").update({ mot_de_passe: password }).eq("id", adherentId);
+  await getSupabase().from("adherents").update({ mot_de_passe: await hashPassword(password) }).eq("id", adherentId);
   return { email: a.email, nom: `${a.prenom} ${a.nom}`, motDePasse: password };
 }
 
@@ -294,7 +336,7 @@ export async function updateProfil(email: string, data: Partial<Pick<AdherentCom
   if (data.telephone !== undefined) patch.telephone = data.telephone;
   if (data.entreprise !== undefined) patch.entreprise = data.entreprise;
   if (data.secteur !== undefined) patch.secteur = data.secteur;
-  if (data.motDePasse !== undefined) patch.mot_de_passe = data.motDePasse;
+  if (data.motDePasse !== undefined) patch.mot_de_passe = await hashPassword(data.motDePasse);
   const { data: row } = await getSupabase().from("adherents").update(patch).ilike("email", email).select().single();
   return row ? toAdherent(row) : null;
 }
@@ -411,23 +453,140 @@ export async function deleteRessource(id: string): Promise<boolean> {
   return !error;
 }
 
-// ── Adhésion / Certificat (données fixes) ────────────────────────────────────
+// ── Adhésion ──────────────────────────────────────────────────────────────────
 
-import { mockAdhesion, mockCertificat } from "../data/mock";
-export function getAdhesion() { return { ...mockAdhesion }; }
-export function getCertificat() { return { ...mockCertificat }; }
+export async function getAdhesion(email: string) {
+  const adherent = await getAdherentByEmail(email);
+  if (!adherent) return null;
+  const { data: paiements } = await getSupabase()
+    .from("paiements")
+    .select("*")
+    .eq("adherent_email", email.toLowerCase())
+    .order("date", { ascending: false });
+  const cours = adherent.coursInscrits[0]
+    ? await getCoursById(adherent.coursInscrits[0])
+    : null;
+  const dateFin = new Date(adherent.dateAdhesion);
+  dateFin.setFullYear(dateFin.getFullYear() + 1);
+  return {
+    numero: adherent.numeroAdherent,
+    statut: adherent.statut === "Actif" ? "active" : "inactive",
+    dateDebut: adherent.dateAdhesion,
+    dateFin: dateFin.toISOString().split("T")[0],
+    programme: cours?.titre ?? "Programme JCBO",
+    abonnement: adherent.abonnement,
+    paiements: (paiements ?? []).map((p) => ({
+      id: p.id,
+      date: p.date,
+      montant: Number(p.montant),
+      methode: p.provider === "fapshi" ? "OM/MoMo" : "Carte",
+      reference: p.numer_transaction,
+    })),
+  };
+}
+
+export async function getCertificatCompetences(email: string, coursId: string) {
+  const cours = await getCoursById(coursId);
+  const cert = await getCertificatAdherent(email, coursId);
+  const adherent = await getAdherentByEmail(email);
+  if (!cours || !adherent) return null;
+  return {
+    nom: `${adherent.prenom} ${adherent.nom}`,
+    programme: cours.titre,
+    numero: cert?.numero ?? "",
+    dateDelivrance: cert?.dateEmission ?? "",
+    competences: (cours as { competences?: string[] }).competences?.length
+      ? (cours as { competences?: string[] }).competences!
+      : cours.modules.filter((m) => m.type !== "Quiz").map((m) => m.titre),
+  };
+}
 
 // ── Statistiques ──────────────────────────────────────────────────────────────
 
-import { mockStats } from "../data/mock";
 export async function getStats() {
-  const { count: total } = await getSupabase().from("adherents").select("id", { count: "exact", head: true });
-  const { count: actifs } = await getSupabase().from("adherents").select("id", { count: "exact", head: true }).eq("statut", "Actif");
+  const sb = getSupabase();
+  const now = new Date();
+  const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+
+  const [
+    { count: total },
+    { count: actifs },
+    { count: nouveaux },
+    { data: paiements },
+    { count: diagnostics },
+    { count: messagesNonLus },
+  ] = await Promise.all([
+    sb.from("adherents").select("id", { count: "exact", head: true }),
+    sb.from("adherents").select("id", { count: "exact", head: true }).eq("statut", "Actif"),
+    sb.from("adherents").select("id", { count: "exact", head: true }).gte("date_adhesion", monthStart),
+    sb.from("paiements").select("montant, date"),
+    sb.from("diagnostic_soumissions").select("id", { count: "exact", head: true }),
+    sb.from("conversations").select("id", { count: "exact", head: true }).gt("non_lu", 0),
+  ]);
+
+  const caMois = (paiements ?? [])
+    .filter((p) => p.date >= monthStart)
+    .reduce((s, p) => s + Number(p.montant), 0);
+
+  const { count: inscriptionsCours } = await sb
+    .from("progressions")
+    .select("adherent_email", { count: "exact", head: true });
+
+  const totalNum = total ?? 0;
+  const actifsNum = actifs ?? 0;
+  const tauxRenouvellement = totalNum > 0 ? Math.round((actifsNum / totalNum) * 100) : 0;
+
+  const progressionMensuelle = await getAdhesionProgressionMensuelle();
+
   return {
-    ...mockStats,
-    totalAdherents: total ?? 0,
-    adherentsActifs: actifs ?? 0,
+    totalAdherents: totalNum,
+    adherentsActifs: actifsNum,
+    nouveauxCeMois: nouveaux ?? 0,
+    tauxRenouvellement,
+    caMois,
+    diagnosticsRecus: diagnostics ?? 0,
+    messagesNonLus: messagesNonLus ?? 0,
+    inscriptionsCours: inscriptionsCours ?? 0,
+    progressionMensuelle,
   };
+}
+
+async function getAdhesionProgressionMensuelle(): Promise<{ mois: string; valeur: number }[]> {
+  const { data } = await getSupabase().from("adherents").select("date_adhesion");
+  const counts: Record<string, number> = {};
+  for (const row of data ?? []) {
+    const d = new Date(row.date_adhesion);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    counts[key] = (counts[key] ?? 0) + 1;
+  }
+  const sorted = Object.keys(counts).sort().slice(-6);
+  const labels = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Aoû", "Sep", "Oct", "Nov", "Déc"];
+  return sorted.map((k) => {
+    const m = parseInt(k.split("-")[1], 10) - 1;
+    return { mois: labels[m] ?? k, valeur: counts[k] };
+  });
+}
+
+export async function searchAdherents(query: string): Promise<AdherentComplet[]> {
+  const q = query.trim().toLowerCase();
+  if (!q) return getAdherents();
+  const all = await getAdherents();
+  return all.filter(
+    (a) =>
+      a.email.toLowerCase().includes(q) ||
+      a.prenom.toLowerCase().includes(q) ||
+      a.nom.toLowerCase().includes(q) ||
+      a.numeroAdherent.toLowerCase().includes(q) ||
+      `${a.prenom} ${a.nom}`.toLowerCase().includes(q)
+  );
+}
+
+export async function updateModule(
+  moduleId: string,
+  data: Partial<{ fichier_url: string; video_url: string; contenu_md: string; titre: string }>
+) {
+  const { data: row } = await getSupabase().from("modules").update(data).eq("id", moduleId).select().single();
+  return row;
 }
 
 // ── Cours ─────────────────────────────────────────────────────────────────────
@@ -436,6 +595,13 @@ export async function getCours() {
   const { data: coursRows } = await getSupabase().from("cours").select("*").order("date", { ascending: false });
   const { data: moduleRows } = await getSupabase().from("modules").select("*");
   return (coursRows ?? []).map(c => toCours(c, moduleRows ?? []));
+}
+
+export async function getCoursById(id: string) {
+  const { data: row } = await getSupabase().from("cours").select("*").eq("id", id).maybeSingle();
+  if (!row) return null;
+  const { data: moduleRows } = await getSupabase().from("modules").select("*").eq("cours_id", id);
+  return toCours(row, moduleRows ?? []);
 }
 
 export async function createCours(data: {
@@ -553,7 +719,13 @@ export async function getPaiementParSession(stripeSessionId: string): Promise<Pa
   return data ? toPaiement(data) : null;
 }
 
-export async function enregistrerPaiement(data: Omit<Paiement, "id" | "date" | "numerTransaction">): Promise<Paiement> {
+export async function enregistrerPaiement(
+  data: Omit<Paiement, "id" | "date" | "numerTransaction"> & {
+    provider?: string;
+    fapshiTransactionId?: string;
+    externalId?: string;
+  }
+): Promise<Paiement> {
   const { count } = await getSupabase().from("paiements").select("id", { count: "exact", head: true });
   const num = String((count ?? 0) + 1).padStart(6, "0");
   const paiement = {
@@ -564,10 +736,22 @@ export async function enregistrerPaiement(data: Omit<Paiement, "id" | "date" | "
     cours_id: data.coursId,
     cours_titre: data.coursTitre,
     montant: data.montant,
-    stripe_session_id: data.stripeSessionId,
+    stripe_session_id: data.stripeSessionId || null,
+    provider: data.provider ?? "stripe",
+    fapshi_transaction_id: data.fapshiTransactionId ?? null,
+    external_id: data.externalId ?? null,
   };
   await getSupabase().from("paiements").insert(paiement);
   return toPaiement(paiement);
+}
+
+export async function getPaiementParFapshiId(fapshiId: string): Promise<Paiement | null> {
+  const { data } = await getSupabase()
+    .from("paiements")
+    .select("*")
+    .eq("fapshi_transaction_id", fapshiId)
+    .maybeSingle();
+  return data ? toPaiement(data) : null;
 }
 
 // ── Notifications ─────────────────────────────────────────────────────────────

@@ -6,7 +6,10 @@ const secret = new TextEncoder().encode(
 
 export interface SessionPayload {
   email: string;
-  role: "admin" | "adherent";
+  role: "admin" | "adherent" | "diagnostic";
+  diagnosticId?: string;
+  adminId?: string;
+  adminRole?: "super_admin" | "admin";
 }
 
 export async function createSession(payload: SessionPayload): Promise<string> {
@@ -24,4 +27,12 @@ export async function verifySession(token: string): Promise<SessionPayload | nul
   } catch {
     return null;
   }
+}
+
+export async function verifySessionFromRequest(request: Request): Promise<SessionPayload | null> {
+  const auth = request.headers.get("Authorization");
+  if (auth?.startsWith("Bearer ")) {
+    return verifySession(auth.slice(7));
+  }
+  return null;
 }

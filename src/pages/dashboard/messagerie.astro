@@ -3,6 +3,8 @@ import AdherentLayout from "../../layouts/AdherentLayout.astro";
 import { getConversations } from "../../lib/store";
 
 const conversations = await getConversations();
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL ?? "";
+const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? "";
 ---
 
 <AdherentLayout titre="Messagerie">
@@ -195,6 +197,19 @@ const conversations = await getConversations();
       renderMessages(activeId);
       markAsRead(activeId);
     }
+
+    window.addEventListener("jcbo:new-message", async () => {
+      const res = await fetch("/api/messagerie");
+      if (res.ok) location.reload();
+    });
   </script>
+  {supabaseUrl && supabaseAnonKey && (
+    <>
+      <script is:inline define:vars={{ supabaseUrl, supabaseAnonKey }}>
+        window.__JCBO_REALTIME__ = { url: supabaseUrl, anonKey: supabaseAnonKey };
+      </script>
+      <script src="/js/realtime-messaging.js" defer></script>
+    </>
+  )}
 
 </AdherentLayout>

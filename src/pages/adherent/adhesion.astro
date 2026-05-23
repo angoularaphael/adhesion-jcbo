@@ -4,7 +4,10 @@ import Card from "../../components/ui/Card.astro";
 import Badge from "../../components/ui/Badge.astro";
 import { getAdhesion } from "../../lib/store";
 
-const mockAdhesion = await getAdhesion();
+const email = Astro.locals.session?.email ?? "";
+if (!email) return Astro.redirect("/login");
+const mockAdhesion = await getAdhesion(email);
+if (!mockAdhesion) return Astro.redirect("/login");
 const dateDebutFormatee = new Date(mockAdhesion.dateDebut).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 const dateFinFormatee = new Date(mockAdhesion.dateFin).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 const joursRestants = Math.ceil((new Date(mockAdhesion.dateFin).getTime() - Date.now()) / 86400000);
