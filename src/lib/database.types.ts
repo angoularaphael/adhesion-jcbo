@@ -22,6 +22,10 @@ export type DbActualite = {
   contenu: string;
   statut: string;
   date: string;
+  image_url: string | null;
+  categorie: string;
+  extrait: string;
+  slug: string | null;
 };
 
 export type DbConversation = {

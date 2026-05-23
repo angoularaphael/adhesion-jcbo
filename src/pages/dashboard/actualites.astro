@@ -32,11 +32,14 @@ const actualites = await getActualites();
               </span>
             </div>
             <h3 class="text-base font-semibold mb-2 leading-snug" style="color: #0b1f3a;">{a.titre}</h3>
+            {a.image_url && (
+              <img src={a.image_url} alt="" class="w-full max-w-md h-36 object-cover rounded-lg mb-3" />
+            )}
             <p class="text-sm text-gray-500 leading-relaxed">{a.contenu}</p>
           </div>
           <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
             <button class="btn-edit p-2 rounded-full hover:bg-blue-50 text-gray-400 hover:text-blue-500"
-              data-id={a.id} data-titre={a.titre} data-contenu={a.contenu} data-statut={a.statut}
+              data-id={a.id} data-titre={a.titre} data-contenu={a.contenu} data-statut={a.statut} data-image={a.image_url ?? ""}
               title="Modifier">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -68,6 +71,14 @@ const actualites = await getActualites();
           <label class="text-xs font-medium text-gray-400 uppercase tracking-widest">Contenu</label>
           <textarea id="input-contenu" rows="4" placeholder="Contenu de l'actualité..." required
             class="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm outline-none focus:border-[#d4a762] transition resize-none" style="color: #0b1f3a;"></textarea>
+        </div>
+        <div class="flex flex-col gap-2">
+          <label class="text-xs font-medium text-gray-400 uppercase tracking-widest">Image (optionnel)</label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <span class="px-4 py-2 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50">Choisir une image</span>
+            <input id="input-image-nouvelle" type="file" accept="image/*" class="hidden" />
+          </label>
+          <div id="preview-nouvelle" class="hidden"></div>
         </div>
         <div class="flex flex-col gap-2">
           <label class="text-xs font-medium text-gray-400 uppercase tracking-widest">Statut</label>
@@ -107,6 +118,14 @@ const actualites = await getActualites();
             class="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm outline-none focus:border-[#d4a762] transition resize-none" style="color: #0b1f3a;"></textarea>
         </div>
         <div class="flex flex-col gap-2">
+          <label class="text-xs font-medium text-gray-400 uppercase tracking-widest">Image (optionnel)</label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <span class="px-4 py-2 rounded-lg text-xs font-medium border border-gray-200 text-gray-600 hover:bg-gray-50">Changer l'image</span>
+            <input id="input-image-edit" type="file" accept="image/*" class="hidden" />
+          </label>
+          <div id="preview-edit" class="hidden"></div>
+        </div>
+        <div class="flex flex-col gap-2">
           <label class="text-xs font-medium text-gray-400 uppercase tracking-widest">Statut</label>
           <select id="edit-statut"
             class="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm outline-none focus:border-[#d4a762] transition bg-white" style="color: #0b1f3a;">
@@ -128,94 +147,7 @@ const actualites = await getActualites();
   </div>
 
   <script>
-    const modalNouvelle = document.getElementById("modal-nouvelle") as HTMLElement;
-    const modalEdit = document.getElementById("modal-edit") as HTMLElement;
-
-    // --- Modal nouvelle ---
-    document.getElementById("btn-nouvelle")!.addEventListener("click", () => {
-      (document.getElementById("form-nouvelle") as HTMLFormElement).reset();
-      modalNouvelle.classList.replace("hidden", "flex");
-    });
-    document.getElementById("btn-annuler-nouvelle")!.addEventListener("click", () => modalNouvelle.classList.replace("flex", "hidden"));
-    modalNouvelle.addEventListener("click", (e) => { if (e.target === modalNouvelle) modalNouvelle.classList.replace("flex", "hidden"); });
-
-    document.getElementById("form-nouvelle")!.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const btn = document.getElementById("btn-submit-nouvelle") as HTMLButtonElement;
-      const errEl = document.getElementById("err-nouvelle") as HTMLParagraphElement;
-      btn.disabled = true;
-      btn.textContent = "Envoi…";
-      errEl.classList.add("hidden");
-
-      const res = await fetch("/api/actualites", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          titre: (document.getElementById("input-titre") as HTMLInputElement).value,
-          contenu: (document.getElementById("input-contenu") as HTMLTextAreaElement).value,
-          statut: (document.getElementById("input-statut") as HTMLSelectElement).value,
-        }),
-      });
-      const data = await res.json();
-
-      if (res.ok) { window.location.reload(); return; }
-      errEl.textContent = data.error || "Erreur lors de la création.";
-      errEl.classList.remove("hidden");
-      btn.disabled = false;
-      btn.textContent = "Publier";
-    });
-
-    // --- Modal édition ---
-    document.getElementById("btn-annuler-edit")!.addEventListener("click", () => modalEdit.classList.replace("flex", "hidden"));
-    modalEdit.addEventListener("click", (e) => { if (e.target === modalEdit) modalEdit.classList.replace("flex", "hidden"); });
-
-    document.querySelectorAll(".btn-edit").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const b = btn as HTMLButtonElement;
-        (document.getElementById("edit-id") as HTMLInputElement).value = b.dataset.id!;
-        (document.getElementById("edit-titre") as HTMLInputElement).value = b.dataset.titre!;
-        (document.getElementById("edit-contenu") as HTMLTextAreaElement).value = b.dataset.contenu!;
-        (document.getElementById("edit-statut") as HTMLSelectElement).value = b.dataset.statut!;
-        modalEdit.classList.replace("hidden", "flex");
-      });
-    });
-
-    document.getElementById("form-edit")!.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const btn = document.getElementById("btn-submit-edit") as HTMLButtonElement;
-      const errEl = document.getElementById("err-edit") as HTMLParagraphElement;
-      const id = (document.getElementById("edit-id") as HTMLInputElement).value;
-      btn.disabled = true;
-      btn.textContent = "Enregistrement…";
-      errEl.classList.add("hidden");
-
-      const res = await fetch(`/api/actualites/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          titre: (document.getElementById("edit-titre") as HTMLInputElement).value,
-          contenu: (document.getElementById("edit-contenu") as HTMLTextAreaElement).value,
-          statut: (document.getElementById("edit-statut") as HTMLSelectElement).value,
-        }),
-      });
-      const data = await res.json();
-
-      if (res.ok) { window.location.reload(); return; }
-      errEl.textContent = data.error || "Erreur lors de la modification.";
-      errEl.classList.remove("hidden");
-      btn.disabled = false;
-      btn.textContent = "Enregistrer";
-    });
-
-    // --- Suppression ---
-    document.querySelectorAll(".btn-delete").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        if (!confirm("Supprimer cette actualité définitivement ?")) return;
-        const id = (btn as HTMLButtonElement).dataset.id!;
-        const res = await fetch(`/api/actualites/${id}`, { method: "DELETE" });
-        if (res.ok) window.location.reload();
-      });
-    });
+    import "../../scripts/actualites-page.ts";
   </script>
 
 </AdherentLayout>

@@ -45,6 +45,12 @@ const cours = await getCours();
           </div>
           <div class="flex flex-col gap-2 flex-shrink-0">
             <button
+              class="btn-contenu-cours text-xs px-3 py-1.5 rounded-lg font-medium border transition hover:opacity-80"
+              style="border-color: #d4a762; color: #d4a762;"
+              data-id={c.id}
+              data-titre={c.titre}
+            >Contenu</button>
+            <button
               class="btn-edit-cours text-xs px-3 py-1.5 rounded-lg font-medium border transition hover:opacity-80"
               style="border-color: #0b1f3a; color: #0b1f3a;"
               data-id={c.id}
@@ -160,85 +166,37 @@ const cours = await getCours();
     </div>
   </div>
 
+  <!-- Modal gestion modules / fichiers / vidéos -->
+  <div id="modal-modules" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 overflow-y-auto" style="background:rgba(0,0,0,0.5);">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 md:p-8 my-8">
+      <h3 id="modal-modules-titre" class="text-lg font-bold mb-2" style="color: #0b1f3a;">Contenu du cours</h3>
+      <p class="text-xs text-gray-400 mb-6">Ajoutez des modules avec un fichier de cours et/ou une vidéo.</p>
+      <div id="modules-list" class="flex flex-col gap-4 mb-6"></div>
+      <form id="form-add-module" class="border-t border-gray-100 pt-6 flex flex-col gap-3">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Nouveau module</p>
+        <div class="grid sm:grid-cols-3 gap-3">
+          <input id="new-module-titre" type="text" required placeholder="Titre du module"
+            class="border rounded-lg px-3 py-2 text-sm sm:col-span-2" />
+          <input id="new-module-duree" type="text" placeholder="Durée (ex: 45min)"
+            class="border rounded-lg px-3 py-2 text-sm" />
+        </div>
+        <select id="new-module-type" class="border rounded-lg px-3 py-2 text-sm w-full sm:w-48">
+          <option value="Vidéo">Vidéo</option>
+          <option value="Document">Document</option>
+          <option value="Quiz">Quiz</option>
+        </select>
+        <div class="flex gap-3 justify-end">
+          <button type="button" id="btn-annuler-modules"
+            class="px-4 py-2 rounded-lg text-sm text-gray-500 border border-gray-200 hover:bg-gray-50">Fermer</button>
+          <button type="submit" id="btn-add-module"
+            class="px-5 py-2 rounded-lg text-sm font-semibold text-white" style="background:#0b1f3a;">Ajouter module</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
 </AdherentLayout>
 
-<script is:inline>
-  const modal = document.getElementById("modal-cours");
-  const modalDelete = document.getElementById("modal-delete-cours");
-  const form = document.getElementById("form-cours");
-  let deletingId = null;
-
-  function openModal(mode, data) {
-    document.getElementById("modal-cours-titre").textContent = mode === "create" ? "Nouveau cours" : "Modifier le cours";
-    document.getElementById("cours-id").value = data?.id ?? "";
-    document.getElementById("cours-titre").value = data?.titre ?? "";
-    document.getElementById("cours-description").value = data?.description ?? "";
-    document.getElementById("cours-duree").value = data?.duree ?? "";
-    document.getElementById("cours-niveau").value = data?.niveau ?? "Débutant";
-    document.getElementById("cours-statut").value = data?.statut ?? "Brouillon";
-    document.getElementById("cours-erreur").classList.add("hidden");
-    modal.classList.remove("hidden");
-  }
-
-  document.getElementById("btn-nouveau-cours").addEventListener("click", () => openModal("create"));
-  document.getElementById("btn-annuler-cours").addEventListener("click", () => modal.classList.add("hidden"));
-  modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.add("hidden"); });
-
-  document.querySelectorAll(".btn-edit-cours").forEach(btn => {
-    btn.addEventListener("click", () => {
-      openModal("edit", {
-        id: btn.dataset.id,
-        titre: btn.dataset.titre,
-        description: btn.dataset.description,
-        duree: btn.dataset.duree,
-        niveau: btn.dataset.niveau,
-        statut: btn.dataset.statut,
-      });
-    });
-  });
-
-  document.querySelectorAll(".btn-delete-cours").forEach(btn => {
-    btn.addEventListener("click", () => {
-      deletingId = btn.dataset.id;
-      document.getElementById("delete-cours-nom").textContent = btn.dataset.titre;
-      modalDelete.classList.remove("hidden");
-    });
-  });
-
-  document.getElementById("btn-annuler-delete-cours").addEventListener("click", () => modalDelete.classList.add("hidden"));
-  modalDelete.addEventListener("click", (e) => { if (e.target === modalDelete) modalDelete.classList.add("hidden"); });
-
-  document.getElementById("btn-confirmer-delete-cours").addEventListener("click", async () => {
-    if (!deletingId) return;
-    const res = await fetch("/api/cours/" + deletingId, { method: "DELETE" });
-    if (res.ok) { window.location.reload(); }
-    else { modalDelete.classList.add("hidden"); alert("Erreur lors de la suppression."); }
-  });
-
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const id = document.getElementById("cours-id").value;
-    const body = {
-      titre: document.getElementById("cours-titre").value.trim(),
-      description: document.getElementById("cours-description").value.trim(),
-      duree: document.getElementById("cours-duree").value.trim(),
-      niveau: document.getElementById("cours-niveau").value,
-      statut: document.getElementById("cours-statut").value,
-    };
-    const url = id ? "/api/cours/" + id : "/api/cours";
-    const method = id ? "PUT" : "POST";
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      const errEl = document.getElementById("cours-erreur");
-      errEl.textContent = data.error || "Erreur";
-      errEl.classList.remove("hidden");
-    } else {
-      window.location.reload();
-    }
-  });
+<script>
+  import "../../scripts/cours-page.ts";
 </script>

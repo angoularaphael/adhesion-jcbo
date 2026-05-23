@@ -8,7 +8,8 @@ const PUBLIC_PATHS = [
   "/api/stripe/webhook",
   "/api/fapshi/webhook",
   "/api/public/",
-  "/api/diagnostic/",
+  "/api/diagnostic/login",
+  "/api/diagnostic/submit",
   "/api/newsletter",
   "/verification/",
 ];

@@ -8,7 +8,8 @@ export const GET: APIRoute = async ({ locals }) => {
   if (!locals.session || locals.session.role !== "admin") {
     return new Response(JSON.stringify({ error: "Non autorisé" }), { status: 401 });
   }
-  return new Response(JSON.stringify(getIdentifiants()), {
+  const items = await getIdentifiants();
+  return new Response(JSON.stringify(items), {
     status: 200,
     headers: { "Content-Type": "application/json" },
   });
@@ -34,7 +35,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
   const result = identifiantSchema.safeParse(body);
   if (!result.success) {
     return new Response(
-      JSON.stringify({ error: result.error.errors[0].message }),
+      JSON.stringify({ error: result.error.issues[0].message }),
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
@@ -43,27 +44,33 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     return new Response(JSON.stringify({ error: "E-mail non autorisé" }), { status: 400 });
   }
 
-  const item = createIdentifiant(result.data);
+  try {
+    const item = await createIdentifiant(result.data);
 
-  const emailResult = await sendCredentialsEmail({
-    to: item.email,
-    nom: item.nom,
-    motDePasse: item.motDePasse,
-  });
-
-  return new Response(
-    JSON.stringify({
-      id: item.id,
-      email: item.email,
+    const emailResult = await sendCredentialsEmail({
+      to: item.email,
       nom: item.nom,
-      emailSent: emailResult.ok,
-      emailError: emailResult.ok ? undefined : emailResult.error,
-    }),
-    { status: 201, headers: { "Content-Type": "application/json" } }
-  );
+      motDePasse: item.motDePasse,
+    });
+
+    return new Response(
+      JSON.stringify({
+        id: item.id,
+        email: item.email,
+        nom: item.nom,
+        motDePasse: item.motDePasse,
+        numeroAdherent: item.numeroAdherent,
+        emailSent: emailResult.ok,
+        emailError: emailResult.ok ? undefined : emailResult.error,
+      }),
+      { status: 201, headers: { "Content-Type": "application/json" } }
+    );
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Erreur lors de la création";
+    return new Response(JSON.stringify({ error: message }), { status: 400 });
+  }
 };
 
-// Régénérer les identifiants d'un adhérent existant
 export const PUT: APIRoute = async ({ request, locals }) => {
   if (!locals.session || locals.session.role !== "admin") {
     return new Response(JSON.stringify({ error: "Non autorisé" }), { status: 401 });
@@ -81,7 +88,7 @@ export const PUT: APIRoute = async ({ request, locals }) => {
     return new Response(JSON.stringify({ error: "ID manquant" }), { status: 400 });
   }
 
-  const reset = resetMotDePasse(id);
+  const reset = await resetMotDePasse(id);
   if (!reset) {
     return new Response(JSON.stringify({ error: "Adhérent introuvable" }), { status: 404 });
   }
@@ -94,7 +101,11 @@ export const PUT: APIRoute = async ({ request, locals }) => {
   });
 
   return new Response(
-    JSON.stringify({ emailSent: emailResult.ok, emailError: emailResult.ok ? undefined : emailResult.error }),
+    JSON.stringify({
+      motDePasse: reset.motDePasse,
+      emailSent: emailResult.ok,
+      emailError: emailResult.ok ? undefined : emailResult.error,
+    }),
     { status: 200, headers: { "Content-Type": "application/json" } }
   );
 };
@@ -116,7 +127,7 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
     return new Response(JSON.stringify({ error: "ID manquant" }), { status: 400 });
   }
 
-  const updated = toggleIdentifiantStatut(id);
+  const updated = await toggleIdentifiantStatut(id);
   if (!updated) {
     return new Response(JSON.stringify({ error: "Identifiant introuvable" }), { status: 404 });
   }

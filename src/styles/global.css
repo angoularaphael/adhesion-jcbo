@@ -20,3 +20,28 @@ h1, h2, h3 {
 .font-accent {
   font-family: "Cormorant Garamond", Georgia, serif;
 }
+
+@keyframes jcbo-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.jcbo-spinner {
+  width: 0.875rem;
+  height: 0.875rem;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: currentColor;
+  border-radius: 9999px;
+  animation: jcbo-spin 0.7s linear infinite;
+}
+
+button .jcbo-spinner {
+  border-color: rgba(11, 31, 58, 0.2);
+  border-top-color: #0b1f3a;
+}
+
+.jcbo-btn-loading {
+  opacity: 0.85;
+  pointer-events: none;
+}

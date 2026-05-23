@@ -146,9 +146,11 @@ function toCours(row: any, modules: any[] = []) {
 
 // ── Actualités ────────────────────────────────────────────────────────────────
 
-export async function getActualites() {
+export type Actualite = import("./database.types").DbActualite;
+
+export async function getActualites(): Promise<Actualite[]> {
   const { data } = await getSupabase().from("actualites").select("*").order("date", { ascending: false });
-  return data ?? [];
+  return data ?? ([] as Actualite[]);
 }
 
 export async function createActualite(data: {
@@ -583,9 +585,29 @@ export async function searchAdherents(query: string): Promise<AdherentComplet[]>
 
 export async function updateModule(
   moduleId: string,
-  data: Partial<{ fichier_url: string; video_url: string; contenu_md: string; titre: string }>
+  data: Partial<{ fichier_url: string; video_url: string; contenu_md: string; titre: string; duree: string; type: string }>
 ) {
   const { data: row } = await getSupabase().from("modules").update(data).eq("id", moduleId).select().single();
+  return row;
+}
+
+export async function createModule(coursId: string, data: { titre: string; duree?: string; type?: string }) {
+  const { count } = await getSupabase()
+    .from("modules")
+    .select("id", { count: "exact", head: true })
+    .eq("cours_id", coursId);
+  const row = {
+    id: `MOD-${Date.now()}`,
+    cours_id: coursId,
+    titre: data.titre,
+    duree: data.duree ?? "",
+    type: data.type ?? "Vidéo",
+    ordre: (count ?? 0) + 1,
+    fichier_url: null,
+    video_url: null,
+    contenu_md: null,
+  };
+  await getSupabase().from("modules").insert(row);
   return row;
 }
 
