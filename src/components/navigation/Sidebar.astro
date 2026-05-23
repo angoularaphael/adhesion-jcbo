@@ -2,7 +2,7 @@
 import LogoJCBO from "../ui/LogoJCBO.astro";
 import { getConversations } from "../../lib/store";
 
-const totalNonLu = getConversations().reduce((sum, c) => sum + c.non_lu, 0);
+const totalNonLu = (await getConversations()).reduce((sum, c) => sum + c.non_lu, 0);
 
 const navLinks = [
   {

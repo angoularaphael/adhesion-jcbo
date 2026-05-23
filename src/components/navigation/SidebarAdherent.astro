@@ -3,12 +3,12 @@ import LogoJCBO from "../ui/LogoJCBO.astro";
 import { getAdherentByEmail, getConversations, getNonLuCount } from "../../lib/store";
 
 const email = Astro.locals.session?.email ?? "";
-const profil = getAdherentByEmail(email);
+const profil = await getAdherentByEmail(email);
 const initiales = profil ? (profil.prenom[0] + profil.nom[0]).toUpperCase() : "?";
 
-const conv = email ? getConversations().find(c => c.email === email.toLowerCase()) : null;
+const conv = email ? (await getConversations()).find(c => c.email === email.toLowerCase()) : null;
 const nonLuAdherent = conv?.non_lu_adherent ?? 0;
-const notifsNonLues = email ? getNonLuCount(email) : 0;
+const notifsNonLues = email ? await getNonLuCount(email) : 0;
 
 const navLinks = [
   {
