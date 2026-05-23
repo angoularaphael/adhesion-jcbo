@@ -1,4 +1,4 @@
-import { setButtonLoading, uploadFile, withButtonLoading } from "./ui-loading";
+import { runWhenReady, setButtonLoading, uploadFile, withButtonLoading } from "./ui-loading";
 
 export function initActualitesPage(): void {
   const modalNouvelle = document.getElementById("modal-nouvelle");
@@ -161,4 +161,4 @@ export function initActualitesPage(): void {
   });
 }
 
-document.addEventListener("DOMContentLoaded", initActualitesPage);
+runWhenReady(initActualitesPage);

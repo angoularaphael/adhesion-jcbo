@@ -1,4 +1,4 @@
-import { setButtonLoading, withButtonLoading } from "./ui-loading";
+import { runWhenReady, withButtonLoading } from "./ui-loading";
 
 type AdherentRow = {
   id: string;
@@ -243,4 +243,8 @@ export function initAdherentsPage(adherents: AdherentRow[], rappelPaiement: stri
       if (id) openEditModal(id);
     });
   });
+}
+
+export function bootAdherentsPage(adherents: AdherentRow[], rappelPaiement: string): void {
+  runWhenReady(() => initAdherentsPage(adherents, rappelPaiement));
 }

@@ -7,6 +7,18 @@ import { getAdherents, getCours } from "../../lib/store";
 const adherents = await getAdherents();
 const cours = (await getCours()).filter(c => c.statut === "Publié");
 
+const adherentsClient = adherents.map((a) => ({
+  id: a.id,
+  prenom: a.prenom,
+  nom: a.nom,
+  email: a.email,
+  telephone: a.telephone,
+  statut: a.statut,
+  entreprise: a.entreprise,
+  secteur: a.secteur,
+  coursInscrits: a.coursInscrits,
+}));
+
 const RAPPEL_PAIEMENT = "Bonjour,\n\nNous vous rappelons que votre cotisation annuelle est arrivée à échéance. Merci de procéder au règlement dans les meilleurs délais.\n\nCordialement,\nJCBO Conseil";
 ---
 
@@ -91,8 +103,6 @@ const RAPPEL_PAIEMENT = "Bonjour,\n\nNous vous rappelons que votre cotisation an
       )}
     </div>
   </Card>
-
-</AdherentLayout>
 
 <!-- MODAL AJOUTER / MODIFIER -->
 <div id="modal-adherent" class="fixed inset-0 z-50 hidden items-center justify-center" style="background: rgba(0,0,0,0.4);">
@@ -213,7 +223,9 @@ const RAPPEL_PAIEMENT = "Bonjour,\n\nNous vous rappelons que votre cotisation an
   </div>
 </div>
 
-<script define:vars={{ adherents, RAPPEL_PAIEMENT }}>
-  import { initAdherentsPage } from "../../scripts/adherents-page.ts";
-  initAdherentsPage(adherents, RAPPEL_PAIEMENT);
+<script define:vars={{ adherentsClient, RAPPEL_PAIEMENT }}>
+  import { bootAdherentsPage } from "../../scripts/adherents-page.ts";
+  bootAdherentsPage(adherentsClient, RAPPEL_PAIEMENT);
 </script>
+
+</AdherentLayout>

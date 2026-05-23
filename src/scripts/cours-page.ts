@@ -1,4 +1,4 @@
-import { setButtonLoading, uploadFile, withButtonLoading } from "./ui-loading";
+import { runWhenReady, setButtonLoading, uploadFile, withButtonLoading } from "./ui-loading";
 
 type ModuleRow = {
   id: string;
@@ -267,4 +267,4 @@ export function initCoursPage(): void {
   });
 }
 
-document.addEventListener("DOMContentLoaded", initCoursPage);
+runWhenReady(initCoursPage);

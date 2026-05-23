@@ -75,52 +75,6 @@ const roleLabel = admin.role === "super_admin" ? "Super Admin" : "Administrateur
   </div>
 
   <script>
-    const photoInput = document.getElementById("photo-input") as HTMLInputElement;
-    photoInput?.addEventListener("change", async () => {
-      const file = photoInput.files?.[0];
-      if (!file) return;
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("bucket", "profils");
-      fd.append("path", "admin");
-      const up = await fetch("/api/upload", { method: "POST", body: fd });
-      const data = await up.json();
-      if (!up.ok) return alert(data.error || "Erreur upload");
-      await fetch("/api/admin/profil", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ photoUrl: data.url }),
-      });
-      location.reload();
-    });
-
-    document.getElementById("form-profil")?.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const res = await fetch("/api/admin/profil", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prenom: (document.getElementById("prenom") as HTMLInputElement).value,
-          nom: (document.getElementById("nom") as HTMLInputElement).value,
-          telephone: (document.getElementById("telephone") as HTMLInputElement).value,
-        }),
-      });
-      const msg = document.getElementById("msg-profil")!;
-      msg.textContent = res.ok ? "Profil mis à jour." : "Erreur.";
-      msg.classList.remove("hidden");
-    });
-
-    document.getElementById("form-password")?.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const pwd = (document.getElementById("new-password") as HTMLInputElement).value;
-      const res = await fetch("/api/admin/profil", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: pwd }),
-      });
-      const msg = document.getElementById("msg-pwd")!;
-      msg.textContent = res.ok ? "Mot de passe mis à jour." : "Erreur.";
-      msg.className = `text-xs mt-3 ${res.ok ? "text-green-600" : "text-red-500"}`;
-    });
+    import "../../scripts/profil-page.ts";
   </script>
 </AdherentLayout>

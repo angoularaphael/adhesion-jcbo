@@ -30,6 +30,13 @@ const { titre } = Astro.props;
 
   <body class="flex" style="background-color: #f8f6f2; min-height: 100vh;">
 
+    <div id="jcbo-page-loader" class="hidden" aria-live="polite" aria-busy="true">
+      <div class="jcbo-page-loader-inner">
+        <span class="jcbo-spinner"></span>
+        <p>Chargement…</p>
+      </div>
+    </div>
+
     <Sidebar />
 
     <div class="flex flex-col flex-1 min-w-0">
@@ -50,12 +57,18 @@ const { titre } = Astro.props;
     </div>
 
     <script>
-      const toggle = document.getElementById("menu-toggle");
-      const sidebar = document.getElementById("sidebar");
-      const overlay = document.getElementById("sidebar-overlay");
-      toggle?.addEventListener("click", () => {
-        sidebar?.classList.remove("-translate-x-full");
-        overlay?.classList.remove("hidden");
+      import { initDashboardNav } from "../scripts/dashboard-nav.ts";
+      import { runWhenReady } from "../scripts/ui-loading.ts";
+
+      runWhenReady(() => {
+        initDashboardNav();
+        const toggle = document.getElementById("menu-toggle");
+        const sidebar = document.getElementById("sidebar");
+        const overlay = document.getElementById("sidebar-overlay");
+        toggle?.addEventListener("click", () => {
+          sidebar?.classList.remove("-translate-x-full");
+          overlay?.classList.remove("hidden");
+        });
       });
     </script>
 

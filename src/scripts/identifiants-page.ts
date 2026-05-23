@@ -1,4 +1,4 @@
-import { withButtonLoading } from "./ui-loading";
+import { runWhenReady, withButtonLoading } from "./ui-loading";
 
 export function initIdentifiantsPage(): void {
   document.querySelectorAll<HTMLButtonElement>(".tab-btn").forEach((btn) => {
@@ -128,6 +128,8 @@ export function initIdentifiantsPage(): void {
 
         const count = document.getElementById("count");
         if (count) count.textContent = String(Number(count.textContent) + 1);
+
+        setTimeout(() => location.reload(), 2500);
         return;
       }
 
@@ -213,4 +215,4 @@ export function initIdentifiantsPage(): void {
   });
 }
 
-document.addEventListener("DOMContentLoaded", initIdentifiantsPage);
+runWhenReady(initIdentifiantsPage);

@@ -167,6 +167,41 @@ export async function sendDiagnosticNotificationEmail({
   }
 }
 
+export async function sendResourceDownloadEmail({
+  to,
+  nom,
+  resourceTitle,
+}: {
+  to: string;
+  nom: string;
+  resourceTitle: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  if (!isSmtpConfigured()) {
+    return { ok: false, error: "Service email non configuré (SMTP)" };
+  }
+  const from = import.meta.env.FROM_EMAIL ?? `JCBO Conseil <noreply@jcbo-conseil.fr>`;
+  const vitrineUrl = import.meta.env.PUBLIC_VITRINE_URL ?? "https://jcboyang-conseil.vercel.app";
+  const html = `<!DOCTYPE html><html lang="fr"><body style="font-family:Georgia,serif;padding:24px;color:#374151;">
+    <p>Bonjour <strong>${nom}</strong>,</p>
+    <p>Merci pour votre intérêt pour JCBO Conseil. Voici la ressource demandée :</p>
+    <p style="background:#f8f6f2;padding:16px;border-radius:8px;border:1px solid rgba(212,167,98,0.3);"><strong>${resourceTitle}</strong></p>
+    <p>Notre équipe vous contactera si vous souhaitez un accompagnement personnalisé.</p>
+    <p><a href="${vitrineUrl}/reserver" style="background:#0b1f3a;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;">Réserver une séance</a></p>
+    <p style="color:#9ca3af;font-size:12px;">JCBO Conseil — contact@jcbo-conseil.fr</p>
+  </body></html>`;
+  try {
+    await createTransport().sendMail({
+      from,
+      to,
+      subject: `Votre ressource : ${resourceTitle}`,
+      html,
+    });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Erreur d'envoi" };
+  }
+}
+
 export async function sendNewsletterConfirmation(to: string): Promise<{ ok: boolean; error?: string }> {
   if (!isSmtpConfigured()) return { ok: false, error: "SMTP non configuré" };
   const from = import.meta.env.FROM_EMAIL ?? `JCBO Conseil <noreply@jcbo-conseil.fr>`;

@@ -1,3 +1,22 @@
+/** Exécute fn dès que le DOM est prêt (évite le bug DOMContentLoaded déjà passé). */
+export function runWhenReady(fn: () => void): void {
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", fn, { once: true });
+  } else {
+    fn();
+  }
+}
+
+export function showPageLoader(): void {
+  const el = document.getElementById("jcbo-page-loader");
+  if (el) el.classList.remove("hidden");
+}
+
+export function hidePageLoader(): void {
+  const el = document.getElementById("jcbo-page-loader");
+  if (el) el.classList.add("hidden");
+}
+
 export function setButtonLoading(el: HTMLElement | null, loading: boolean, loadingLabel = "Chargement…"): void {
   if (!el) return;
   const btn = el as HTMLButtonElement;
