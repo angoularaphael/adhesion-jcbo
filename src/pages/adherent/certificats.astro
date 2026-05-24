@@ -88,13 +88,29 @@ const certificats = coursTerminesIds.map(coursId => {
 
 <script is:inline>
 (function() {
+  function loadImage(src) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL("image/jpeg"));
+      };
+      img.onerror = () => resolve(null);
+      img.src = src;
+    });
+  }
+
   document.querySelectorAll(".btn-download-pdf").forEach(btn => {
     btn.addEventListener("click", async function() {
       const cert = JSON.parse(this.dataset.cert);
       this.textContent = "Génération…";
       this.disabled = true;
 
-      // Génération PDF avec jsPDF via CDN
       if (!window.jspdf) {
         await new Promise((resolve, reject) => {
           const s = document.createElement("script");
@@ -104,6 +120,11 @@ const certificats = coursTerminesIds.map(coursId => {
           document.head.appendChild(s);
         });
       }
+
+      const [cachetData, signatureData] = await Promise.all([
+        loadImage("/images/cachet.jpeg"),
+        loadImage("/images/signature-jcbo.jpeg"),
+      ]);
 
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
@@ -168,15 +189,30 @@ const certificats = coursTerminesIds.map(coursId => {
       doc.text(`N° ${cert.numero}`, W / 2 - 40, 125, { align: "center" });
       doc.text(`Délivré le ${dateStr}`, W / 2 + 40, 125, { align: "center" });
 
-      // Signature JCBO
+      // Signature et cachet
+      if (signatureData) {
+        doc.addImage(signatureData, "JPEG", W / 2 - 50, 135, 35, 20);
+      }
+      if (cachetData) {
+        doc.addImage(cachetData, "JPEG", W / 2 + 15, 132, 35, 25);
+      }
+
+      // Texte sous signature/cachet
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(140, 140, 140);
+      doc.text("Signature", W / 2 - 33, 158, { align: "center" });
+      doc.text("Cachet", W / 2 + 33, 160, { align: "center" });
+
+      // JCBO Conseil
       doc.setFontSize(10);
       doc.setFont("times", "italic");
       doc.setTextColor(212, 167, 98);
-      doc.text("JCBO Conseil", W / 2, 155, { align: "center" });
+      doc.text("JCBO Conseil", W / 2, 172, { align: "center" });
       doc.setFontSize(8);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(100, 100, 100);
-      doc.text("Cabinet de conseil aux entreprises", W / 2, 162, { align: "center" });
+      doc.text("Cabinet de conseil aux entreprises", W / 2, 178, { align: "center" });
 
       doc.save(`Certificat_${cert.titre.replace(/[^a-zA-Z0-9]/g, "_")}_${cert.adherent.replace(/\s/g, "_")}.pdf`);
 

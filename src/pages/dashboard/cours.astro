@@ -171,22 +171,19 @@ const cours = await getCours();
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 md:p-8 my-8">
       <h3 id="modal-modules-titre" class="text-lg font-bold mb-2" style="color: #0b1f3a;">Contenu du cours</h3>
       <p class="text-xs text-gray-400 mb-6">
-        Ajoutez un module par type : vidéo (URL ou fichier), document (fichier seul), ou quiz (questions uniquement).
+        Chaque module peut contenir une vidéo, un PDF de cours et un quiz. Tous sont optionnels.
       </p>
       <div id="modules-list" class="flex flex-col gap-4 mb-6"></div>
       <form id="form-add-module" class="border-t border-gray-100 pt-6 flex flex-col gap-3">
         <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Nouveau module</p>
+        <p class="text-xs text-gray-400 -mt-1">Chaque module peut contenir : une vidéo, un PDF de cours et un quiz.</p>
         <div class="grid sm:grid-cols-3 gap-3">
           <input id="new-module-titre" type="text" required placeholder="Titre du module"
             class="border rounded-lg px-3 py-2 text-sm sm:col-span-2" />
           <input id="new-module-duree" type="text" placeholder="Durée (ex: 45min)"
             class="border rounded-lg px-3 py-2 text-sm" />
         </div>
-        <select id="new-module-type" class="border rounded-lg px-3 py-2 text-sm w-full sm:w-48">
-          <option value="Vidéo">Vidéo</option>
-          <option value="Document">Document</option>
-          <option value="Quiz">Quiz</option>
-        </select>
+        <input id="new-module-type" type="hidden" value="Vidéo" />
         <div class="flex gap-3 justify-end">
           <button type="button" id="btn-annuler-modules"
             class="px-4 py-2 rounded-lg text-sm text-gray-500 border border-gray-200 hover:bg-gray-50">Fermer</button>

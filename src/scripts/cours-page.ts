@@ -44,7 +44,6 @@ export function initCoursPage(): void {
   }
 
   function renderModuleItem(mod: ModuleRow): string {
-    const kind = normalizeModuleType(mod.type);
     const fileInfo = mod.fichierUrl
       ? `<a href="/api/cours/fichier/${escapeHtml(mod.id)}" class="text-xs text-blue-600 hover:underline">Document enregistré — tester le téléchargement</a>`
       : `<span class="text-xs text-gray-400">Aucun fichier</span>`;
@@ -52,28 +51,11 @@ export function initCoursPage(): void {
       ? `<a href="${escapeHtml(mod.videoUrl)}" target="_blank" class="text-xs text-blue-600 hover:underline truncate block max-w-xs">${escapeHtml(mod.videoUrl)}</a>`
       : `<span class="text-xs text-gray-400">Aucune vidéo</span>`;
 
-    let bodyHtml = "";
-    if (kind === "Quiz") {
-      bodyHtml = `
-        <div class="rounded-lg border border-dashed border-gray-200 bg-gray-50/80 p-4">
-          <p class="text-xs text-gray-500 mb-3">Ce module est un quiz : configurez les questions (pas de fichier ni de vidéo).</p>
-          <button type="button" class="btn-edit-quiz px-4 py-2 rounded-lg text-xs font-semibold text-white" style="background:#d4a762;">Gérer les questions du quiz</button>
-        </div>`;
-    } else if (kind === "Document") {
-      bodyHtml = `
-        <div>
-          <p class="text-xs text-gray-400 mb-1">Fichier de cours (PDF, DOC…)</p>
-          <div class="file-info">${fileInfo}</div>
-          <label class="mt-2 inline-flex cursor-pointer">
-            <span class="btn-upload-file px-3 py-1.5 rounded-lg text-xs border border-gray-200 hover:bg-gray-50">Choisir un fichier</span>
-            <input type="file" class="input-module-file hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,application/pdf" />
-          </label>
-        </div>
-        <button type="button" class="btn-save-module mt-3 px-4 py-2 rounded-lg text-xs font-semibold text-white" style="background:#0b1f3a;">Enregistrer le document</button>`;
-    } else {
-      bodyHtml = `
-        <div>
-          <p class="text-xs text-gray-400 mb-1">Vidéo (URL ou upload)</p>
+    const bodyHtml = `
+      <div class="space-y-4">
+        <!-- Vidéo -->
+        <div class="rounded-lg border border-gray-100 p-3">
+          <p class="text-xs font-semibold uppercase tracking-wide mb-2" style="color:#0b1f3a;">1. Vidéo <span class="text-gray-400 font-normal">(optionnel)</span></p>
           <div class="video-info">${videoInfo}</div>
           <input type="url" class="input-module-video w-full mt-2 border rounded-lg px-3 py-2 text-xs" placeholder="https://youtu.be/…" value="${escapeHtml(mod.videoUrl ?? "")}" />
           <label class="mt-2 inline-flex cursor-pointer">
@@ -81,23 +63,31 @@ export function initCoursPage(): void {
             <input type="file" class="input-module-video-file hidden" accept="video/mp4,video/webm,video/quicktime" />
           </label>
         </div>
-        <button type="button" class="btn-save-module mt-3 px-4 py-2 rounded-lg text-xs font-semibold text-white" style="background:#0b1f3a;">Enregistrer la vidéo</button>`;
-    }
-
-    const quizHeaderBtn =
-      kind === "Quiz"
-        ? ""
-        : `<button type="button" class="btn-edit-quiz text-xs font-semibold hover:underline hidden" style="color:#d4a762;" title="Gérer le quiz">Quiz</button>`;
+        <!-- PDF de cours -->
+        <div class="rounded-lg border border-gray-100 p-3">
+          <p class="text-xs font-semibold uppercase tracking-wide mb-2" style="color:#0b1f3a;">2. PDF de cours <span class="text-gray-400 font-normal">(optionnel)</span></p>
+          <div class="file-info">${fileInfo}</div>
+          <label class="mt-2 inline-flex cursor-pointer">
+            <span class="btn-upload-file px-3 py-1.5 rounded-lg text-xs border border-gray-200 hover:bg-gray-50">Choisir un fichier</span>
+            <input type="file" class="input-module-file hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,application/pdf" />
+          </label>
+        </div>
+        <!-- Quiz -->
+        <div class="rounded-lg border border-gray-100 p-3">
+          <p class="text-xs font-semibold uppercase tracking-wide mb-2" style="color:#0b1f3a;">3. Quiz <span class="text-gray-400 font-normal">(optionnel)</span></p>
+          <button type="button" class="btn-edit-quiz px-4 py-2 rounded-lg text-xs font-semibold text-white" style="background:#d4a762;">Gérer les questions du quiz</button>
+        </div>
+      </div>
+      <button type="button" class="btn-save-module mt-4 w-full px-4 py-2.5 rounded-lg text-xs font-semibold text-white" style="background:#0b1f3a;">Enregistrer le module</button>`;
 
     return `
-      <div class="border border-gray-100 rounded-xl p-4 module-item" data-module-id="${escapeHtml(mod.id)}" data-module-type="${kind}">
+      <div class="border border-gray-100 rounded-xl p-4 module-item" data-module-id="${escapeHtml(mod.id)}" data-module-type="Vidéo">
         <div class="flex items-start justify-between gap-3 mb-3">
           <div>
             <p class="text-sm font-semibold" style="color:#0b1f3a;">${escapeHtml(mod.titre)}</p>
-            <p class="text-xs text-gray-400">${escapeHtml(kind)}${mod.duree ? " · " + escapeHtml(mod.duree) : ""}</p>
+            <p class="text-xs text-gray-400">Module${mod.duree ? " · " + escapeHtml(mod.duree) : ""}</p>
           </div>
           <div class="flex items-center gap-3">
-            ${quizHeaderBtn}
             <button type="button" class="btn-delete-module text-xs text-red-500 hover:underline" title="Supprimer ce module">Supprimer</button>
           </div>
         </div>
@@ -369,23 +359,18 @@ export function initCoursPage(): void {
         const item = btn.closest(".module-item");
         const moduleId = item?.getAttribute("data-module-id");
         if (!moduleId) return;
-        const kind = normalizeModuleType(item?.getAttribute("data-module-type") ?? "Vidéo");
         const body: Record<string, string> = {};
-        if (kind === "Document") {
-          const pendingFile = item?.getAttribute("data-pending-file");
-          if (pendingFile) body.fichier_url = pendingFile;
-          else if (!item?.querySelector(".file-info a")) {
-            alert("Choisissez un fichier à enregistrer.");
-            return;
-          }
-        } else if (kind === "Vidéo") {
-          const videoInput = item?.querySelector<HTMLInputElement>(".input-module-video");
-          const url = videoInput?.value.trim() ?? "";
-          if (!url) {
-            alert("Indiquez une URL ou uploadez une vidéo.");
-            return;
-          }
-          body.video_url = url;
+
+        const videoInput = item?.querySelector<HTMLInputElement>(".input-module-video");
+        const videoUrl = videoInput?.value.trim() ?? "";
+        if (videoUrl) body.video_url = videoUrl;
+
+        const pendingFile = item?.getAttribute("data-pending-file");
+        if (pendingFile) body.fichier_url = pendingFile;
+
+        if (!videoUrl && !pendingFile && !item?.querySelector(".file-info a") && !item?.querySelector(".video-info a")) {
+          alert("Ajoutez au moins une vidéo ou un document.");
+          return;
         }
 
         await withButtonLoading(btn, async () => {
