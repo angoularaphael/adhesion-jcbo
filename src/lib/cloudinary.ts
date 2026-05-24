@@ -37,20 +37,58 @@ function signParams(params: Record<string, string | number>, apiSecret: string):
 export type UploadResult = {
   url: string;
   publicId: string;
-  resourceType: string;
+  resourceType: "image" | "video" | "raw";
   bytes: number;
 };
+
+/** PDF/DOC doivent être en `raw`, pas en `image` (sinon HTTP 401 à l'ouverture). */
+export function resolveCloudinaryResourceType(
+  mimeType: string,
+  fileName?: string
+): "image" | "video" | "raw" {
+  const mime = mimeType.toLowerCase();
+  if (mime.startsWith("video/")) return "video";
+  if (mime.startsWith("image/")) return "image";
+  if (
+    mime === "application/pdf" ||
+    mime.includes("msword") ||
+    mime.includes("wordprocessingml") ||
+    mime.includes("presentation") ||
+    mime.includes("spreadsheet") ||
+    mime === "application/zip" ||
+    mime === "application/octet-stream"
+  ) {
+    return "raw";
+  }
+  const ext = fileName?.split(".").pop()?.toLowerCase() ?? "";
+  if (["pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "zip"].includes(ext)) return "raw";
+  if (["mp4", "webm", "mov", "mkv"].includes(ext)) return "video";
+  if (["jpg", "jpeg", "png", "gif", "webp"].includes(ext)) return "image";
+  return "raw";
+}
+
+/** Corrige les anciennes URLs PDF stockées sous /image/upload/ → /raw/upload/ */
+export function normalizeCloudinaryDeliveryUrl(url: string): string {
+  if (!url.includes("res.cloudinary.com")) return url;
+  if (/\/image\/upload\/.*\.(pdf|doc|docx|ppt|pptx|zip)(\?|$)/i.test(url)) {
+    return url.replace("/image/upload/", "/raw/upload/");
+  }
+  return url;
+}
 
 export async function uploadToCloudinary(
   file: Buffer | Uint8Array,
   mimeType: string,
   folder: CloudinaryFolder,
-  pathPrefix = "upload"
+  pathPrefix = "upload",
+  fileName?: string
 ): Promise<{ ok: true; data: UploadResult } | { ok: false; error: string }> {
   const { cloudName, apiKey, apiSecret } = getConfig();
   const timestamp = Math.floor(Date.now() / 1000);
-  const publicIdSafe = `${pathPrefix}-${timestamp}-${Math.random().toString(36).slice(2, 8)}`
-    .replace(/[^a-zA-Z0-9_-]/g, "");
+  const resourceType = resolveCloudinaryResourceType(mimeType, fileName);
+  const ext = fileName?.includes(".") ? fileName.slice(fileName.lastIndexOf(".")) : "";
+  const publicIdSafe = `${pathPrefix}-${timestamp}-${Math.random().toString(36).slice(2, 8)}${ext}`
+    .replace(/[^a-zA-Z0-9_.-]/g, "");
 
   const paramsToSign: Record<string, string | number> = {
     folder,
@@ -61,14 +99,14 @@ export async function uploadToCloudinary(
 
   const form = new FormData();
   const blob = new Blob([file as BlobPart], { type: mimeType });
-  form.append("file", blob, publicIdSafe);
+  form.append("file", blob, fileName || publicIdSafe);
   form.append("api_key", apiKey);
   form.append("timestamp", String(timestamp));
   form.append("folder", folder);
   form.append("public_id", publicIdSafe);
   form.append("signature", signature);
 
-  const endpoint = `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`;
+  const endpoint = `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`;
 
   try {
     const res = await fetch(endpoint, { method: "POST", body: form });
@@ -82,12 +120,13 @@ export async function uploadToCloudinary(
     if (!res.ok || !json.secure_url) {
       return { ok: false, error: json.error?.message || "Échec de l'upload Cloudinary." };
     }
+    const deliveryUrl = normalizeCloudinaryDeliveryUrl(json.secure_url);
     return {
       ok: true,
       data: {
-        url: json.secure_url,
+        url: deliveryUrl,
         publicId: json.public_id ?? publicIdSafe,
-        resourceType: json.resource_type ?? "image",
+        resourceType: (json.resource_type as UploadResult["resourceType"]) ?? resourceType,
         bytes: json.bytes ?? 0,
       },
     };

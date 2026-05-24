@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { normalizeCloudinaryDeliveryUrl } from "../../../lib/cloudinary";
 import { updateModule } from "../../../lib/store";
 import { getSupabase } from "../../../lib/supabase";
 
@@ -23,7 +24,17 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
   if (body.video_url !== undefined) patch.video_url = body.video_url || null;
   if (body.contenu_md !== undefined) patch.contenu_md = body.contenu_md || null;
 
+  if (patch.fichier_url) {
+    patch.fichier_url = normalizeCloudinaryDeliveryUrl(patch.fichier_url);
+  }
+
   const row = await updateModule(id, patch);
+  if (!row) {
+    return new Response(
+      JSON.stringify({ error: "Impossible d'enregistrer le module. Vérifiez la base de données." }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
   return new Response(JSON.stringify(row), {
     headers: { "Content-Type": "application/json" },
   });

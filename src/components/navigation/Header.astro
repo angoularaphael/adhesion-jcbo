@@ -1,5 +1,9 @@
 ﻿---
-import { getAdminByEmail } from "../../lib/store-admin";
+import {
+  getAdminByEmail,
+  getAdminNotifications,
+  countAdminNotificationsNonLues,
+} from "../../lib/store-admin";
 
 const sessionEmail = Astro.locals.session?.email ?? "";
 const currentAdmin = sessionEmail ? await getAdminByEmail(sessionEmail) : null;
@@ -8,6 +12,16 @@ const headerInitials = currentAdmin
   ? `${currentAdmin.prenom.charAt(0)}${currentAdmin.nom.charAt(0)}`.toUpperCase()
   : "AR";
 const headerRole = currentAdmin?.role === "super_admin" ? "Super Admin" : "Administrateur";
+
+// Notifications admin (paiements vitrine, etc.) — tolérant si la table n'existe pas encore
+let notifs: Awaited<ReturnType<typeof getAdminNotifications>> = [];
+let nonLues = 0;
+try {
+  notifs = await getAdminNotifications(8);
+  nonLues = await countAdminNotificationsNonLues();
+} catch {
+  // Migration 007 pas encore appliquée — on n'affiche tout simplement rien.
+}
 ---
 
 <header class="h-16 flex items-center justify-between px-8 bg-white border-b border-gray-200 flex-shrink-0">
@@ -15,16 +29,116 @@ const headerRole = currentAdmin?.role === "super_admin" ? "Super Admin" : "Admin
   <!-- Titre dynamique via slot -->
   <slot />
 
-  <!-- Profil admin -->
-  <div class="flex items-center gap-3">
-    <div class="text-right">
-      <p class="text-sm font-semibold" style="color: #0b1f3a;">{headerName}</p>
-      <p class="text-xs text-gray-400">{headerRole}</p>
+  <div class="flex items-center gap-4">
+
+    <!-- Cloche de notifications admin -->
+    <div class="relative">
+      <button
+        id="admin-notif-bell"
+        type="button"
+        class="relative w-9 h-9 rounded-full flex items-center justify-center hover:bg-gray-100 transition"
+        aria-label="Notifications administrateur"
+        aria-haspopup="true"
+        aria-expanded="false"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#0b1f3a" stroke-width="1.8">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+        </svg>
+        {nonLues > 0 && (
+          <span
+            id="admin-notif-badge"
+            class="absolute top-0.5 right-0.5 min-w-[16px] h-4 rounded-full text-[10px] font-bold flex items-center justify-center px-1 ring-2 ring-white"
+            style="background-color: #d4a762; color: #0b1f3a;"
+          >
+            {nonLues > 9 ? "9+" : nonLues}
+          </span>
+        )}
+      </button>
+
+      <div
+        id="admin-notif-panel"
+        class="hidden absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50"
+      >
+        <div class="px-4 py-3 flex items-center justify-between" style="border-bottom: 1px solid #f1f3f5;">
+          <p class="text-sm font-bold" style="color: #0b1f3a;">Notifications</p>
+          {nonLues > 0 && (
+            <span class="text-xs font-semibold" style="color: #d4a762;">{nonLues} non lue{nonLues > 1 ? "s" : ""}</span>
+          )}
+        </div>
+        <div class="max-h-80 overflow-y-auto">
+          {notifs.length === 0 ? (
+            <div class="px-4 py-8 text-center">
+              <p class="text-sm text-gray-400">Aucune notification.</p>
+            </div>
+          ) : (
+            notifs.map((n) => {
+              const dateF = new Date(n.createdAt).toLocaleDateString("fr-FR", {
+                day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+              });
+              return (
+                <div
+                  class="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition"
+                  style={n.lue ? "" : "background-color: rgba(212,167,98,0.04);"}
+                >
+                  <span class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style="background-color: #d4a762;"></span>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold leading-tight" style="color: #0b1f3a;">{n.titre}</p>
+                    <p class="text-xs text-gray-500 mt-0.5 line-clamp-2">{n.message}</p>
+                    <p class="text-xs text-gray-300 mt-1">{dateF}</p>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
     </div>
-    <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold" style="background-color: #0b1f3a;">
-      {headerInitials}
+
+    <!-- Profil admin -->
+    <div class="flex items-center gap-3">
+      <div class="text-right">
+        <p class="text-sm font-semibold" style="color: #0b1f3a;">{headerName}</p>
+        <p class="text-xs text-gray-400">{headerRole}</p>
+      </div>
+      <div
+        class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold overflow-hidden"
+        style={currentAdmin?.photoUrl
+          ? `background-image:url('${currentAdmin.photoUrl}');background-size:cover;background-position:center;`
+          : "background-color: #0b1f3a;"}
+      >
+        {!currentAdmin?.photoUrl && headerInitials}
+      </div>
     </div>
+
   </div>
 
 </header>
+
+<script>
+  const bell = document.getElementById("admin-notif-bell");
+  const panel = document.getElementById("admin-notif-panel");
+  const badge = document.getElementById("admin-notif-badge");
+  if (bell && panel) {
+    bell.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const wasOpen = !panel.classList.contains("hidden");
+      panel.classList.toggle("hidden");
+      bell.setAttribute("aria-expanded", String(!wasOpen));
+      if (!wasOpen && badge) {
+        try {
+          await fetch("/api/admin/notifications/lues", { method: "POST" });
+          badge.remove();
+        } catch {
+          // silencieux
+        }
+      }
+    });
+    document.addEventListener("click", (e) => {
+      if (!panel.contains(e.target as Node) && e.target !== bell) {
+        panel.classList.add("hidden");
+        bell.setAttribute("aria-expanded", "false");
+      }
+    });
+  }
+</script>
 

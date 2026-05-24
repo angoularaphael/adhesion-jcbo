@@ -37,7 +37,7 @@ const MAX_SIZE: Record<CloudinaryFolder, number> = {
 };
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  if (!locals.session || locals.session.role !== "admin") {
+  if (!locals.session) {
     return new Response(JSON.stringify({ error: "Non autorisé" }), { status: 401 });
   }
 
@@ -51,6 +51,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const file = form.get("file");
   const bucket = String(form.get("bucket") ?? "") as CloudinaryFolder;
   const pathPrefix = String(form.get("path") ?? "upload");
+
+  // Un adhérent ne peut envoyer que sa propre photo de profil ("profils").
+  if (locals.session.role === "adherent" && bucket !== "profils") {
+    return new Response(JSON.stringify({ error: "Action réservée aux administrateurs." }), { status: 403 });
+  }
 
   if (!(file instanceof File) || !ALLOWED_FOLDERS.includes(bucket)) {
     return new Response(JSON.stringify({ error: "Fichier ou dossier invalide." }), { status: 400 });
@@ -74,7 +79,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  const result = await uploadToCloudinary(buffer, file.type, bucket, pathPrefix);
+  const result = await uploadToCloudinary(buffer, file.type, bucket, pathPrefix, file.name);
 
   if (!result.ok) {
     return new Response(JSON.stringify({ error: result.error }), { status: 500 });

@@ -83,8 +83,13 @@ const currentPath = Astro.url.pathname;
 
   <!-- Membre connecté -->
   <div class="px-6 py-4 flex items-center gap-3" style="border-bottom: 1px solid rgba(212,167,98,0.08);">
-    <div class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0" style="background-color: rgba(212,167,98,0.2); color: #d4a762;">
-      {initiales}
+    <div
+      class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 overflow-hidden"
+      style={profil?.photoUrl
+        ? `background-image:url('${profil.photoUrl}');background-size:cover;background-position:center;`
+        : "background-color: rgba(212,167,98,0.2); color: #d4a762;"}
+    >
+      {!profil?.photoUrl && initiales}
     </div>
     <div class="min-w-0">
       <p class="text-sm font-medium text-white truncate">{profil?.prenom} {profil?.nom}</p>

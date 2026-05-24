@@ -493,6 +493,56 @@ export async function countDiagnosticsNonLus(): Promise<number> {
   return count ?? 0;
 }
 
+// ── Notifications admin (paiements vitrine, contacts, etc.) ──────────────────
+
+export type AdminNotification = {
+  id: string;
+  type: string;
+  titre: string;
+  message: string;
+  metadata: Record<string, unknown>;
+  lue: boolean;
+  createdAt: string;
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapAdminNotif(r: any): AdminNotification {
+  return {
+    id: r.id,
+    type: r.type,
+    titre: r.titre,
+    message: r.message,
+    metadata: (r.metadata ?? {}) as Record<string, unknown>,
+    lue: !!r.lue,
+    createdAt: r.created_at,
+  };
+}
+
+export async function getAdminNotifications(limit = 30): Promise<AdminNotification[]> {
+  const { data } = await getSupabase()
+    .from("admin_notifications")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return (data ?? []).map(mapAdminNotif);
+}
+
+export async function countAdminNotificationsNonLues(): Promise<number> {
+  const { count } = await getSupabase()
+    .from("admin_notifications")
+    .select("id", { count: "exact", head: true })
+    .eq("lue", false);
+  return count ?? 0;
+}
+
+export async function markAllAdminNotificationsLues(): Promise<void> {
+  await getSupabase().from("admin_notifications").update({ lue: true }).eq("lue", false);
+}
+
+export async function markAdminNotificationLue(id: string): Promise<void> {
+  await getSupabase().from("admin_notifications").update({ lue: true }).eq("id", id);
+}
+
 // ── Quiz DB ───────────────────────────────────────────────────────────────────
 
 export type QuizQuestion = {

@@ -4,7 +4,10 @@ import { isSuperAdminEmail } from "./lib/admin-auth";
 
 const PUBLIC_PATHS = [
   "/login",
-  "/api/auth/",
+  // ⚠ NE PAS mettre tout "/api/auth/" : password.ts a besoin de la session.
+  "/api/auth/login",
+  "/api/auth/logout",
+  "/api/auth/register",
   "/api/stripe/webhook",
   "/api/fapshi/webhook",
   "/api/public/",

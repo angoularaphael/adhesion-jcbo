@@ -14,6 +14,7 @@ export type DbAdherent = {
   abonnement_statut: string | null;
   abonnement_date_debut: string | null;
   cours_inscrits: string[];
+  photo_url: string;
 };
 
 export type DbActualite = {
@@ -125,6 +126,16 @@ export type DbCertificat = {
   date_emission: string;
 };
 
+export type DbAdminNotification = {
+  id: string;
+  type: string;
+  titre: string;
+  message: string;
+  metadata: Record<string, unknown>;
+  lue: boolean;
+  created_at: string;
+};
+
 export interface Database {
   public: {
     Tables: {
@@ -142,6 +153,11 @@ export interface Database {
       notifications: { Row: DbNotification; Insert: DbNotification; Update: Partial<DbNotification> };
       certificats_emis: { Row: DbCertificat; Insert: DbCertificat; Update: Partial<DbCertificat> };
       compteurs_certificats: { Row: { cle: string; valeur: number }; Insert: { cle: string; valeur: number }; Update: { valeur?: number } };
+      admin_notifications: {
+        Row: DbAdminNotification;
+        Insert: Omit<DbAdminNotification, "created_at"> & { created_at?: string };
+        Update: Partial<DbAdminNotification>;
+      };
     };
   };
 }

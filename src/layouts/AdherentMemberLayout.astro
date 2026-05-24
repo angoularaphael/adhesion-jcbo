@@ -1,7 +1,7 @@
 ---
 import SidebarAdherent from "../components/navigation/SidebarAdherent.astro";
 import "../styles/global.css";
-import { getAdherentByEmail } from "../lib/store";
+import { getAdherentByEmail, getNotifications, getNonLuCount } from "../lib/store";
 
 interface Props {
   titre: string;
@@ -10,6 +10,18 @@ const { titre } = Astro.props;
 const email = Astro.locals.session?.email ?? "";
 const profil = await getAdherentByEmail(email);
 const initiales = profil ? (profil.prenom[0] + profil.nom[0]).toUpperCase() : "?";
+
+// Cloche de notifications
+const notifications = email ? (await getNotifications(email)).slice(0, 6) : [];
+const notifsNonLues = email ? await getNonLuCount(email) : 0;
+
+const typeIconColor: Record<string, string> = {
+  paiement: "#16a34a",
+  inscription: "#d4a762",
+  abonnement: "#d4a762",
+  rappel: "#ef4444",
+  certificat: "#16a34a",
+};
 ---
 
 <html lang="fr">
@@ -44,13 +56,93 @@ const initiales = profil ? (profil.prenom[0] + profil.nom[0]).toUpperCase() : "?
           <h1 class="text-lg font-semibold font-heading" style="color: #0b1f3a;">{titre}</h1>
         </div>
         <div class="flex items-center gap-3">
+
+          <!-- Cloche de notifications -->
+          <div class="relative">
+            <button
+              id="notif-bell"
+              type="button"
+              class="relative w-9 h-9 rounded-full flex items-center justify-center hover:bg-gray-100 transition"
+              aria-label="Notifications"
+              aria-haspopup="true"
+              aria-expanded="false"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#0b1f3a" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+              </svg>
+              {notifsNonLues > 0 && (
+                <span
+                  id="notif-badge"
+                  class="absolute top-0.5 right-0.5 min-w-[16px] h-4 rounded-full text-[10px] font-bold flex items-center justify-center px-1 ring-2 ring-white"
+                  style="background-color: #d4a762; color: #0b1f3a;"
+                >
+                  {notifsNonLues > 9 ? "9+" : notifsNonLues}
+                </span>
+              )}
+            </button>
+
+            <!-- Panneau dropdown -->
+            <div
+              id="notif-panel"
+              class="hidden absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50"
+            >
+              <div class="px-4 py-3 flex items-center justify-between" style="border-bottom: 1px solid #f1f3f5;">
+                <p class="text-sm font-bold" style="color: #0b1f3a;">Notifications</p>
+                {notifsNonLues > 0 && (
+                  <span class="text-xs font-semibold" style="color: #d4a762;">{notifsNonLues} non lue{notifsNonLues > 1 ? "s" : ""}</span>
+                )}
+              </div>
+              <div class="max-h-80 overflow-y-auto">
+                {notifications.length === 0 ? (
+                  <div class="px-4 py-8 text-center">
+                    <p class="text-sm text-gray-400">Aucune notification pour l'instant.</p>
+                  </div>
+                ) : (
+                  notifications.map((n) => {
+                    const dateF = new Date(n.date).toLocaleDateString("fr-FR", {
+                      day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+                    });
+                    return (
+                      <a
+                        href="/adherent/paiements?onglet=notifications"
+                        class="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition"
+                        style={n.lue ? "" : "background-color: rgba(212,167,98,0.04);"}
+                      >
+                        <span class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={`background-color: ${typeIconColor[n.type] ?? "#9ca3af"};`}></span>
+                        <div class="flex-1 min-w-0">
+                          <p class="text-sm font-semibold leading-tight" style="color: #0b1f3a;">{n.titre}</p>
+                          <p class="text-xs text-gray-500 mt-0.5 line-clamp-2">{n.message}</p>
+                          <p class="text-xs text-gray-300 mt-1">{dateF}</p>
+                        </div>
+                      </a>
+                    );
+                  })
+                )}
+              </div>
+              <a
+                href="/adherent/paiements?onglet=notifications"
+                class="block px-4 py-3 text-center text-xs font-semibold transition hover:bg-gray-50"
+                style="color: #d4a762; border-top: 1px solid #f1f3f5;"
+              >
+                Voir toutes les notifications
+              </a>
+            </div>
+          </div>
+
           <div class="text-right hidden sm:block">
             <p class="text-sm font-semibold" style="color: #0b1f3a;">{profil?.prenom} {profil?.nom}</p>
             <p class="text-xs text-gray-400">{profil?.entreprise}</p>
           </div>
-          <div class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0" style="background-color: rgba(212,167,98,0.15); color: #d4a762;">
-            {initiales}
-          </div>
+          <a
+            href="/adherent/profil"
+            class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 overflow-hidden"
+            style={profil?.photoUrl
+              ? `background-image:url('${profil.photoUrl}');background-size:cover;background-position:center;`
+              : "background-color: rgba(212,167,98,0.15); color: #d4a762;"}
+            aria-label="Mon profil"
+          >
+            {!profil?.photoUrl && initiales}
+          </a>
         </div>
       </header>
 
@@ -73,6 +165,33 @@ const initiales = profil ? (profil.prenom[0] + profil.nom[0]).toUpperCase() : "?
           sidebar?.classList.remove("-translate-x-full");
           overlay?.classList.remove("hidden");
         });
+
+        // Cloche de notifications
+        const bell = document.getElementById("notif-bell");
+        const panel = document.getElementById("notif-panel");
+        const badge = document.getElementById("notif-badge");
+        if (bell && panel) {
+          bell.addEventListener("click", async (e) => {
+            e.stopPropagation();
+            const open = !panel.classList.contains("hidden");
+            panel.classList.toggle("hidden");
+            bell.setAttribute("aria-expanded", String(!open));
+            if (!open && badge) {
+              try {
+                await fetch("/api/notifications/lues", { method: "POST" });
+                badge.remove();
+              } catch {
+                // silencieux : on ne casse pas l'UX si le marquage échoue
+              }
+            }
+          });
+          document.addEventListener("click", (e) => {
+            if (!panel.contains(e.target as Node) && e.target !== bell) {
+              panel.classList.add("hidden");
+              bell.setAttribute("aria-expanded", "false");
+            }
+          });
+        }
       });
     </script>
 

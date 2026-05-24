@@ -164,9 +164,14 @@ export function initCoursPage(): void {
             credentials: "same-origin",
             body: JSON.stringify(body),
           });
-          const data = (await res.json()) as { error?: string };
+          let data: { error?: string } = {};
+          try {
+            data = (await res.json()) as { error?: string };
+          } catch {
+            data = { error: "Réponse serveur invalide." };
+          }
           if (!res.ok) {
-            alert(data.error || "Erreur");
+            alert(data.error || `Erreur (${res.status})`);
             return;
           }
           item?.removeAttribute("data-pending-file");

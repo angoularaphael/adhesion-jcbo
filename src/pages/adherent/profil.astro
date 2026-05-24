@@ -19,9 +19,30 @@ if (!profil) return Astro.redirect("/login");
 
     <!-- Carte identité -->
     <Card class="flex flex-col items-center text-center gap-4">
-      <div class="w-20 h-20 rounded-full flex items-center justify-center text-xl font-bold" style="background: linear-gradient(135deg, #0b1f3a 0%, #162d4f 100%); color: #d4a762;">
-        {profil.prenom[0]}{profil.nom[0]}
+      <div class="relative group">
+        <div
+          id="profil-avatar"
+          class="w-24 h-24 rounded-full flex items-center justify-center text-2xl font-bold overflow-hidden"
+          style={profil.photoUrl
+            ? `background-image:url('${profil.photoUrl}');background-size:cover;background-position:center;`
+            : "background: linear-gradient(135deg, #0b1f3a 0%, #162d4f 100%); color: #d4a762;"}
+        >
+          {!profil.photoUrl && <span>{profil.prenom[0]}{profil.nom[0]}</span>}
+        </div>
+        <button
+          id="btn-edit-photo"
+          type="button"
+          class="absolute bottom-0 right-0 w-8 h-8 rounded-full flex items-center justify-center shadow-md border-2 border-white transition hover:scale-110"
+          style="background-color: #d4a762; color: white;"
+          aria-label="Modifier la photo de profil"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>
+          </svg>
+        </button>
+        <input id="input-photo" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" />
       </div>
+      <p id="photo-status" class="hidden text-xs text-gray-400"></p>
       <div>
         <p class="font-semibold text-lg" style="color: #0b1f3a;">{profil.prenom} {profil.nom}</p>
         <p class="text-xs text-gray-400 mt-0.5">{profil.entreprise}</p>
@@ -148,6 +169,61 @@ if (!profil) return Astro.redirect("/login");
   <script>
     const profilView = document.getElementById("profil-view") as HTMLElement;
     const formProfil = document.getElementById("form-profil") as HTMLFormElement;
+
+    // — Photo de profil —
+    const btnEditPhoto = document.getElementById("btn-edit-photo") as HTMLButtonElement | null;
+    const inputPhoto = document.getElementById("input-photo") as HTMLInputElement | null;
+    const photoStatus = document.getElementById("photo-status") as HTMLParagraphElement | null;
+    const avatarEl = document.getElementById("profil-avatar") as HTMLElement | null;
+
+    if (btnEditPhoto && inputPhoto) {
+      btnEditPhoto.addEventListener("click", () => inputPhoto.click());
+      inputPhoto.addEventListener("change", async () => {
+        const file = inputPhoto.files?.[0];
+        if (!file || !photoStatus || !avatarEl) return;
+        if (file.size > 4 * 1024 * 1024) {
+          photoStatus.textContent = "Image trop volumineuse (max 4 Mo).";
+          photoStatus.style.color = "#ef4444";
+          photoStatus.classList.remove("hidden");
+          return;
+        }
+        photoStatus.textContent = "Envoi en cours…";
+        photoStatus.style.color = "#9ca3af";
+        photoStatus.classList.remove("hidden");
+
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("bucket", "profils");
+        fd.append("path", "adherent");
+        const up = await fetch("/api/upload", { method: "POST", body: fd });
+        const upData = await up.json();
+        if (!up.ok) {
+          photoStatus.textContent = upData.error || "Erreur d'envoi.";
+          photoStatus.style.color = "#ef4444";
+          return;
+        }
+
+        const save = await fetch("/api/profil/photo", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ photoUrl: upData.url }),
+        });
+        const saveData = await save.json();
+        if (!save.ok) {
+          photoStatus.textContent = saveData.error || "Erreur d'enregistrement.";
+          photoStatus.style.color = "#ef4444";
+          return;
+        }
+
+        avatarEl.style.backgroundImage = `url('${upData.url}')`;
+        avatarEl.style.backgroundSize = "cover";
+        avatarEl.style.backgroundPosition = "center";
+        avatarEl.innerHTML = "";
+        photoStatus.textContent = "Photo de profil mise à jour.";
+        photoStatus.style.color = "#16a34a";
+        setTimeout(() => photoStatus.classList.add("hidden"), 2500);
+      });
+    }
 
     document.getElementById("btn-edit-profil")!.addEventListener("click", () => {
       profilView.classList.add("hidden");

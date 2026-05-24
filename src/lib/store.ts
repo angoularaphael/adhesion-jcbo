@@ -1,5 +1,6 @@
 import { getSupabase } from "./supabase";
 import { hashPassword } from "./password";
+import { normalizeCloudinaryDeliveryUrl } from "./cloudinary";
 
 // ── Re-exported types (unchanged surface for callers) ─────────────────────────
 
@@ -42,6 +43,7 @@ export type AdherentComplet = {
   numeroAdherent: string;
   coursInscrits: string[];
   abonnement: AbonnementInfo | null;
+  photoUrl: string;
 };
 
 export type QuizResultat = { moduleId: string; score: number; passe: boolean };
@@ -85,6 +87,7 @@ function toAdherent(row: any): AdherentComplet {
     abonnement: row.abonnement_plan
       ? { plan: row.abonnement_plan, statut: row.abonnement_statut as "actif" | "inactif", dateDebut: row.abonnement_date_debut }
       : null,
+    photoUrl: row.photo_url ?? "",
   };
 }
 
@@ -137,7 +140,7 @@ function toCours(row: any, modules: any[] = []) {
         duree: m.duree,
         type: m.type as "Vidéo" | "Document" | "Quiz",
         ordre: m.ordre,
-        fichierUrl: m.fichier_url ?? undefined,
+        fichierUrl: m.fichier_url ? normalizeCloudinaryDeliveryUrl(m.fichier_url) : undefined,
         videoUrl: m.video_url ?? undefined,
         contenuMd: m.contenu_md ?? undefined,
       })),
@@ -339,12 +342,13 @@ export async function getProfil(email?: string): Promise<AdherentComplet | null>
   return data ? toAdherent(data) : null;
 }
 
-export async function updateProfil(email: string, data: Partial<Pick<AdherentComplet, "telephone" | "entreprise" | "secteur" | "motDePasse">>) {
+export async function updateProfil(email: string, data: Partial<Pick<AdherentComplet, "telephone" | "entreprise" | "secteur" | "motDePasse" | "photoUrl">>) {
   const patch: Record<string, unknown> = {};
   if (data.telephone !== undefined) patch.telephone = data.telephone;
   if (data.entreprise !== undefined) patch.entreprise = data.entreprise;
   if (data.secteur !== undefined) patch.secteur = data.secteur;
   if (data.motDePasse !== undefined) patch.mot_de_passe = await hashPassword(data.motDePasse);
+  if (data.photoUrl !== undefined) patch.photo_url = data.photoUrl;
   const { data: row } = await getSupabase().from("adherents").update(patch).ilike("email", email).select().single();
   return row ? toAdherent(row) : null;
 }
@@ -600,7 +604,16 @@ export async function updateModule(
     type: string;
   }>
 ) {
-  const { data: row } = await getSupabase().from("modules").update(data).eq("id", moduleId).select().single();
+  const { data: row, error } = await getSupabase()
+    .from("modules")
+    .update(data)
+    .eq("id", moduleId)
+    .select()
+    .single();
+  if (error) {
+    console.error("[updateModule]", error.message);
+    return null;
+  }
   return row;
 }
 
