@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { z } from "zod";
 import { subscribeNewsletter, enregistrerTelechargement } from "../../../../lib/store-admin";
+import { getRessources } from "../../../../lib/store";
 import { sendResourceDownloadEmail } from "../../../../lib/email";
 import { handleCorsPreflight, jsonCorsResponse } from "../../../../lib/cors";
 import { checkRateLimit } from "../../../../lib/rateLimit";
@@ -49,10 +50,30 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     resource: parsed.data.resource,
   });
 
+  let fileBuffer: Buffer | undefined;
+  let fileName: string | undefined;
+
+  try {
+    const ressources = await getRessources();
+    const match = ressources.find(
+      (r: { titre?: string; nom_fichier?: string }) =>
+        r.titre === parsed.data.resource || r.nom_fichier === parsed.data.resource
+    );
+    if (match && match.fichier && match.fichier.startsWith("data:")) {
+      const parts = match.fichier.split(",");
+      fileBuffer = Buffer.from(parts[1], "base64");
+      fileName = match.nom_fichier || `${parsed.data.resource}.pdf`;
+    }
+  } catch {
+    // Si pas trouvé, on envoie sans pièce jointe
+  }
+
   const emailResult = await sendResourceDownloadEmail({
     to: parsed.data.email,
     nom: `${parsed.data.prenom} ${parsed.data.nom}`,
     resourceTitle: parsed.data.resource,
+    fileBuffer,
+    fileName,
   });
 
   if (!emailResult.ok) {

@@ -70,7 +70,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       type: "cours_multiple",
     },
     success_url: `${origin}/paiement/succes?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${origin}/adherent/cours`,
+    cancel_url: `${origin}/adherent/marketplace`,
   });
 
   return new Response(JSON.stringify({ url: session.url }), {

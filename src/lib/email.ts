@@ -171,10 +171,14 @@ export async function sendResourceDownloadEmail({
   to,
   nom,
   resourceTitle,
+  fileBuffer,
+  fileName,
 }: {
   to: string;
   nom: string;
   resourceTitle: string;
+  fileBuffer?: Buffer;
+  fileName?: string;
 }): Promise<{ ok: boolean; error?: string }> {
   if (!isSmtpConfigured()) {
     return { ok: false, error: "Service email non configuré (SMTP)" };
@@ -185,16 +189,23 @@ export async function sendResourceDownloadEmail({
     <p>Bonjour <strong>${nom}</strong>,</p>
     <p>Merci pour votre intérêt pour JCBO Conseil. Voici la ressource demandée :</p>
     <p style="background:#f8f6f2;padding:16px;border-radius:8px;border:1px solid rgba(212,167,98,0.3);"><strong>${resourceTitle}</strong></p>
+    ${fileBuffer ? '<p>Vous trouverez le document en pièce jointe de cet email.</p>' : '<p>Notre équipe vous contactera pour vous transmettre le document.</p>'}
     <p>Notre équipe vous contactera si vous souhaitez un accompagnement personnalisé.</p>
     <p><a href="${vitrineUrl}/reserver" style="background:#0b1f3a;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;">Réserver une séance</a></p>
     <p style="color:#9ca3af;font-size:12px;">JCBO Conseil — contact@jcbo-conseil.fr</p>
   </body></html>`;
+
+  const attachments = fileBuffer && fileName
+    ? [{ filename: fileName, content: fileBuffer }]
+    : [];
+
   try {
     await createTransport().sendMail({
       from,
       to,
       subject: `Votre ressource : ${resourceTitle}`,
       html,
+      attachments,
     });
     return { ok: true };
   } catch (err) {
