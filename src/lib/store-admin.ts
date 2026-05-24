@@ -651,4 +651,44 @@ export async function slugExists(slug: string, excludeId?: string): Promise<bool
   return !!data;
 }
 
+// ── Téléchargements de ressources (vitrine) ─────────────────────────────────
+
+export type TelechargementInfo = {
+  id: string;
+  nom: string;
+  prenom: string;
+  email: string;
+  profession: string;
+  resource: string;
+  date: string;
+};
+
+export async function enregistrerTelechargement(info: Omit<TelechargementInfo, "id" | "date">): Promise<void> {
+  await getSupabase().from("telechargements_ressources").insert({
+    id: `DL-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    nom: info.nom,
+    prenom: info.prenom,
+    email: info.email,
+    profession: info.profession,
+    resource: info.resource,
+    date: new Date().toISOString(),
+  });
+}
+
+export async function getTelechargements(): Promise<TelechargementInfo[]> {
+  const { data } = await getSupabase()
+    .from("telechargements_ressources")
+    .select("*")
+    .order("date", { ascending: false });
+  return (data ?? []).map((r: Record<string, string>) => ({
+    id: r.id,
+    nom: r.nom,
+    prenom: r.prenom,
+    email: r.email,
+    profession: r.profession,
+    resource: r.resource,
+    date: r.date,
+  }));
+}
+
 export { slugify, uniqueSlug };

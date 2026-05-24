@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { z } from "zod";
-import { subscribeNewsletter } from "../../../../lib/store-admin";
+import { subscribeNewsletter, enregistrerTelechargement } from "../../../../lib/store-admin";
 import { sendResourceDownloadEmail } from "../../../../lib/email";
 import { handleCorsPreflight, jsonCorsResponse } from "../../../../lib/cors";
 import { checkRateLimit } from "../../../../lib/rateLimit";
@@ -8,6 +8,8 @@ import { checkRateLimit } from "../../../../lib/rateLimit";
 const schema = z.object({
   email: z.string().email(),
   nom: z.string().min(2).max(120),
+  prenom: z.string().min(2).max(120),
+  profession: z.string().min(2).max(200),
   resource: z.string().min(2).max(300),
   newsletter: z.boolean().optional(),
 });
@@ -39,9 +41,17 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     await subscribeNewsletter(parsed.data.email);
   }
 
+  await enregistrerTelechargement({
+    nom: parsed.data.nom,
+    prenom: parsed.data.prenom,
+    email: parsed.data.email,
+    profession: parsed.data.profession,
+    resource: parsed.data.resource,
+  });
+
   const emailResult = await sendResourceDownloadEmail({
     to: parsed.data.email,
-    nom: parsed.data.nom,
+    nom: `${parsed.data.prenom} ${parsed.data.nom}`,
     resourceTitle: parsed.data.resource,
   });
 

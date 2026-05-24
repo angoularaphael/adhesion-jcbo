@@ -102,33 +102,24 @@ const catalogue = coursAvecInfos.filter(c => !c.inscrit);
     </div>
   )}
 
-  <!-- Catalogue — formations disponibles -->
+  <!-- Catalogue — formations disponibles (marketplace) -->
   {catalogue.length > 0 && (
     <div>
-      <div class="mb-6">
-        <h2 class="text-2xl font-bold" style="color: #0b1f3a;">
-          {mesFormations.length === 0 ? "Formations disponibles" : "Autres formations"}
-        </h2>
-        <p class="text-sm text-gray-500 mt-1">Investissez dans votre développement professionnel.</p>
-      </div>
-
-      <!-- Avertissement premium -->
-      {mesFormations.length === 0 && (
-        <div class="flex items-start gap-4 p-5 rounded-2xl mb-6" style="background: linear-gradient(135deg, rgba(212,167,98,0.1) 0%, rgba(11,31,58,0.05) 100%); border: 1px solid rgba(212,167,98,0.3);">
-          <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style="background-color: rgba(212,167,98,0.15);">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#d4a762" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-            </svg>
-          </div>
-          <div>
-            <p class="text-sm font-bold" style="color: #0b1f3a;">Espace de formation premium</p>
-            <p class="text-xs text-gray-500 mt-1 leading-relaxed">
-              Les contenus sont réservés aux membres inscrits. L'accès nécessite un paiement préalable.
-              Certaines formations incluent des évaluations obligatoires avec un score minimum de 80%.
-            </p>
-          </div>
+      <div class="mb-6 flex items-center justify-between">
+        <div>
+          <h2 class="text-2xl font-bold" style="color: #0b1f3a;">
+            {mesFormations.length === 0 ? "Formations disponibles" : "Autres formations"}
+          </h2>
+          <p class="text-sm text-gray-500 mt-1">Sélectionnez les formations qui vous intéressent et achetez-les en une fois.</p>
         </div>
-      )}
+        <button id="btn-voir-panier" class="relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition hover:opacity-90" style="background-color: #0b1f3a; color: white;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
+          </svg>
+          Panier
+          <span id="panier-count" class="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 rounded-full text-xs font-bold flex items-center justify-center px-1" style="background-color: #d4a762; color: #0b1f3a; display: none;">0</span>
+        </button>
+      </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {catalogue.map((c) => (
@@ -145,7 +136,6 @@ const catalogue = coursAvecInfos.filter(c => !c.inscrit);
                 <p class="text-xs text-gray-400 mt-1.5 line-clamp-2">{c.description}</p>
               </div>
 
-              <!-- Prix -->
               <div class="flex items-center justify-between py-3 px-4 rounded-xl" style="background-color: rgba(248,246,242,0.9); border: 1px solid rgba(212,167,98,0.15);">
                 <div>
                   <p class="text-xs text-gray-400">Accès complet + certificat</p>
@@ -159,17 +149,17 @@ const catalogue = coursAvecInfos.filter(c => !c.inscrit);
                 </div>
               </div>
 
-              <!-- Bouton S'inscrire -->
               <button
                 data-cours-id={c.id}
                 data-cours-titre={c.titre}
-                class="btn-inscrire flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold transition hover:opacity-90 mt-auto"
-                style="background-color: #d4a762; color: white;"
+                data-cours-prix={c.prix}
+                class="btn-add-panier flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold transition hover:opacity-90 mt-auto"
+                style="background-color: #d4a762; color: #0b1f3a;"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                 </svg>
-                S'inscrire — {c.prix} €
+                Ajouter au panier — {c.prix} €
               </button>
             </div>
           </Card>
@@ -186,83 +176,161 @@ const catalogue = coursAvecInfos.filter(c => !c.inscrit);
 
 </AdherentMemberLayout>
 
-<!-- Modal de confirmation paiement -->
-<div id="modal-paiement" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background-color: rgba(0,0,0,0.5);">
-  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-5 sm:p-8">
-    <div class="text-center mb-6">
-      <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style="background-color: rgba(212,167,98,0.12);">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="#d4a762" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-        </svg>
+<!-- Modal Panier -->
+<div id="modal-panier" class="fixed inset-0 z-[70] hidden items-center justify-center p-4" style="background-color: rgba(0,0,0,0.5);">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-5 sm:p-8 max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color: rgba(212,167,98,0.12);">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#d4a762" stroke-width="2">
+            <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold" style="color: #0b1f3a;">Mon panier</h3>
+          <p class="text-xs text-gray-400">Achetez toutes vos formations en une seule fois.</p>
+        </div>
       </div>
-      <h3 class="text-lg font-bold mb-1" style="color: #0b1f3a;" id="modal-titre">Confirmer l'inscription</h3>
-      <p class="text-sm text-gray-500 leading-relaxed">
-        Vous allez être redirigé vers le paiement sécurisé Stripe.
-        Après validation, votre accès sera activé immédiatement.
-      </p>
+      <button id="btn-close-panier" class="text-2xl text-gray-400 hover:text-gray-600 leading-none">×</button>
     </div>
 
-    <div class="rounded-xl p-4 mb-6" style="background-color: rgba(248,246,242,0.9); border: 1px solid rgba(212,167,98,0.2);">
-      <div class="flex items-center justify-between">
-        <p class="text-sm text-gray-600" id="modal-cours-nom">Formation</p>
-        <p class="text-base font-bold" style="color: #0b1f3a;" id="modal-prix">— €</p>
-      </div>
+    <div id="panier-list" class="flex flex-col gap-3 mb-6"></div>
+
+    <div id="panier-vide" class="hidden text-center py-8">
+      <p class="text-sm text-gray-400">Votre panier est vide.</p>
+      <p class="text-xs text-gray-300 mt-1">Ajoutez des formations depuis le catalogue.</p>
     </div>
 
-    <div class="flex flex-col gap-2">
-      <div class="flex gap-3">
-        <button id="btn-annuler" class="flex-1 py-2.5 rounded-xl text-sm font-semibold" style="background-color: #f1f3f5; color: #6b7280;">Annuler</button>
-        <button id="btn-payer" class="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white" style="background-color: #0b1f3a;">Carte bancaire</button>
+    <div id="panier-footer" class="border-t pt-4" style="border-color: #f1f3f5;">
+      <div class="flex items-center justify-between mb-4">
+        <span class="text-sm font-semibold" style="color: #0b1f3a;">Total</span>
+        <span id="panier-total" class="text-xl font-bold" style="color: #0b1f3a;">0 €</span>
       </div>
-      <button id="btn-payer-fapshi" class="w-full py-2.5 rounded-xl text-sm font-semibold border" style="border-color:#0b1f3a;color:#0b1f3a;">OM / MoMo (Fapshi)</button>
+      <div class="flex flex-col gap-2">
+        <button id="btn-payer-panier" class="w-full py-3 rounded-xl text-sm font-bold text-white transition hover:opacity-90" style="background-color: #0b1f3a;">
+          Payer par carte bancaire
+        </button>
+        <button id="btn-payer-panier-fapshi" class="w-full py-3 rounded-xl text-sm font-bold border transition hover:opacity-90" style="border-color:#0b1f3a; color:#0b1f3a;">
+          Payer par OM / MoMo (Fapshi)
+        </button>
+      </div>
+      <p id="panier-erreur" class="text-xs text-red-500 text-center mt-3 hidden"></p>
     </div>
-
-    <p id="modal-erreur" class="text-xs text-red-500 text-center mt-3 hidden"></p>
   </div>
 </div>
 
 <script>
-  let coursIdSelectionne = "";
+  type CartItem = { id: string; titre: string; prix: number };
+  let panier: CartItem[] = [];
 
-  document.querySelectorAll<HTMLButtonElement>(".btn-inscrire").forEach(btn => {
+  function updatePanierUI() {
+    const list = document.getElementById("panier-list")!;
+    const vide = document.getElementById("panier-vide")!;
+    const footer = document.getElementById("panier-footer")!;
+    const countBadge = document.getElementById("panier-count")!;
+    const totalEl = document.getElementById("panier-total")!;
+
+    if (panier.length === 0) {
+      list.innerHTML = "";
+      vide.classList.remove("hidden");
+      footer.classList.add("hidden");
+      countBadge.style.display = "none";
+    } else {
+      vide.classList.add("hidden");
+      footer.classList.remove("hidden");
+      countBadge.style.display = "flex";
+      countBadge.textContent = String(panier.length);
+
+      const total = panier.reduce((s, i) => s + i.prix, 0);
+      totalEl.textContent = `${total} €`;
+
+      list.innerHTML = panier.map((item, idx) => `
+        <div class="flex items-center justify-between p-3 rounded-xl" style="background-color: #f8f6f2; border: 1px solid rgba(212,167,98,0.15);">
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium truncate" style="color: #0b1f3a;">${item.titre}</p>
+            <p class="text-xs text-gray-400">${item.prix} €</p>
+          </div>
+          <button class="btn-remove-item text-xs px-2 py-1 rounded-lg transition hover:bg-red-50" style="color: #ef4444;" data-idx="${idx}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      `).join("");
+
+      list.querySelectorAll(".btn-remove-item").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const idx = parseInt((btn as HTMLElement).dataset.idx ?? "0");
+          panier.splice(idx, 1);
+          updatePanierUI();
+          updateAddButtons();
+        });
+      });
+    }
+  }
+
+  function updateAddButtons() {
+    document.querySelectorAll<HTMLButtonElement>(".btn-add-panier").forEach(btn => {
+      const id = btn.dataset.coursId ?? "";
+      const inCart = panier.some(i => i.id === id);
+      if (inCart) {
+        btn.disabled = true;
+        btn.style.backgroundColor = "#f1f3f5";
+        btn.style.color = "#9ca3af";
+        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Ajouté au panier`;
+      } else {
+        btn.disabled = false;
+        btn.style.backgroundColor = "#d4a762";
+        btn.style.color = "#0b1f3a";
+        const prix = btn.dataset.coursPrix ?? "0";
+        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Ajouter au panier — ${prix} €`;
+      }
+    });
+  }
+
+  document.querySelectorAll<HTMLButtonElement>(".btn-add-panier").forEach(btn => {
     btn.addEventListener("click", () => {
       const id = btn.dataset.coursId ?? "";
       const titre = btn.dataset.coursTitre ?? "";
-      const prix = btn.textContent?.match(/(\d+)\s*€/)?.[1] ?? "";
-      coursIdSelectionne = id;
-      document.getElementById("modal-cours-nom")!.textContent = titre;
-      document.getElementById("modal-prix")!.textContent = prix ? `${prix} €` : "—";
-      document.getElementById("modal-titre")!.textContent = `S'inscrire — ${titre}`;
-      const modal = document.getElementById("modal-paiement")!;
-      modal.classList.remove("hidden");
-      modal.classList.add("flex");
+      const prix = parseInt(btn.dataset.coursPrix ?? "0");
+      if (panier.some(i => i.id === id)) return;
+      panier.push({ id, titre, prix });
+      updatePanierUI();
+      updateAddButtons();
     });
   });
 
-  document.getElementById("btn-annuler")?.addEventListener("click", () => {
-    const modal = document.getElementById("modal-paiement")!;
+  function openPanier() {
+    const modal = document.getElementById("modal-panier")!;
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+    updatePanierUI();
+  }
+  function closePanier() {
+    const modal = document.getElementById("modal-panier")!;
     modal.classList.add("hidden");
     modal.classList.remove("flex");
+  }
+
+  document.getElementById("btn-voir-panier")?.addEventListener("click", openPanier);
+  document.getElementById("btn-close-panier")?.addEventListener("click", closePanier);
+  document.getElementById("modal-panier")?.addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) closePanier();
   });
 
-  document.getElementById("modal-paiement")?.addEventListener("click", (e) => {
-    if (e.target === e.currentTarget) {
-      const modal = document.getElementById("modal-paiement")!;
-      modal.classList.add("hidden");
-      modal.classList.remove("flex");
-    }
-  });
-
-  async function payer(methode: "stripe" | "fapshi") {
-    const btn = document.getElementById(methode === "fapshi" ? "btn-payer-fapshi" : "btn-payer") as HTMLButtonElement;
-    const erreur = document.getElementById("modal-erreur")!;
+  async function payerPanier(methode: "stripe" | "fapshi") {
+    if (panier.length === 0) return;
+    const erreur = document.getElementById("panier-erreur")!;
+    const btn = document.getElementById(methode === "fapshi" ? "btn-payer-panier-fapshi" : "btn-payer-panier") as HTMLButtonElement;
     btn.disabled = true;
     erreur.classList.add("hidden");
-    const body: { coursId: string; phone?: string } = { coursId: coursIdSelectionne };
+
+    const coursIds = panier.map(i => i.id);
+    const body: { coursIds: string[]; phone?: string } = { coursIds };
+
     if (methode === "fapshi") {
       const phone = prompt("Numéro Mobile Money (optionnel) :");
       if (phone) body.phone = phone;
     }
+
     try {
       const res = await fetch(methode === "fapshi" ? "/api/fapshi/checkout" : "/api/stripe/checkout", {
         method: "POST",
@@ -284,6 +352,7 @@ const catalogue = coursAvecInfos.filter(c => !c.inscrit);
       btn.disabled = false;
     }
   }
-  document.getElementById("btn-payer")?.addEventListener("click", () => payer("stripe"));
-  document.getElementById("btn-payer-fapshi")?.addEventListener("click", () => payer("fapshi"));
+
+  document.getElementById("btn-payer-panier")?.addEventListener("click", () => payerPanier("stripe"));
+  document.getElementById("btn-payer-panier-fapshi")?.addEventListener("click", () => payerPanier("fapshi"));
 </script>

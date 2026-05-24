@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import { z } from "zod";
 import { getQuizQuestions } from "../../lib/store-admin";
-import { enregistrerQuizResultat } from "../../lib/store";
+import { enregistrerQuizResultat, getProgressions } from "../../lib/store";
 
 const schema = z.object({
   coursId: z.string().min(1),
@@ -27,6 +27,17 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   const { coursId, moduleId, reponses } = result.data;
+
+  const progressions = await getProgressions(locals.session.email);
+  const prog = progressions.find(p => p.coursId === coursId);
+  const existingQuizResult = prog?.quizResultats?.find(q => q.moduleId === moduleId);
+  if (existingQuizResult && existingQuizResult.passe && existingQuizResult.score >= 80) {
+    return new Response(
+      JSON.stringify({ error: "Quiz déjà validé. Vous ne pouvez plus le refaire.", score: existingQuizResult.score, passe: true }),
+      { status: 403, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
   const questions = await getQuizQuestions(moduleId);
 
   if (!questions.length) {
