@@ -63,6 +63,7 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
   let role: "admin" | "adherent" | null = null;
   let adminId: string | undefined;
   let adminRole: "super_admin" | "admin" | undefined;
+  let blockedReason: string | null = null;
 
   const admin = await verifyAdminLogin(emailLower, password);
   if (admin) {
@@ -74,14 +75,18 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
     }
   } else {
     const adherent = await getAdherentByEmail(emailLower);
-    if (adherent && adherent.statut === "Actif" && (await verifyPassword(password, adherent.motDePasse))) {
-      role = "adherent";
+    if (adherent && (await verifyPassword(password, adherent.motDePasse))) {
+      if (adherent.statut === "Actif") {
+        role = "adherent";
+      } else {
+        blockedReason = "Votre compte est désactivé. Contactez l'administrateur.";
+      }
     }
   }
 
   if (!role) {
     return new Response(
-      JSON.stringify({ error: "Identifiants incorrects.", remaining }),
+      JSON.stringify({ error: blockedReason ?? "Identifiants incorrects.", remaining }),
       { status: 401, headers: { "Content-Type": "application/json" } }
     );
   }

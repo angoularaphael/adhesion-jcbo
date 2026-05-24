@@ -31,34 +31,43 @@ export function initCoursPage(): void {
     modal?.classList.remove("hidden");
   }
 
+  function escapeHtml(s: string): string {
+    return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
+  }
+
   function renderModuleItem(mod: ModuleRow): string {
     const fileInfo = mod.fichierUrl
-      ? `<a href="${mod.fichierUrl}" target="_blank" class="text-xs text-blue-600 hover:underline">Fichier joint</a>`
-      : `<span class="text-xs text-gray-400">Aucun fichier</span>`;
+      ? `<a href="${escapeHtml(mod.fichierUrl)}" target="_blank" class="text-xs text-blue-600 hover:underline">Fichier joint (PDF/DOC)</a>`
+      : `<span class="text-xs text-gray-400">Aucun fichier (optionnel)</span>`;
     const videoInfo = mod.videoUrl
-      ? `<a href="${mod.videoUrl}" target="_blank" class="text-xs text-blue-600 hover:underline truncate block max-w-xs">${mod.videoUrl}</a>`
-      : `<span class="text-xs text-gray-400">Aucune vidéo</span>`;
+      ? `<a href="${escapeHtml(mod.videoUrl)}" target="_blank" class="text-xs text-blue-600 hover:underline truncate block max-w-xs">${escapeHtml(mod.videoUrl)}</a>`
+      : `<span class="text-xs text-gray-400">Aucune vidéo (optionnel)</span>`;
     return `
-      <div class="border border-gray-100 rounded-xl p-4 module-item" data-module-id="${mod.id}">
+      <div class="border border-gray-100 rounded-xl p-4 module-item" data-module-id="${escapeHtml(mod.id)}">
         <div class="flex items-start justify-between gap-3 mb-3">
           <div>
-            <p class="text-sm font-semibold" style="color:#0b1f3a;">${mod.titre}</p>
-            <p class="text-xs text-gray-400">${mod.type}${mod.duree ? " · " + mod.duree : ""}</p>
+            <p class="text-sm font-semibold" style="color:#0b1f3a;">${escapeHtml(mod.titre)}</p>
+            <p class="text-xs text-gray-400">${escapeHtml(mod.type)}${mod.duree ? " · " + escapeHtml(mod.duree) : ""}</p>
           </div>
+          <button type="button" class="btn-delete-module text-xs text-red-500 hover:underline" title="Supprimer ce module">Supprimer</button>
         </div>
         <div class="grid sm:grid-cols-2 gap-3">
           <div>
-            <p class="text-xs text-gray-400 mb-1">Fichier cours (PDF, DOC…)</p>
-            ${fileInfo}
+            <p class="text-xs text-gray-400 mb-1">Fichier de cours (PDF, DOC… — optionnel)</p>
+            <div class="file-info">${fileInfo}</div>
             <label class="mt-2 inline-flex cursor-pointer">
-              <span class="btn-upload-file px-3 py-1.5 rounded-lg text-xs border border-gray-200 hover:bg-gray-50">Uploader fichier</span>
-              <input type="file" class="input-module-file hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.zip" />
+              <span class="btn-upload-file px-3 py-1.5 rounded-lg text-xs border border-gray-200 hover:bg-gray-50">Choisir un fichier</span>
+              <input type="file" class="input-module-file hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,application/pdf" />
             </label>
           </div>
           <div>
-            <p class="text-xs text-gray-400 mb-1">Vidéo (URL YouTube, Vimeo…)</p>
-            ${videoInfo}
-            <input type="url" class="input-module-video w-full mt-2 border rounded-lg px-3 py-2 text-xs" placeholder="https://…" value="${mod.videoUrl ?? ""}" />
+            <p class="text-xs text-gray-400 mb-1">Vidéo (URL ou upload — optionnel)</p>
+            <div class="video-info">${videoInfo}</div>
+            <input type="url" class="input-module-video w-full mt-2 border rounded-lg px-3 py-2 text-xs" placeholder="https://youtu.be/… ou laisser vide" value="${escapeHtml(mod.videoUrl ?? "")}" />
+            <label class="mt-2 inline-flex cursor-pointer">
+              <span class="btn-upload-video px-3 py-1.5 rounded-lg text-xs border border-gray-200 hover:bg-gray-50">Uploader une vidéo</span>
+              <input type="file" class="input-module-video-file hidden" accept="video/mp4,video/webm,video/quicktime" />
+            </label>
           </div>
         </div>
         <button type="button" class="btn-save-module mt-3 px-4 py-2 rounded-lg text-xs font-semibold text-white" style="background:#0b1f3a;">Enregistrer le module</button>
@@ -100,16 +109,36 @@ export function initCoursPage(): void {
         try {
           const { url } = await uploadFile(file, "cours-fichiers", "module");
           item?.setAttribute("data-pending-file", url);
-          const info = item?.querySelector("div:first-child")?.parentElement;
-          const fileBlock = item?.querySelector(".grid > div:first-child");
+          const fileBlock = item?.querySelector(".file-info");
           if (fileBlock) {
-            const link = fileBlock.querySelector("a, span");
-            if (link) {
-              link.outerHTML = `<a href="${url}" target="_blank" class="text-xs text-blue-600 hover:underline">Fichier prêt</a>`;
-            }
+            fileBlock.innerHTML = `<a href="${url}" target="_blank" class="text-xs text-blue-600 hover:underline">Fichier prêt à enregistrer</a>`;
           }
         } catch (e) {
           alert(e instanceof Error ? e.message : "Erreur upload");
+        } finally {
+          if (btn) setButtonLoading(btn as HTMLButtonElement, false);
+          input.value = "";
+        }
+      });
+    });
+
+    modulesList?.querySelectorAll<HTMLInputElement>(".input-module-video-file").forEach((input) => {
+      input.addEventListener("change", async () => {
+        const file = input.files?.[0];
+        if (!file) return;
+        const item = input.closest(".module-item");
+        const btn = item?.querySelector<HTMLElement>(".btn-upload-video");
+        if (btn) setButtonLoading(btn as HTMLButtonElement, true, "Upload vidéo…");
+        try {
+          const { url } = await uploadFile(file, "videos-formation", "video");
+          const videoInput = item?.querySelector<HTMLInputElement>(".input-module-video");
+          if (videoInput) videoInput.value = url;
+          const videoBlock = item?.querySelector(".video-info");
+          if (videoBlock) {
+            videoBlock.innerHTML = `<a href="${url}" target="_blank" class="text-xs text-blue-600 hover:underline truncate block max-w-xs">Vidéo prête à enregistrer</a>`;
+          }
+        } catch (e) {
+          alert(e instanceof Error ? e.message : "Erreur upload vidéo");
         } finally {
           if (btn) setButtonLoading(btn as HTMLButtonElement, false);
           input.value = "";
@@ -126,7 +155,7 @@ export function initCoursPage(): void {
         const body: Record<string, string> = {};
         const pendingFile = item?.getAttribute("data-pending-file");
         if (pendingFile) body.fichier_url = pendingFile;
-        if (videoInput?.value.trim()) body.video_url = videoInput.value.trim();
+        body.video_url = videoInput?.value.trim() ?? "";
 
         await withButtonLoading(btn, async () => {
           const res = await fetch(`/api/modules/${moduleId}`, {
@@ -146,6 +175,26 @@ export function initCoursPage(): void {
             await loadModules(currentCoursId, titre);
           }
         }, "Enregistrement…");
+      });
+    });
+
+    modulesList?.querySelectorAll<HTMLButtonElement>(".btn-delete-module").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const item = btn.closest(".module-item");
+        const moduleId = item?.getAttribute("data-module-id");
+        if (!moduleId) return;
+        if (!confirm("Supprimer ce module ?")) return;
+        await withButtonLoading(btn, async () => {
+          const res = await fetch(`/api/modules/${moduleId}`, { method: "DELETE", credentials: "same-origin" });
+          if (!res.ok) {
+            alert("Erreur lors de la suppression du module.");
+            return;
+          }
+          if (currentCoursId) {
+            const titre = document.getElementById("modal-modules-titre")?.textContent?.replace("Contenu — ", "") ?? "";
+            await loadModules(currentCoursId, titre);
+          }
+        }, "…");
       });
     });
   }

@@ -1,5 +1,5 @@
 import { defineMiddleware } from "astro:middleware";
-import { verifySession } from "./lib/session";
+import { verifySession, createSession } from "./lib/session";
 import { isSuperAdminEmail } from "./lib/admin-auth";
 
 const PUBLIC_PATHS = [
@@ -14,10 +14,14 @@ const PUBLIC_PATHS = [
   "/verification/",
 ];
 
+// 24h en secondes — durée d'inactivité maximale autorisée
+const SESSION_MAX_AGE_S = 60 * 60 * 24;
+// On rafraîchit la session si elle a été émise il y a plus d'1h (pour limiter le coût)
+const REFRESH_THRESHOLD_S = 60 * 60;
+
 export const onRequest = defineMiddleware(async (context, next) => {
   const path = new URL(context.request.url).pathname;
 
-  // Laisser passer les routes publiques
   if (PUBLIC_PATHS.some(p => path.startsWith(p))) {
     return next();
   }
@@ -35,7 +39,28 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return context.redirect("/login");
   }
 
-  // Contrôle d'accès par rôle
+  // ── Session glissante : on prolonge la session si le token a + d'1h.
+  // Toute action de l'adhérent (navigation, API call) repousse l'expiration.
+  // Si l'utilisateur reste inactif 24h, le token expirera naturellement.
+  const nowS = Math.floor(Date.now() / 1000);
+  const iat = (session as unknown as { iat?: number }).iat ?? 0;
+  if (!iat || nowS - iat > REFRESH_THRESHOLD_S) {
+    const fresh = await createSession({
+      email: session.email,
+      role: session.role,
+      ...(session.diagnosticId ? { diagnosticId: session.diagnosticId } : {}),
+      ...(session.adminId ? { adminId: session.adminId } : {}),
+      ...(session.adminRole ? { adminRole: session.adminRole } : {}),
+    });
+    context.cookies.set("session", fresh, {
+      httpOnly: true,
+      secure: import.meta.env.PROD,
+      sameSite: "lax",
+      maxAge: SESSION_MAX_AGE_S,
+      path: "/",
+    });
+  }
+
   if (path.startsWith("/dashboard") && session.role !== "admin") {
     return context.redirect("/adherent/tableau-de-bord");
   }

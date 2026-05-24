@@ -223,9 +223,17 @@ const RAPPEL_PAIEMENT = "Bonjour,\n\nNous vous rappelons que votre cotisation an
   </div>
 </div>
 
-<script define:vars={{ adherentsClient, RAPPEL_PAIEMENT }}>
+<script
+  type="application/json"
+  id="adherents-data"
+  set:html={JSON.stringify({ adherents: adherentsClient, rappel: RAPPEL_PAIEMENT })}
+/>
+
+<script>
   import { bootAdherentsPage } from "../../scripts/adherents-page.ts";
-  bootAdherentsPage(adherentsClient, RAPPEL_PAIEMENT);
+  const raw = document.getElementById("adherents-data")?.textContent ?? "{}";
+  const { adherents, rappel } = JSON.parse(raw);
+  bootAdherentsPage(adherents, rappel);
 </script>
 
 </AdherentLayout>

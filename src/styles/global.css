@@ -46,37 +46,48 @@ button .jcbo-spinner {
   pointer-events: none;
 }
 
+/* Loader de navigation : barre fine en haut de page (style YouTube/GitHub),
+   beaucoup moins intrusive qu'un overlay plein écran. */
 #jcbo-page-loader {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
   z-index: 9999;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  background: rgba(248, 246, 242, 0.75);
-  backdrop-filter: blur(2px);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  background: transparent;
 }
 
 #jcbo-page-loader.jcbo-page-loader-visible {
-  display: flex;
+  opacity: 1;
 }
 
 #jcbo-page-loader .jcbo-page-loader-inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
 }
 
-#jcbo-page-loader .jcbo-spinner {
-  width: 2rem;
-  height: 2rem;
-  border-width: 3px;
-  border-color: rgba(11, 31, 58, 0.15);
-  border-top-color: #0b1f3a;
+#jcbo-page-loader .jcbo-page-loader-inner p {
+  display: none;
 }
 
-#jcbo-page-loader p {
-  font-size: 0.8125rem;
-  color: #6b7280;
+#jcbo-page-loader .jcbo-page-loader-inner .jcbo-spinner {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  animation: none;
+  background: linear-gradient(90deg, #0b1f3a 0%, #d4a762 50%, #0b1f3a 100%);
+  background-size: 200% 100%;
+  animation: jcbo-progress 1.1s ease-in-out infinite;
+}
+
+@keyframes jcbo-progress {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
 }

@@ -315,7 +315,13 @@ export async function resetMotDePasse(adherentId: string): Promise<{ email: stri
   const charset = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#!";
   let password = "";
   for (let i = 0; i < 12; i++) password += charset[Math.floor(Math.random() * charset.length)];
-  await getSupabase().from("adherents").update({ mot_de_passe: await hashPassword(password) }).eq("id", adherentId);
+  // On réactive l'adhérent lors de la régénération des identifiants : sinon
+  // l'utilisateur ne pourrait jamais se reconnecter avec le nouveau mot de passe
+  // (le login refuse les comptes inactifs).
+  await getSupabase()
+    .from("adherents")
+    .update({ mot_de_passe: await hashPassword(password), statut: "Actif" })
+    .eq("id", adherentId);
   return { email: a.email, nom: `${a.prenom} ${a.nom}`, motDePasse: password };
 }
 
@@ -585,7 +591,14 @@ export async function searchAdherents(query: string): Promise<AdherentComplet[]>
 
 export async function updateModule(
   moduleId: string,
-  data: Partial<{ fichier_url: string; video_url: string; contenu_md: string; titre: string; duree: string; type: string }>
+  data: Partial<{
+    fichier_url: string | null;
+    video_url: string | null;
+    contenu_md: string | null;
+    titre: string;
+    duree: string;
+    type: string;
+  }>
 ) {
   const { data: row } = await getSupabase().from("modules").update(data).eq("id", moduleId).select().single();
   return row;
