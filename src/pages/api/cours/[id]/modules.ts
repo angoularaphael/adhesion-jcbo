@@ -1,6 +1,8 @@
 import type { APIRoute } from "astro";
 import { z } from "zod";
-import { createModule, getCoursById } from "../../../../lib/store";
+import { normalizeCloudinaryDeliveryUrl } from "../../../../lib/cloudinary";
+import { createModule } from "../../../../lib/store";
+import { getSupabase } from "../../../../lib/supabase";
 
 const schema = z.object({
   titre: z.string().min(2).max(200),
@@ -12,11 +14,29 @@ export const GET: APIRoute = async ({ params, locals }) => {
   if (!locals.session || locals.session.role !== "admin") {
     return new Response(JSON.stringify({ error: "Non autorisé" }), { status: 401 });
   }
-  const cours = await getCoursById(params.id ?? "");
-  if (!cours) {
+  const coursId = params.id ?? "";
+  const { data: row } = await getSupabase().from("cours").select("id").eq("id", coursId).maybeSingle();
+  if (!row) {
     return new Response(JSON.stringify({ error: "Cours introuvable" }), { status: 404 });
   }
-  return new Response(JSON.stringify({ modules: cours.modules }), {
+  // Requête directe sur ce cours uniquement (évite toute confusion entre formations)
+  const { data: moduleRows, error } = await getSupabase()
+    .from("modules")
+    .select("*")
+    .eq("cours_id", coursId)
+    .order("ordre", { ascending: true });
+  if (error) {
+    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+  }
+  const modules = (moduleRows ?? []).map((m) => ({
+    id: m.id,
+    titre: m.titre,
+    duree: m.duree,
+    type: m.type,
+    fichierUrl: m.fichier_url ? normalizeCloudinaryDeliveryUrl(m.fichier_url) : undefined,
+    videoUrl: m.video_url ?? undefined,
+  }));
+  return new Response(JSON.stringify({ modules }), {
     headers: { "Content-Type": "application/json" },
   });
 };

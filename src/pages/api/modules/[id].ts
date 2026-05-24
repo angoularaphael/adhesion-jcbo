@@ -18,14 +18,32 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
     return new Response(JSON.stringify({ error: "Corps invalide" }), { status: 400 });
   }
 
-  // Permettre d'effacer un fichier/vidéo en envoyant une chaîne vide
-  const patch: Record<string, string | null> = {};
-  if (body.fichier_url !== undefined) patch.fichier_url = body.fichier_url || null;
-  if (body.video_url !== undefined) patch.video_url = body.video_url || null;
-  if (body.contenu_md !== undefined) patch.contenu_md = body.contenu_md || null;
+  const { data: existingMod } = await getSupabase()
+    .from("modules")
+    .select("type")
+    .eq("id", id)
+    .maybeSingle();
+  if (!existingMod) {
+    return new Response(JSON.stringify({ error: "Module introuvable" }), { status: 404 });
+  }
 
-  if (patch.fichier_url) {
-    patch.fichier_url = normalizeCloudinaryDeliveryUrl(patch.fichier_url);
+  /** Selon le type : un seul type de média actif ; le quiz ne garde pas de fichier/vidéo. */
+  const patch: Record<string, string | null> = {};
+  const t = existingMod.type as string;
+
+  if (t === "Quiz") {
+    patch.fichier_url = null;
+    patch.video_url = null;
+    if (body.contenu_md !== undefined) patch.contenu_md = body.contenu_md || null;
+  } else if (t === "Document") {
+    patch.video_url = null;
+    if (body.fichier_url !== undefined) {
+      patch.fichier_url = body.fichier_url ? normalizeCloudinaryDeliveryUrl(body.fichier_url) : null;
+    }
+  } else {
+    /* Vidéo (ou valeur héritée) */
+    patch.fichier_url = null;
+    if (body.video_url !== undefined) patch.video_url = body.video_url || null;
   }
 
   const row = await updateModule(id, patch);

@@ -623,7 +623,7 @@ export async function createModule(coursId: string, data: { titre: string; duree
     .select("id", { count: "exact", head: true })
     .eq("cours_id", coursId);
   const row = {
-    id: `MOD-${Date.now()}`,
+    id: `MOD-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
     cours_id: coursId,
     titre: data.titre,
     duree: data.duree ?? "",

@@ -17,6 +17,7 @@ export function initCoursPage(): void {
   const modulesList = document.getElementById("modules-list");
   let deletingId: string | null = null;
   let currentCoursId: string | null = null;
+  let modulesLoadSeq = 0;
 
   function openModal(mode: "create" | "edit", data?: Record<string, string>) {
     const titre = document.getElementById("modal-cours-titre");
@@ -35,45 +36,72 @@ export function initCoursPage(): void {
     return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
   }
 
+  function normalizeModuleType(type: string): "Quiz" | "Document" | "Vidéo" {
+    const t = type.trim().toLowerCase();
+    if (t === "quiz" || t === "quizz") return "Quiz";
+    if (t === "document") return "Document";
+    return "Vidéo";
+  }
+
   function renderModuleItem(mod: ModuleRow): string {
+    const kind = normalizeModuleType(mod.type);
     const fileInfo = mod.fichierUrl
       ? `<a href="${escapeHtml(mod.fichierUrl)}" target="_blank" class="text-xs text-blue-600 hover:underline">Fichier joint (PDF/DOC)</a>`
-      : `<span class="text-xs text-gray-400">Aucun fichier (optionnel)</span>`;
+      : `<span class="text-xs text-gray-400">Aucun fichier</span>`;
     const videoInfo = mod.videoUrl
       ? `<a href="${escapeHtml(mod.videoUrl)}" target="_blank" class="text-xs text-blue-600 hover:underline truncate block max-w-xs">${escapeHtml(mod.videoUrl)}</a>`
-      : `<span class="text-xs text-gray-400">Aucune vidéo (optionnel)</span>`;
+      : `<span class="text-xs text-gray-400">Aucune vidéo</span>`;
+
+    let bodyHtml = "";
+    if (kind === "Quiz") {
+      bodyHtml = `
+        <div class="rounded-lg border border-dashed border-gray-200 bg-gray-50/80 p-4">
+          <p class="text-xs text-gray-500 mb-3">Ce module est un quiz : configurez les questions (pas de fichier ni de vidéo).</p>
+          <button type="button" class="btn-edit-quiz px-4 py-2 rounded-lg text-xs font-semibold text-white" style="background:#d4a762;">Gérer les questions du quiz</button>
+        </div>`;
+    } else if (kind === "Document") {
+      bodyHtml = `
+        <div>
+          <p class="text-xs text-gray-400 mb-1">Fichier de cours (PDF, DOC…)</p>
+          <div class="file-info">${fileInfo}</div>
+          <label class="mt-2 inline-flex cursor-pointer">
+            <span class="btn-upload-file px-3 py-1.5 rounded-lg text-xs border border-gray-200 hover:bg-gray-50">Choisir un fichier</span>
+            <input type="file" class="input-module-file hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,application/pdf" />
+          </label>
+        </div>
+        <button type="button" class="btn-save-module mt-3 px-4 py-2 rounded-lg text-xs font-semibold text-white" style="background:#0b1f3a;">Enregistrer le document</button>`;
+    } else {
+      bodyHtml = `
+        <div>
+          <p class="text-xs text-gray-400 mb-1">Vidéo (URL ou upload)</p>
+          <div class="video-info">${videoInfo}</div>
+          <input type="url" class="input-module-video w-full mt-2 border rounded-lg px-3 py-2 text-xs" placeholder="https://youtu.be/…" value="${escapeHtml(mod.videoUrl ?? "")}" />
+          <label class="mt-2 inline-flex cursor-pointer">
+            <span class="btn-upload-video px-3 py-1.5 rounded-lg text-xs border border-gray-200 hover:bg-gray-50">Uploader une vidéo</span>
+            <input type="file" class="input-module-video-file hidden" accept="video/mp4,video/webm,video/quicktime" />
+          </label>
+        </div>
+        <button type="button" class="btn-save-module mt-3 px-4 py-2 rounded-lg text-xs font-semibold text-white" style="background:#0b1f3a;">Enregistrer la vidéo</button>`;
+    }
+
+    const quizHeaderBtn =
+      kind === "Quiz"
+        ? ""
+        : `<button type="button" class="btn-edit-quiz text-xs font-semibold hover:underline hidden" style="color:#d4a762;" title="Gérer le quiz">Quiz</button>`;
+
     return `
-      <div class="border border-gray-100 rounded-xl p-4 module-item" data-module-id="${escapeHtml(mod.id)}">
+      <div class="border border-gray-100 rounded-xl p-4 module-item" data-module-id="${escapeHtml(mod.id)}" data-module-type="${kind}">
         <div class="flex items-start justify-between gap-3 mb-3">
           <div>
             <p class="text-sm font-semibold" style="color:#0b1f3a;">${escapeHtml(mod.titre)}</p>
-            <p class="text-xs text-gray-400">${escapeHtml(mod.type)}${mod.duree ? " · " + escapeHtml(mod.duree) : ""}</p>
+            <p class="text-xs text-gray-400">${escapeHtml(kind)}${mod.duree ? " · " + escapeHtml(mod.duree) : ""}</p>
           </div>
           <div class="flex items-center gap-3">
-            <button type="button" class="btn-edit-quiz text-xs font-semibold hover:underline" style="color:#d4a762;" title="Gérer le quiz">Quiz</button>
+            ${quizHeaderBtn}
             <button type="button" class="btn-delete-module text-xs text-red-500 hover:underline" title="Supprimer ce module">Supprimer</button>
           </div>
         </div>
-        <div class="grid sm:grid-cols-2 gap-3">
-          <div>
-            <p class="text-xs text-gray-400 mb-1">Fichier de cours (PDF, DOC… — optionnel)</p>
-            <div class="file-info">${fileInfo}</div>
-            <label class="mt-2 inline-flex cursor-pointer">
-              <span class="btn-upload-file px-3 py-1.5 rounded-lg text-xs border border-gray-200 hover:bg-gray-50">Choisir un fichier</span>
-              <input type="file" class="input-module-file hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,application/pdf" />
-            </label>
-          </div>
-          <div>
-            <p class="text-xs text-gray-400 mb-1">Vidéo (URL ou upload — optionnel)</p>
-            <div class="video-info">${videoInfo}</div>
-            <input type="url" class="input-module-video w-full mt-2 border rounded-lg px-3 py-2 text-xs" placeholder="https://youtu.be/… ou laisser vide" value="${escapeHtml(mod.videoUrl ?? "")}" />
-            <label class="mt-2 inline-flex cursor-pointer">
-              <span class="btn-upload-video px-3 py-1.5 rounded-lg text-xs border border-gray-200 hover:bg-gray-50">Uploader une vidéo</span>
-              <input type="file" class="input-module-video-file hidden" accept="video/mp4,video/webm,video/quicktime" />
-            </label>
-          </div>
-        </div>
-        <button type="button" class="btn-save-module mt-3 px-4 py-2 rounded-lg text-xs font-semibold text-white" style="background:#0b1f3a;">Enregistrer le module</button>
+        ${bodyHtml}
       </div>`;
   }
 
@@ -262,6 +290,7 @@ export function initCoursPage(): void {
 
   async function loadModules(coursId: string, coursTitre: string) {
     currentCoursId = coursId;
+    const seq = ++modulesLoadSeq;
     const titleEl = document.getElementById("modal-modules-titre");
     if (titleEl) titleEl.textContent = "Contenu — " + coursTitre;
     if (modulesList) modulesList.innerHTML = `<p class="text-sm text-gray-400">Chargement…</p>`;
@@ -269,6 +298,9 @@ export function initCoursPage(): void {
 
     const res = await fetch(`/api/cours/${coursId}/modules`, { credentials: "same-origin" });
     const data = (await res.json()) as { modules?: ModuleRow[]; error?: string };
+
+    if (seq !== modulesLoadSeq || currentCoursId !== coursId) return;
+
     if (!res.ok || !modulesList) {
       if (modulesList) modulesList.innerHTML = `<p class="text-sm text-red-500">${data.error || "Erreur"}</p>`;
       return;
@@ -337,11 +369,24 @@ export function initCoursPage(): void {
         const item = btn.closest(".module-item");
         const moduleId = item?.getAttribute("data-module-id");
         if (!moduleId) return;
-        const videoInput = item?.querySelector<HTMLInputElement>(".input-module-video");
+        const kind = normalizeModuleType(item?.getAttribute("data-module-type") ?? "Vidéo");
         const body: Record<string, string> = {};
-        const pendingFile = item?.getAttribute("data-pending-file");
-        if (pendingFile) body.fichier_url = pendingFile;
-        body.video_url = videoInput?.value.trim() ?? "";
+        if (kind === "Document") {
+          const pendingFile = item?.getAttribute("data-pending-file");
+          if (pendingFile) body.fichier_url = pendingFile;
+          else if (!item?.querySelector(".file-info a")) {
+            alert("Choisissez un fichier à enregistrer.");
+            return;
+          }
+        } else if (kind === "Vidéo") {
+          const videoInput = item?.querySelector<HTMLInputElement>(".input-module-video");
+          const url = videoInput?.value.trim() ?? "";
+          if (!url) {
+            alert("Indiquez une URL ou uploadez une vidéo.");
+            return;
+          }
+          body.video_url = url;
+        }
 
         await withButtonLoading(btn, async () => {
           const res = await fetch(`/api/modules/${moduleId}`, {
