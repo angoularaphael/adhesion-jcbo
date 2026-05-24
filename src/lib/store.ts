@@ -706,6 +706,28 @@ export async function marquerModuleTermine(adherentEmail: string, coursId: strin
   const { data: moduleRows } = await getSupabase().from("modules").select("id").eq("cours_id", coursId);
   const total = moduleRows?.length ?? 1;
   const pourcentage = Math.round((updated.length / total) * 100);
+
+  // ▶ Notif admin si tous les modules sont terminés (et qu'il n'y a pas de quiz à passer)
+  if (pourcentage === 100) {
+    try {
+      const { data: quizRows } = await getSupabase().from("quiz_questions").select("id").in("module_id", (moduleRows ?? []).map(m => m.id));
+      const aDesQuiz = (quizRows?.length ?? 0) > 0;
+      if (!aDesQuiz) {
+        const { notifyAdmin } = await import("./store-admin");
+        const { data: cours } = await getSupabase().from("cours").select("titre").eq("id", coursId).maybeSingle();
+        const coursTitre = cours?.titre ?? coursId;
+        await notifyAdmin({
+          type: "cours_termine",
+          titre: `Formation terminée — ${coursTitre}`,
+          message: `${email} a complété 100 % de la formation « ${coursTitre} ».`,
+          metadata: { adherentEmail: email, coursId, formation: coursTitre },
+        });
+      }
+    } catch (err) {
+      console.error("[marquerModuleTermine] notify admin failed:", err);
+    }
+  }
+
   return { adherentEmail: email, coursId, modulesTermines: updated, dateDebut: existing?.date_debut ?? new Date().toISOString().split("T")[0], quizResultats: [], pourcentage };
 }
 
@@ -724,6 +746,24 @@ export async function enregistrerQuizResultat(adherentEmail: string, coursId: st
   const { data: allQuiz } = await getSupabase().from("quiz_resultats").select("passe").eq("adherent_email", email).eq("cours_id", coursId);
   const passedCount = (allQuiz ?? []).filter(q => q.passe).length;
   const coursTermine = pourcentage === 100 && passedCount >= total;
+
+  // ▶ Notif admin si la formation est entièrement terminée
+  if (coursTermine) {
+    try {
+      const { notifyAdmin } = await import("./store-admin");
+      const { data: cours } = await getSupabase().from("cours").select("titre").eq("id", coursId).maybeSingle();
+      const coursTitre = cours?.titre ?? coursId;
+      await notifyAdmin({
+        type: "cours_termine",
+        titre: `Formation terminée — ${coursTitre}`,
+        message: `${email} a complété 100 % de la formation « ${coursTitre} » (${passedCount}/${total} quiz validés).`,
+        metadata: { adherentEmail: email, coursId, formation: coursTitre },
+      });
+    } catch (err) {
+      console.error("[enregistrerQuizResultat] notify admin failed:", err);
+    }
+  }
+
   return { adherentEmail: email, coursId, modulesTermines: updated, dateDebut: existing?.date_debut ?? new Date().toISOString().split("T")[0], quizResultats: [], pourcentage, coursTermine };
 }
 
@@ -889,5 +929,31 @@ export async function genererCertificat(email: string, coursId: string, coursTit
     date_emission: new Date().toISOString().split("T")[0],
   };
   await getSupabase().from("certificats_emis").insert(cert);
+
+  // Notif adhérent
+  try {
+    await addNotification({
+      adherentEmail: email,
+      type: "certificat",
+      titre: "Certificat disponible",
+      message: `Félicitations ! Votre certificat « ${coursTitre} » a été émis. Numéro : ${numero}.`,
+    });
+  } catch {
+    /* silencieux */
+  }
+
+  // Notif admin
+  try {
+    const { notifyAdmin } = await import("./store-admin");
+    await notifyAdmin({
+      type: "certificat",
+      titre: `Certificat émis — ${coursTitre}`,
+      message: `Un certificat (${numero}) a été émis pour ${email} sur la formation « ${coursTitre} ».`,
+      metadata: { adherentEmail: email, coursId, numero, programmeCode, niveauCode, annee },
+    });
+  } catch (err) {
+    console.error("[genererCertificat] notify admin failed:", err);
+  }
+
   return { id: cert.id, adherentEmail: cert.adherent_email, coursId: cert.cours_id, numero, programmeCode, niveauCode, annee, dateEmission: cert.date_emission };
 }

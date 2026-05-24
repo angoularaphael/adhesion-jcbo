@@ -543,6 +543,44 @@ export async function markAdminNotificationLue(id: string): Promise<void> {
   await getSupabase().from("admin_notifications").update({ lue: true }).eq("id", id);
 }
 
+/**
+ * Crée une notification admin (insertion DB) + envoie un email admin si SMTP configuré.
+ * Tolérant : ne casse pas le flux appelant si la DB ou le SMTP échouent.
+ */
+export async function notifyAdmin(payload: {
+  type: string;
+  titre: string;
+  message: string;
+  metadata?: Record<string, unknown>;
+  sendEmail?: boolean;
+}): Promise<void> {
+  const { type, titre, message, metadata = {}, sendEmail = true } = payload;
+
+  // 1) Insertion DB
+  try {
+    await getSupabase().from("admin_notifications").insert({
+      id: `NOTIF-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      type,
+      titre,
+      message,
+      metadata,
+      lue: false,
+    });
+  } catch (err) {
+    console.error("[notifyAdmin] insert admin_notifications failed:", err);
+  }
+
+  // 2) Email admin (best-effort)
+  if (sendEmail) {
+    try {
+      const { sendAdminEventEmail } = await import("./email");
+      await sendAdminEventEmail({ type, titre, message, metadata });
+    } catch (err) {
+      console.error("[notifyAdmin] email failed:", err);
+    }
+  }
+}
+
 // ── Quiz DB ───────────────────────────────────────────────────────────────────
 
 export type QuizQuestion = {

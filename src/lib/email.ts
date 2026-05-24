@@ -202,6 +202,66 @@ export async function sendResourceDownloadEmail({
   }
 }
 
+/**
+ * Envoie un email récap d'un événement aux administrateurs (paiement, cours terminé, certificat…).
+ * Cible `ADMIN_EMAIL` (configurable via `.env`).
+ */
+export async function sendAdminEventEmail(payload: {
+  type: string;
+  titre: string;
+  message: string;
+  metadata?: Record<string, unknown>;
+}): Promise<{ ok: boolean; error?: string }> {
+  if (!isSmtpConfigured()) {
+    return { ok: false, error: "Service email non configuré (SMTP)" };
+  }
+  const from = import.meta.env.FROM_EMAIL ?? `JCBO Conseil <noreply@jcbo-conseil.fr>`;
+  const adminEmail = import.meta.env.ADMIN_EMAIL ?? "contact@jcbo-conseil.fr";
+
+  const meta = payload.metadata ?? {};
+  const detailsRows = Object.entries(meta)
+    .filter(([, v]) => v !== undefined && v !== null && v !== "")
+    .map(([k, v]) => {
+      const val = typeof v === "object" ? JSON.stringify(v) : String(v);
+      const escaped = val.length > 200 ? val.slice(0, 200) + "…" : val;
+      return `<tr><td style="padding:5px 0;font-size:13px;color:#6b7280;width:38%;">${k}</td><td style="padding:5px 0;font-size:13px;color:#0b1f3a;">${escaped}</td></tr>`;
+    })
+    .join("");
+
+  const html = `<!DOCTYPE html>
+<html lang="fr"><body style="margin:0;padding:0;background:#f8f6f2;font-family:Georgia,serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f6f2;padding:40px 20px;">
+  <tr><td align="center">
+    <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid rgba(212,167,98,0.2);max-width:560px;">
+      <tr><td style="background:linear-gradient(135deg,#0b1f3a 0%,#162d4f 100%);padding:32px 40px;text-align:center;">
+        <p style="margin:0;font-size:11px;font-weight:600;letter-spacing:0.2em;color:rgba(212,167,98,0.7);text-transform:uppercase;">JCBO-CONSEIL — Admin</p>
+        <h1 style="margin:8px 0 0;font-size:20px;font-weight:700;color:#ffffff;">${payload.titre}</h1>
+      </td></tr>
+      <tr><td style="padding:32px 40px;">
+        <p style="margin:0 0 18px;font-size:14px;color:#374151;line-height:1.6;">${payload.message}</p>
+        ${detailsRows ? `<table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f6f2;border-radius:10px;border:1px solid rgba(212,167,98,0.18);">
+          <tr><td style="padding:14px 18px;"><table width="100%" cellpadding="0" cellspacing="0">${detailsRows}</table></td></tr>
+        </table>` : ""}
+        <p style="margin:24px 0 0;font-size:11px;color:#9ca3af;line-height:1.6;">Cet événement est aussi disponible dans votre dashboard administrateur, cloche de notifications.</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
+
+  try {
+    await createTransport().sendMail({
+      from,
+      to: adminEmail,
+      subject: `[JCBO] ${payload.titre}`,
+      html,
+    });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Erreur d'envoi" };
+  }
+}
+
 export async function sendNewsletterConfirmation(to: string): Promise<{ ok: boolean; error?: string }> {
   if (!isSmtpConfigured()) return { ok: false, error: "SMTP non configuré" };
   const from = import.meta.env.FROM_EMAIL ?? `JCBO Conseil <noreply@jcbo-conseil.fr>`;

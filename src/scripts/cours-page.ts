@@ -49,7 +49,10 @@ export function initCoursPage(): void {
             <p class="text-sm font-semibold" style="color:#0b1f3a;">${escapeHtml(mod.titre)}</p>
             <p class="text-xs text-gray-400">${escapeHtml(mod.type)}${mod.duree ? " · " + escapeHtml(mod.duree) : ""}</p>
           </div>
-          <button type="button" class="btn-delete-module text-xs text-red-500 hover:underline" title="Supprimer ce module">Supprimer</button>
+          <div class="flex items-center gap-3">
+            <button type="button" class="btn-edit-quiz text-xs font-semibold hover:underline" style="color:#d4a762;" title="Gérer le quiz">Quiz</button>
+            <button type="button" class="btn-delete-module text-xs text-red-500 hover:underline" title="Supprimer ce module">Supprimer</button>
+          </div>
         </div>
         <div class="grid sm:grid-cols-2 gap-3">
           <div>
@@ -72,6 +75,189 @@ export function initCoursPage(): void {
         </div>
         <button type="button" class="btn-save-module mt-3 px-4 py-2 rounded-lg text-xs font-semibold text-white" style="background:#0b1f3a;">Enregistrer le module</button>
       </div>`;
+  }
+
+  type QuizQuestion = { id?: string; question: string; options: string[]; correcte: number };
+
+  function openQuizModal(moduleId: string, moduleTitre: string) {
+    const overlay = document.getElementById("modal-quiz-admin");
+    if (!overlay) return;
+
+    const titleEl = overlay.querySelector("#quiz-admin-titre");
+    if (titleEl) titleEl.textContent = "Quiz — " + moduleTitre;
+
+    const list = overlay.querySelector("#quiz-admin-list") as HTMLElement | null;
+    const errBox = overlay.querySelector("#quiz-admin-error") as HTMLElement | null;
+    if (errBox) {
+      errBox.classList.add("hidden");
+      errBox.textContent = "";
+    }
+    if (list) list.innerHTML = `<p class="text-sm text-gray-400">Chargement…</p>`;
+    overlay.classList.remove("hidden");
+    overlay.classList.add("flex");
+
+    let questions: QuizQuestion[] = [];
+
+    function renderList() {
+      if (!list) return;
+      if (questions.length === 0) {
+        list.innerHTML = `<p class="text-sm text-gray-400">Aucune question pour l'instant. Cliquez sur « Ajouter une question ».</p>`;
+        return;
+      }
+      list.innerHTML = questions
+        .map(
+          (q, qi) => `
+        <div class="border border-gray-100 rounded-xl p-4 quiz-q-item" data-qi="${qi}">
+          <div class="flex items-start justify-between gap-3 mb-2">
+            <p class="text-xs font-bold uppercase tracking-wide" style="color:#0b1f3a;">Question ${qi + 1}</p>
+            <button type="button" class="btn-del-q text-xs text-red-500 hover:underline">Supprimer</button>
+          </div>
+          <input class="q-text w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-3" placeholder="Énoncé de la question" value="${escapeHtml(q.question)}" />
+          <div class="q-options flex flex-col gap-2">
+            ${q.options
+              .map(
+                (opt, oi) => `
+              <label class="flex items-center gap-2 border border-gray-100 rounded-lg px-2 py-1.5">
+                <input type="radio" name="q-${qi}-correct" class="q-correct-radio" data-oi="${oi}" ${oi === q.correcte ? "checked" : ""} />
+                <input class="q-option flex-1 border border-transparent rounded px-2 py-1 text-sm focus:border-gray-200 outline-none" placeholder="Option ${oi + 1}" value="${escapeHtml(opt)}" />
+                <button type="button" class="btn-del-opt text-xs text-gray-400 hover:text-red-500" title="Supprimer cette option">×</button>
+              </label>`
+              )
+              .join("")}
+          </div>
+          <button type="button" class="btn-add-opt mt-2 text-xs font-semibold hover:underline" style="color:#d4a762;">+ Ajouter une option</button>
+        </div>`
+        )
+        .join("");
+      bindListEvents();
+    }
+
+    function readListIntoModel() {
+      if (!list) return;
+      list.querySelectorAll<HTMLElement>(".quiz-q-item").forEach((item) => {
+        const qi = Number(item.dataset.qi ?? -1);
+        if (qi < 0 || !questions[qi]) return;
+        const text = (item.querySelector(".q-text") as HTMLInputElement | null)?.value ?? "";
+        const options = Array.from(item.querySelectorAll<HTMLInputElement>(".q-option")).map(
+          (i) => i.value
+        );
+        const radio = item.querySelector<HTMLInputElement>(".q-correct-radio:checked");
+        const correcte = radio ? Number(radio.dataset.oi) : 0;
+        questions[qi] = { ...questions[qi], question: text, options, correcte };
+      });
+    }
+
+    function bindListEvents() {
+      list?.querySelectorAll<HTMLElement>(".quiz-q-item").forEach((item) => {
+        const qi = Number(item.dataset.qi ?? -1);
+        if (qi < 0) return;
+
+        item.querySelector(".btn-del-q")?.addEventListener("click", () => {
+          readListIntoModel();
+          questions.splice(qi, 1);
+          renderList();
+        });
+
+        item.querySelector(".btn-add-opt")?.addEventListener("click", () => {
+          readListIntoModel();
+          questions[qi].options.push("");
+          renderList();
+        });
+
+        item.querySelectorAll<HTMLButtonElement>(".btn-del-opt").forEach((b, idx) => {
+          b.addEventListener("click", () => {
+            readListIntoModel();
+            if (questions[qi].options.length <= 2) {
+              if (errBox) {
+                errBox.textContent = "Une question doit avoir au moins 2 options.";
+                errBox.classList.remove("hidden");
+              }
+              return;
+            }
+            questions[qi].options.splice(idx, 1);
+            if (questions[qi].correcte >= questions[qi].options.length) {
+              questions[qi].correcte = 0;
+            }
+            renderList();
+          });
+        });
+      });
+    }
+
+    const btnAdd = overlay.querySelector("#btn-quiz-add-question") as HTMLButtonElement | null;
+    btnAdd?.addEventListener("click", () => {
+      readListIntoModel();
+      questions.push({ question: "", options: ["", ""], correcte: 0 });
+      renderList();
+    }, { once: false });
+
+    const btnClose = overlay.querySelector("#btn-quiz-close") as HTMLButtonElement | null;
+    btnClose?.addEventListener("click", () => {
+      overlay.classList.add("hidden");
+      overlay.classList.remove("flex");
+    });
+
+    const btnSave = overlay.querySelector("#btn-quiz-save") as HTMLButtonElement | null;
+    btnSave?.addEventListener("click", async () => {
+      readListIntoModel();
+
+      // Validation côté client
+      for (const [qi, q] of questions.entries()) {
+        if (!q.question.trim() || q.question.trim().length < 3) {
+          if (errBox) {
+            errBox.textContent = `Question ${qi + 1} : énoncé manquant.`;
+            errBox.classList.remove("hidden");
+          }
+          return;
+        }
+        if (q.options.length < 2 || q.options.some((o) => !o.trim())) {
+          if (errBox) {
+            errBox.textContent = `Question ${qi + 1} : il faut au moins 2 options remplies.`;
+            errBox.classList.remove("hidden");
+          }
+          return;
+        }
+      }
+
+      await withButtonLoading(btnSave, async () => {
+        const res = await fetch(`/api/modules/${moduleId}/quiz`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ questions }),
+        });
+        const data = (await res.json()) as { error?: string };
+        if (!res.ok) {
+          if (errBox) {
+            errBox.textContent = data.error ?? "Erreur lors de l'enregistrement.";
+            errBox.classList.remove("hidden");
+          }
+          return;
+        }
+        overlay.classList.add("hidden");
+        overlay.classList.remove("flex");
+      }, "Enregistrement…");
+    }, { once: false });
+
+    // Charger les questions existantes
+    fetch(`/api/modules/${moduleId}/quiz`, { credentials: "same-origin" })
+      .then((r) => r.json())
+      .then((data: { questions?: QuizQuestion[]; error?: string }) => {
+        if (data.error) {
+          if (list) list.innerHTML = `<p class="text-sm text-red-500">${data.error}</p>`;
+          return;
+        }
+        questions = (data.questions ?? []).map((q) => ({
+          id: q.id,
+          question: q.question,
+          options: q.options,
+          correcte: q.correcte,
+        }));
+        renderList();
+      })
+      .catch(() => {
+        if (list) list.innerHTML = `<p class="text-sm text-red-500">Erreur de chargement.</p>`;
+      });
   }
 
   async function loadModules(coursId: string, coursTitre: string) {
@@ -180,6 +366,16 @@ export function initCoursPage(): void {
             await loadModules(currentCoursId, titre);
           }
         }, "Enregistrement…");
+      });
+    });
+
+    modulesList?.querySelectorAll<HTMLButtonElement>(".btn-edit-quiz").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const item = btn.closest(".module-item");
+        const moduleId = item?.getAttribute("data-module-id");
+        const titreEl = item?.querySelector("p.text-sm.font-semibold");
+        const titre = titreEl?.textContent ?? "Module";
+        if (moduleId) openQuizModal(moduleId, titre);
       });
     });
 

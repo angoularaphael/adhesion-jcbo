@@ -4,6 +4,7 @@ import {
   setCoursAdherent, getAdherentByEmail, enregistrerPaiement,
   addNotification, setAbonnement,
 } from "../../../lib/store";
+import { notifyAdmin } from "../../../lib/store-admin";
 
 export const POST: APIRoute = async ({ request }) => {
   const webhookSecret = import.meta.env.STRIPE_WEBHOOK_SECRET?.trim();
@@ -28,71 +29,125 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(`Webhook invalide: ${msg}`, { status: 400 });
   }
 
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object as Stripe.Checkout.Session;
-    const meta = session.metadata ?? {};
-
-    if (meta.type === "abonnement") {
-      const { adherentEmail, planNom, montant } = meta;
-      if (!adherentEmail || !planNom) {
-        return new Response("Métadonnées abonnement manquantes", { status: 400 });
-      }
-
-      const adherent = await getAdherentByEmail(adherentEmail);
-      if (adherent) {
-        await setAbonnement(adherent.id, planNom);
-      }
-
-      await enregistrerPaiement({
-        adherentEmail,
-        coursId: "",
-        coursTitre: `Abonnement ${planNom}`,
-        montant: Number(montant ?? 0),
-        stripeSessionId: session.id,
-      });
-
-      await addNotification({
-        adherentEmail,
-        type: "abonnement",
-        titre: "Abonnement activé",
-        message: `Votre abonnement Plan ${planNom} (${montant} €/mois) est maintenant actif. Profitez de tous vos avantages JCBO-CONSEIL.`,
-      });
-
-    } else {
-      const { adherentEmail, coursId, coursTitre, montant } = meta;
-
-      if (!adherentEmail || !coursId) {
-        return new Response("Métadonnées manquantes", { status: 400 });
-      }
-
-      const adherent = await getAdherentByEmail(adherentEmail);
-      if (adherent && !adherent.coursInscrits.includes(coursId)) {
-        await setCoursAdherent(adherent.id, [...adherent.coursInscrits, coursId]);
-      }
-
-      const paiement = await enregistrerPaiement({
-        adherentEmail,
-        coursId,
-        coursTitre: coursTitre ?? "",
-        montant: Number(montant ?? 0),
-        stripeSessionId: session.id,
-      });
-
-      await addNotification({
-        adherentEmail,
-        type: "paiement",
-        titre: "Paiement confirmé",
-        message: `Votre paiement de ${paiement.montant} € pour "${paiement.coursTitre}" a été validé. Votre accès est activé. Réf. ${paiement.numerTransaction}`,
-      });
-
-      await addNotification({
-        adherentEmail,
-        type: "inscription",
-        titre: "Inscription confirmée",
-        message: `Vous êtes maintenant inscrit à la formation "${paiement.coursTitre}". Rendez-vous dans "Mes cours" pour commencer.`,
-      });
-    }
+  if (event.type !== "checkout.session.completed") {
+    return new Response(JSON.stringify({ recu: true, ignored: event.type }), { status: 200 });
   }
+
+  const session = event.data.object as Stripe.Checkout.Session;
+  const meta = session.metadata ?? {};
+  const amountTotal = (session.amount_total ?? 0) / 100;
+  const currency = (session.currency ?? "eur").toUpperCase();
+
+  // ─── Cas 1 : paiement depuis le SITE VITRINE (réservation séance) ─────────────
+  if (meta.source === "vitrine") {
+    const customerEmail = session.customer_email ?? meta.customerEmail ?? "";
+    const sessionLabel = meta.sessionLabel ?? "Réservation";
+
+    await notifyAdmin({
+      type: "paiement_vitrine",
+      titre: `Paiement reçu — ${sessionLabel}`,
+      message:
+        `${meta.customerName ?? "Un client"} (${customerEmail}) a réglé ${amountTotal} ${currency} ` +
+        `pour la prestation « ${sessionLabel} ».`,
+      metadata: {
+        client: meta.customerName,
+        email: customerEmail,
+        telephone: meta.customerPhone,
+        entreprise: meta.customerCompany,
+        prestation: sessionLabel,
+        montant: `${amountTotal} ${currency}`,
+        dateSouhaitee: meta.desiredDate,
+        message: meta.customerMessage,
+        stripeSessionId: session.id,
+      },
+    });
+
+    return new Response(JSON.stringify({ recu: true, source: "vitrine" }), { status: 200 });
+  }
+
+  // ─── Cas 2 : abonnement (espace adhérent) ─────────────────────────────────────
+  if (meta.type === "abonnement") {
+    const { adherentEmail, planNom, montant } = meta;
+    if (!adherentEmail || !planNom) {
+      return new Response("Métadonnées abonnement manquantes", { status: 400 });
+    }
+
+    const adherent = await getAdherentByEmail(adherentEmail);
+    if (adherent) {
+      await setAbonnement(adherent.id, planNom);
+    }
+
+    await enregistrerPaiement({
+      adherentEmail,
+      coursId: "",
+      coursTitre: `Abonnement ${planNom}`,
+      montant: Number(montant ?? 0),
+      stripeSessionId: session.id,
+    });
+
+    await addNotification({
+      adherentEmail,
+      type: "abonnement",
+      titre: "Abonnement activé",
+      message: `Votre abonnement Plan ${planNom} (${montant} €/mois) est maintenant actif. Profitez de tous vos avantages JCBO-CONSEIL.`,
+    });
+
+    await notifyAdmin({
+      type: "abonnement",
+      titre: `Nouvel abonnement — Plan ${planNom}`,
+      message: `L'adhérent ${adherentEmail} a souscrit au Plan ${planNom} (${montant} €/mois).`,
+      metadata: { adherentEmail, planNom, montant: `${montant} €`, stripeSessionId: session.id },
+    });
+
+    return new Response(JSON.stringify({ recu: true, type: "abonnement" }), { status: 200 });
+  }
+
+  // ─── Cas 3 : inscription à une formation (espace adhérent) ────────────────────
+  const { adherentEmail, coursId, coursTitre, montant } = meta;
+
+  if (!adherentEmail || !coursId) {
+    return new Response("Métadonnées manquantes", { status: 400 });
+  }
+
+  const adherent = await getAdherentByEmail(adherentEmail);
+  if (adherent && !adherent.coursInscrits.includes(coursId)) {
+    await setCoursAdherent(adherent.id, [...adherent.coursInscrits, coursId]);
+  }
+
+  const paiement = await enregistrerPaiement({
+    adherentEmail,
+    coursId,
+    coursTitre: coursTitre ?? "",
+    montant: Number(montant ?? 0),
+    stripeSessionId: session.id,
+  });
+
+  await addNotification({
+    adherentEmail,
+    type: "paiement",
+    titre: "Paiement confirmé",
+    message: `Votre paiement de ${paiement.montant} € pour "${paiement.coursTitre}" a été validé. Votre accès est activé. Réf. ${paiement.numerTransaction}`,
+  });
+
+  await addNotification({
+    adherentEmail,
+    type: "inscription",
+    titre: "Inscription confirmée",
+    message: `Vous êtes maintenant inscrit à la formation "${paiement.coursTitre}". Rendez-vous dans "Mes cours" pour commencer.`,
+  });
+
+  await notifyAdmin({
+    type: "paiement_adherent",
+    titre: `Paiement adhérent — ${paiement.coursTitre}`,
+    message: `${adherentEmail} vient de régler ${paiement.montant} € pour la formation « ${paiement.coursTitre} ».`,
+    metadata: {
+      adherentEmail,
+      formation: paiement.coursTitre,
+      montant: `${paiement.montant} €`,
+      reference: paiement.numerTransaction,
+      stripeSessionId: session.id,
+    },
+  });
 
   return new Response(JSON.stringify({ recu: true }), { status: 200 });
 };
