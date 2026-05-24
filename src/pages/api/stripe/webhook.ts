@@ -102,22 +102,28 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ recu: true, type: "abonnement" }), { status: 200 });
   }
 
-  // ─── Cas 3 : inscription à une formation (espace adhérent) ────────────────────
-  const { adherentEmail, coursId, coursTitre, montant } = meta;
+  // ─── Cas 3 : inscription à une/plusieurs formation(s) (espace adhérent) ──────
+  const { adherentEmail, coursId, coursIds, coursTitre, coursTitres, montant } = meta;
 
-  if (!adherentEmail || !coursId) {
+  if (!adherentEmail || (!coursId && !coursIds)) {
     return new Response("Métadonnées manquantes", { status: 400 });
   }
 
   const adherent = await getAdherentByEmail(adherentEmail);
-  if (adherent && !adherent.coursInscrits.includes(coursId)) {
-    await setCoursAdherent(adherent.id, [...adherent.coursInscrits, coursId]);
+  const idsToEnroll = coursIds ? coursIds.split(",").filter(Boolean) : (coursId ? [coursId] : []);
+  const titres = coursTitres ?? coursTitre ?? "Formation JCBO";
+
+  if (adherent) {
+    const newIds = idsToEnroll.filter(id => !adherent.coursInscrits.includes(id));
+    if (newIds.length > 0) {
+      await setCoursAdherent(adherent.id, [...adherent.coursInscrits, ...newIds]);
+    }
   }
 
   const paiement = await enregistrerPaiement({
     adherentEmail,
-    coursId,
-    coursTitre: coursTitre ?? "",
+    coursId: idsToEnroll[0] ?? "",
+    coursTitre: titres,
     montant: Number(montant ?? 0),
     stripeSessionId: session.id,
   });
@@ -126,23 +132,23 @@ export const POST: APIRoute = async ({ request }) => {
     adherentEmail,
     type: "paiement",
     titre: "Paiement confirmé",
-    message: `Votre paiement de ${paiement.montant} € pour "${paiement.coursTitre}" a été validé. Votre accès est activé. Réf. ${paiement.numerTransaction}`,
+    message: `Votre paiement de ${paiement.montant} € pour "${titres}" a été validé. Accès activé automatiquement. Réf. ${paiement.numerTransaction}`,
   });
 
   await addNotification({
     adherentEmail,
     type: "inscription",
     titre: "Inscription confirmée",
-    message: `Vous êtes maintenant inscrit à la formation "${paiement.coursTitre}". Rendez-vous dans "Mes cours" pour commencer.`,
+    message: `Vous êtes inscrit. Rendez-vous dans "Mes cours" pour commencer.`,
   });
 
   await notifyAdmin({
     type: "paiement_adherent",
-    titre: `Paiement adhérent — ${paiement.coursTitre}`,
-    message: `${adherentEmail} vient de régler ${paiement.montant} € pour la formation « ${paiement.coursTitre} ».`,
+    titre: `Paiement adhérent — ${titres}`,
+    message: `${adherentEmail} a réglé ${paiement.montant} € pour « ${titres} ». Accès activé automatiquement.`,
     metadata: {
       adherentEmail,
-      formation: paiement.coursTitre,
+      formation: titres,
       montant: `${paiement.montant} €`,
       reference: paiement.numerTransaction,
       stripeSessionId: session.id,

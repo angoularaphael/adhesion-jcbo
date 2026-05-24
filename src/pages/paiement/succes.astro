@@ -23,36 +23,39 @@ if (!recu && sessionId) {
       const stripe = new Stripe(stripeKey);
       const session = await stripe.checkout.sessions.retrieve(sessionId);
       if (session.payment_status === "paid" && session.metadata) {
-        const { adherentEmail, coursId, coursTitre, montant } = session.metadata;
+        const { adherentEmail, coursId, coursIds, coursTitre, coursTitres, montant } = session.metadata;
         const email = (adherentEmail ?? profil.email).toLowerCase();
+        const titres = coursTitres ?? coursTitre ?? "Formation JCBO";
 
-        // Inscrire l'adhérent au cours s'il ne l'est pas déjà
+        // Inscrire l'adhérent aux cours
+        const idsToEnroll = coursIds ? coursIds.split(",").filter(Boolean) : (coursId ? [coursId] : []);
         const adherent = await getAdherentByEmail(email);
-        if (adherent && coursId && !adherent.coursInscrits.includes(coursId)) {
-          await setCoursAdherent(adherent.id, [...adherent.coursInscrits, coursId]);
+        if (adherent && idsToEnroll.length > 0) {
+          const newIds = idsToEnroll.filter(id => !adherent.coursInscrits.includes(id));
+          if (newIds.length > 0) {
+            await setCoursAdherent(adherent.id, [...adherent.coursInscrits, ...newIds]);
+          }
         }
 
-        // Enregistrer le paiement dans le store
         recu = await enregistrerPaiement({
           adherentEmail: email,
-          coursId: coursId ?? "",
-          coursTitre: coursTitre ?? "Formation JCBO",
+          coursId: idsToEnroll[0] ?? "",
+          coursTitre: titres,
           montant: Number(montant ?? 0),
           stripeSessionId: sessionId,
         });
 
-        // Créer les notifications
         await addNotification({
           adherentEmail: email,
           type: "paiement",
           titre: "Paiement confirmé",
-          message: `Votre paiement de ${recu.montant} € pour "${recu.coursTitre}" a été validé. Réf. ${recu.numerTransaction}`,
+          message: `Votre paiement de ${recu.montant} € a été validé. Accès activé. Réf. ${recu.numerTransaction}`,
         });
         await addNotification({
           adherentEmail: email,
           type: "inscription",
           titre: "Inscription confirmée",
-          message: `Vous êtes maintenant inscrit à "${recu.coursTitre}". Rendez-vous dans "Mes cours" pour commencer.`,
+          message: `Vous êtes inscrit. Rendez-vous dans "Mes cours" pour commencer.`,
         });
       }
     } catch { /* session invalide ou clés manquantes */ }

@@ -496,7 +496,7 @@ export async function getAdhesion(email: string) {
       id: p.id,
       date: p.date,
       montant: Number(p.montant),
-      methode: p.provider === "fapshi" ? "OM/MoMo" : "Carte",
+      methode: (p.provider === "fapshi" || p.provider === "notchpay") ? "OM/MoMo" : "Carte",
       reference: p.numer_transaction,
     })),
   };

@@ -131,8 +131,8 @@ const catalogue = tousLesCours
         <button id="btn-payer-panier" class="w-full py-3 rounded-xl text-sm font-bold text-white transition hover:opacity-90" style="background-color: #0b1f3a;">
           Payer par carte bancaire
         </button>
-        <button id="btn-payer-panier-fapshi" class="w-full py-3 rounded-xl text-sm font-bold border transition hover:opacity-90" style="border-color:#0b1f3a; color:#0b1f3a;">
-          Payer par OM / MoMo (Fapshi)
+        <button id="btn-payer-panier-notchpay" class="w-full py-3 rounded-xl text-sm font-bold border transition hover:opacity-90" style="border-color:#0b1f3a; color:#0b1f3a;">
+          Payer par OM / MoMo (Mobile Money)
         </button>
       </div>
       <p id="panier-erreur" class="text-xs text-red-500 text-center mt-3 hidden"></p>
@@ -237,26 +237,20 @@ const catalogue = tousLesCours
     if (e.target === e.currentTarget) closePanier();
   });
 
-  async function payerPanier(methode: "stripe" | "fapshi") {
+  async function payerPanier(methode: "stripe" | "notchpay") {
     if (panier.length === 0) return;
     const erreur = document.getElementById("panier-erreur")!;
-    const btn = document.getElementById(methode === "fapshi" ? "btn-payer-panier-fapshi" : "btn-payer-panier") as HTMLButtonElement;
+    const btn = document.getElementById(methode === "notchpay" ? "btn-payer-panier-notchpay" : "btn-payer-panier") as HTMLButtonElement;
     btn.disabled = true;
     erreur.classList.add("hidden");
 
     const coursIds = panier.map(i => i.id);
-    const body: { coursIds: string[]; phone?: string } = { coursIds };
-
-    if (methode === "fapshi") {
-      const phone = prompt("Numéro Mobile Money (optionnel) :");
-      if (phone) body.phone = phone;
-    }
 
     try {
-      const res = await fetch(methode === "fapshi" ? "/api/fapshi/checkout" : "/api/stripe/checkout", {
+      const res = await fetch(methode === "notchpay" ? "/api/notchpay/checkout" : "/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ coursIds }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -266,7 +260,7 @@ const catalogue = tousLesCours
         return;
       }
       if (data.url) window.location.href = data.url;
-      else { alert("Paiement initié sur votre téléphone."); location.reload(); }
+      else { alert("Paiement initié."); location.reload(); }
     } catch {
       erreur.textContent = "Erreur réseau.";
       erreur.classList.remove("hidden");
@@ -275,5 +269,5 @@ const catalogue = tousLesCours
   }
 
   document.getElementById("btn-payer-panier")?.addEventListener("click", () => payerPanier("stripe"));
-  document.getElementById("btn-payer-panier-fapshi")?.addEventListener("click", () => payerPanier("fapshi"));
+  document.getElementById("btn-payer-panier-notchpay")?.addEventListener("click", () => payerPanier("notchpay"));
 </script>

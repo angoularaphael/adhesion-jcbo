@@ -9,7 +9,7 @@ const PUBLIC_PATHS = [
   "/api/auth/logout",
   "/api/auth/register",
   "/api/stripe/webhook",
-  "/api/fapshi/webhook",
+  "/api/notchpay/webhook",
   "/api/public/",
   "/api/diagnostic/login",
   "/api/diagnostic/submit",
