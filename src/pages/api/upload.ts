@@ -1,5 +1,7 @@
 import type { APIRoute } from "astro";
 import { uploadToCloudinary, type CloudinaryFolder } from "../../lib/cloudinary";
+import { SUPABASE_FILE_PREFIX } from "../../lib/module-fichier";
+import { uploadFile as uploadToSupabaseStorage, type StorageBucket } from "../../lib/storage";
 
 const ALLOWED_FOLDERS: CloudinaryFolder[] = [
   "actualites",
@@ -79,6 +81,26 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
+
+  // PDF / documents de cours → Supabase Storage (privé), pas Cloudinary (401 sur les PDF)
+  if (bucket === "cours-fichiers") {
+    const ext = file.name.includes(".") ? file.name.slice(file.name.lastIndexOf(".")) : "";
+    const safeName = `${pathPrefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}${ext}`.replace(
+      /[^a-zA-Z0-9_.-]/g,
+      "_"
+    );
+    const storageBucket: StorageBucket = "cours-fichiers";
+    const result = await uploadToSupabaseStorage(storageBucket, safeName, buffer, file.type);
+    if ("error" in result) {
+      return new Response(JSON.stringify({ error: result.error }), { status: 500 });
+    }
+    const storageRef = `${SUPABASE_FILE_PREFIX}${storageBucket}/${safeName}`;
+    return new Response(
+      JSON.stringify({ url: storageRef, storage: true }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
   const result = await uploadToCloudinary(buffer, file.type, bucket, pathPrefix, file.name);
 
   if (!result.ok) {

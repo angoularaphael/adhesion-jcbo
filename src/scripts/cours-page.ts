@@ -46,7 +46,7 @@ export function initCoursPage(): void {
   function renderModuleItem(mod: ModuleRow): string {
     const kind = normalizeModuleType(mod.type);
     const fileInfo = mod.fichierUrl
-      ? `<a href="${escapeHtml(mod.fichierUrl)}" target="_blank" class="text-xs text-blue-600 hover:underline">Fichier joint (PDF/DOC)</a>`
+      ? `<a href="/api/cours/fichier/${escapeHtml(mod.id)}" class="text-xs text-blue-600 hover:underline">Document enregistré — tester le téléchargement</a>`
       : `<span class="text-xs text-gray-400">Aucun fichier</span>`;
     const videoInfo = mod.videoUrl
       ? `<a href="${escapeHtml(mod.videoUrl)}" target="_blank" class="text-xs text-blue-600 hover:underline truncate block max-w-xs">${escapeHtml(mod.videoUrl)}</a>`
@@ -329,7 +329,7 @@ export function initCoursPage(): void {
           item?.setAttribute("data-pending-file", url);
           const fileBlock = item?.querySelector(".file-info");
           if (fileBlock) {
-            fileBlock.innerHTML = `<a href="${url}" target="_blank" class="text-xs text-blue-600 hover:underline">Fichier prêt à enregistrer</a>`;
+            fileBlock.innerHTML = `<span class="text-xs text-green-700">Fichier prêt — cliquez sur « Enregistrer le document »</span>`;
           }
         } catch (e) {
           alert(e instanceof Error ? e.message : "Erreur upload");

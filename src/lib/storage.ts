@@ -30,3 +30,12 @@ export function pathFromPublicUrl(url: string, bucket: StorageBucket): string | 
   if (idx === -1) return null;
   return url.slice(idx + marker.length);
 }
+
+export async function downloadStorageFile(
+  bucket: StorageBucket,
+  path: string
+): Promise<{ data: Blob; contentType: string } | { error: string }> {
+  const { data, error } = await getSupabase().storage.from(bucket).download(path);
+  if (error || !data) return { error: error?.message ?? "Fichier introuvable." };
+  return { data, contentType: data.type || "application/octet-stream" };
+}

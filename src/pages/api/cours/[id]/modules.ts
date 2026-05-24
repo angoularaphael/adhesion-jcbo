@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { z } from "zod";
 import { normalizeCloudinaryDeliveryUrl } from "../../../../lib/cloudinary";
+import { isSupabaseFileRef } from "../../../../lib/module-fichier";
 import { createModule } from "../../../../lib/store";
 import { getSupabase } from "../../../../lib/supabase";
 
@@ -33,7 +34,11 @@ export const GET: APIRoute = async ({ params, locals }) => {
     titre: m.titre,
     duree: m.duree,
     type: m.type,
-    fichierUrl: m.fichier_url ? normalizeCloudinaryDeliveryUrl(m.fichier_url) : undefined,
+    fichierUrl: m.fichier_url
+      ? isSupabaseFileRef(m.fichier_url)
+        ? m.fichier_url
+        : normalizeCloudinaryDeliveryUrl(m.fichier_url)
+      : undefined,
     videoUrl: m.video_url ?? undefined,
   }));
   return new Response(JSON.stringify({ modules }), {

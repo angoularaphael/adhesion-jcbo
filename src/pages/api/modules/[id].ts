@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { normalizeCloudinaryDeliveryUrl } from "../../../lib/cloudinary";
+import { isSupabaseFileRef } from "../../../lib/module-fichier";
 import { updateModule } from "../../../lib/store";
 import { getSupabase } from "../../../lib/supabase";
 
@@ -38,7 +39,9 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
   } else if (t === "Document") {
     patch.video_url = null;
     if (body.fichier_url !== undefined) {
-      patch.fichier_url = body.fichier_url ? normalizeCloudinaryDeliveryUrl(body.fichier_url) : null;
+      const url = body.fichier_url || null;
+      patch.fichier_url =
+        url && !isSupabaseFileRef(url) ? normalizeCloudinaryDeliveryUrl(url) : url;
     }
   } else {
     /* Vidéo (ou valeur héritée) */

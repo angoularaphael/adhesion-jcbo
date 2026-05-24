@@ -1,6 +1,7 @@
 import { getSupabase } from "./supabase";
 import { hashPassword } from "./password";
 import { normalizeCloudinaryDeliveryUrl } from "./cloudinary";
+import { isSupabaseFileRef } from "./module-fichier";
 
 // ── Re-exported types (unchanged surface for callers) ─────────────────────────
 
@@ -140,7 +141,11 @@ function toCours(row: any, modules: any[] = []) {
         duree: m.duree,
         type: m.type as "Vidéo" | "Document" | "Quiz",
         ordre: m.ordre,
-        fichierUrl: m.fichier_url ? normalizeCloudinaryDeliveryUrl(m.fichier_url) : undefined,
+        fichierUrl: m.fichier_url
+          ? isSupabaseFileRef(m.fichier_url)
+            ? m.fichier_url
+            : normalizeCloudinaryDeliveryUrl(m.fichier_url)
+          : undefined,
         videoUrl: m.video_url ?? undefined,
         contenuMd: m.contenu_md ?? undefined,
       })),

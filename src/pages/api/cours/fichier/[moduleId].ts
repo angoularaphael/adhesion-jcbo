@@ -1,19 +1,18 @@
 import type { APIRoute } from "astro";
 import { getAdherentByEmail } from "../../../../lib/store";
+import {
+  isCloudinaryUrl,
+  isSupabaseFileRef,
+  parseSupabaseFileRef,
+} from "../../../../lib/module-fichier";
+import { downloadStorageFile } from "../../../../lib/storage";
 import { getSupabase } from "../../../../lib/supabase";
 
 /**
- * Téléchargement sécurisé d'un fichier de cours (PDF/DOC) ou redirection vidéo.
- *
- * - Vérifie que l'adhérent est inscrit au cours qui contient ce module
- *   (ou que l'utilisateur est admin).
- * - Va chercher le fichier sur Cloudinary côté serveur (les comptes Cloudinary
- *   gratuits bloquent la livraison publique des PDF — passer par le serveur
- *   contourne le HTTP 401).
- * - Streame le contenu au navigateur avec `Content-Disposition: attachment`,
- *   ce qui (a) force le téléchargement et (b) cache l'URL Cloudinary réelle.
- *
- * `?inline=1`  → renvoie le fichier en `inline` (pour preview vidéo).
+ * Téléchargement sécurisé d'un fichier de cours (PDF/DOC) ou streaming vidéo.
+ * - PDF/DOC : Supabase Storage (bucket privé) via clé service
+ * - Vidéos : Cloudinary (URL publique ou proxifiée)
+ * - Anciens PDF Cloudinary : message invitant à ré-uploader
  */
 export const GET: APIRoute = async ({ params, url, locals }) => {
   if (!locals.session) {
@@ -39,12 +38,11 @@ export const GET: APIRoute = async ({ params, url, locals }) => {
     return new Response("Module introuvable", { status: 404 });
   }
 
-  const remoteUrl = kind === "video" ? moduleRow.video_url : moduleRow.fichier_url;
-  if (!remoteUrl) {
+  const remoteRef = kind === "video" ? moduleRow.video_url : moduleRow.fichier_url;
+  if (!remoteRef) {
     return new Response("Aucun fichier associé à ce module.", { status: 404 });
   }
 
-  // ─── Contrôle d'accès ───────────────────────────────────────────────────────
   if (locals.session.role !== "admin") {
     const adherent = await getAdherentByEmail(locals.session.email);
     if (!adherent) {
@@ -58,15 +56,64 @@ export const GET: APIRoute = async ({ params, url, locals }) => {
     }
   }
 
-  // ─── Récupération du fichier côté serveur ───────────────────────────────────
-  // Cloudinary peut bloquer la livraison publique des PDF (compte Free) ; on
-  // tente la même URL d'abord, puis on bascule entre /image/upload et /raw/upload
-  // si nécessaire.
-  const fetchTargets = [remoteUrl];
-  if (remoteUrl.includes("/image/upload/")) {
-    fetchTargets.push(remoteUrl.replace("/image/upload/", "/raw/upload/"));
-  } else if (remoteUrl.includes("/raw/upload/")) {
-    fetchTargets.push(remoteUrl.replace("/raw/upload/", "/image/upload/"));
+  const titreSafe = moduleRow.titre.replace(/[^a-zA-Z0-9-_]/g, "_").slice(0, 60) || "fichier";
+
+  // ─── Fichier document (Supabase ou legacy Cloudinary) ─────────────────────
+  if (kind === "fichier") {
+    const storageRef = parseSupabaseFileRef(remoteRef);
+    if (storageRef) {
+      const dl = await downloadStorageFile(
+        storageRef.bucket as "cours-fichiers",
+        storageRef.path
+      );
+      if ("error" in dl) {
+        return new Response(
+          "Le document n'a pas pu être récupéré. Ré-uploadez-le depuis l'administration.",
+          { status: 502 }
+        );
+      }
+      const ext = storageRef.path.includes(".")
+        ? storageRef.path.slice(storageRef.path.lastIndexOf("."))
+        : ".pdf";
+      const filename = `${titreSafe}${ext}`;
+      const buffer = Buffer.from(await dl.data.arrayBuffer());
+      return new Response(buffer, {
+        status: 200,
+        headers: {
+          "Content-Type": dl.contentType,
+          "Content-Length": String(buffer.length),
+          "Cache-Control": "private, max-age=300",
+          "Content-Disposition": `attachment; filename="${filename}"`,
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "no-referrer",
+        },
+      });
+    }
+
+    if (isSupabaseFileRef(remoteRef) || !isCloudinaryUrl(remoteRef)) {
+      return new Response("Référence de fichier invalide. Ré-uploadez le document.", { status: 404 });
+    }
+
+    return new Response(
+      "Ce document est encore sur Cloudinary (accès bloqué). Depuis l'admin, ouvrez le module et ré-uploadez le PDF.",
+      { status: 410, headers: { "Content-Type": "text/plain; charset=utf-8" } }
+    );
+  }
+
+  // ─── Vidéo (Cloudinary ou URL externe) ────────────────────────────────────
+  if (!remoteRef.startsWith("http")) {
+    return new Response("URL vidéo invalide.", { status: 404 });
+  }
+
+  if (remoteRef.includes("youtube.com") || remoteRef.includes("youtu.be") || remoteRef.includes("vimeo.com")) {
+    return Response.redirect(remoteRef, 302);
+  }
+
+  const fetchTargets = [remoteRef];
+  if (remoteRef.includes("/image/upload/")) {
+    fetchTargets.push(remoteRef.replace("/image/upload/", "/raw/upload/"));
+  } else if (remoteRef.includes("/raw/upload/")) {
+    fetchTargets.push(remoteRef.replace("/raw/upload/", "/image/upload/"));
   }
 
   let upstream: Response | null = null;
@@ -83,28 +130,12 @@ export const GET: APIRoute = async ({ params, url, locals }) => {
   }
 
   if (!upstream) {
-    return new Response(
-      "Le fichier n'a pas pu être récupéré. Si l'erreur persiste, ré-uploadez-le depuis l'admin.",
-      { status: 502 }
-    );
+    return new Response("La vidéo n'a pas pu être récupérée.", { status: 502 });
   }
 
-  const contentType = upstream.headers.get("content-type") ?? "application/octet-stream";
+  const contentType = upstream.headers.get("content-type") ?? "video/mp4";
   const contentLength = upstream.headers.get("content-length") ?? undefined;
-
-  // Nom de fichier proposé au navigateur
-  const extFromUrl = (() => {
-    try {
-      const u = new URL(remoteUrl);
-      const last = u.pathname.split("/").pop() ?? "";
-      const dot = last.lastIndexOf(".");
-      return dot >= 0 ? last.slice(dot) : "";
-    } catch {
-      return "";
-    }
-  })();
-  const titreSafe = moduleRow.titre.replace(/[^a-zA-Z0-9-_]/g, "_").slice(0, 60) || "fichier";
-  const ext = extFromUrl || (kind === "video" ? ".mp4" : ".pdf");
+  const ext = remoteRef.includes(".mp4") ? ".mp4" : ".mp4";
   const filename = `${titreSafe}${ext}`;
 
   const headers: Record<string, string> = {
