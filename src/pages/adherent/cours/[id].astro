@@ -146,16 +146,17 @@ function moduleHasQuiz(moduleId: string): boolean {
                         </div>
                       )}
                       {mod.fichierUrl && (
-                        <a href={`/api/cours/fichier/${mod.id}`} rel="noopener" class="flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm hover:shadow transition mb-4">
+                        <button type="button" class="btn-consulter-doc w-full flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm hover:shadow transition mb-4 text-left"
+                          data-module-id={mod.id} data-module-titre={mod.titre}>
                           <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style="background-color: rgba(212,167,98,0.1);">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#d4a762" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5l5 5v14a2 2 0 01-2 2z"/></svg>
                           </div>
                           <div class="flex-1 min-w-0">
                             <p class="text-sm font-medium truncate" style="color: #0b1f3a;">Support écrit du module</p>
-                            <p class="text-xs text-gray-400">Télécharger le PDF</p>
+                            <p class="text-xs text-gray-400">Consulter dans Mes ressources</p>
                           </div>
-                          <span class="text-xs font-medium px-3 py-1.5 rounded-lg" style="background-color: #f1f3f5; color: #0b1f3a;">Télécharger</span>
-                        </a>
+                          <span class="text-xs font-medium px-3 py-1.5 rounded-lg" style="background-color: #f1f3f5; color: #0b1f3a;">Consulter</span>
+                        </button>
                       )}
                       {contenu && <div class="text-sm leading-relaxed space-y-3" style="color: #374151;">{contenu.split("\n\n").map(para => <p>{para}</p>)}</div>}
                     </div>
@@ -165,7 +166,8 @@ function moduleHasQuiz(moduleId: string): boolean {
                     <div>
                       {contenu && <div class="text-sm leading-relaxed space-y-3 mb-5" style="color: #374151;">{contenu.split("\n\n").map(para => <p>{para}</p>)}</div>}
                       {mod.fichierUrl ? (
-                        <a href={`/api/cours/fichier/${mod.id}`} rel="noopener" class="flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm hover:shadow transition">
+                        <button type="button" class="btn-consulter-doc w-full flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm hover:shadow transition text-left"
+                          data-module-id={mod.id} data-module-titre={mod.titre}>
                           <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style="background-color: rgba(212,167,98,0.1);">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#d4a762" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5l5 5v14a2 2 0 01-2 2z"/></svg>
                           </div>
@@ -173,8 +175,8 @@ function moduleHasQuiz(moduleId: string): boolean {
                             <p class="text-sm font-medium truncate" style="color: #0b1f3a;">{mod.titre} — Support de cours</p>
                             <p class="text-xs text-gray-400">Document PDF · {mod.duree} de lecture</p>
                           </div>
-                          <span class="text-xs font-medium px-3 py-1.5 rounded-lg" style="background-color: #d4a762; color: #0b1f3a;">Télécharger</span>
-                        </a>
+                          <span class="text-xs font-medium px-3 py-1.5 rounded-lg" style="background-color: #d4a762; color: #0b1f3a;">Consulter</span>
+                        </button>
                       ) : (
                         <div class="flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm">
                           <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style="background-color: rgba(212,167,98,0.1);">
@@ -294,6 +296,29 @@ function moduleHasQuiz(moduleId: string): boolean {
   </div>
 
 </AdherentMemberLayout>
+
+<!-- MODAL CONSULTATION DOCUMENT (in-app, pas de téléchargement local) -->
+<div id="modal-doc" class="fixed inset-0 z-50 hidden items-center justify-center p-3" style="background: rgba(0,0,0,0.65);">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden">
+    <div class="flex items-center justify-between px-5 py-3" style="border-bottom: 1px solid #f1f3f5;">
+      <div class="min-w-0">
+        <p class="text-xs font-semibold uppercase tracking-wide" style="color: #d4a762;">Mes ressources</p>
+        <p id="doc-titre" class="text-sm font-bold truncate" style="color: #0b1f3a;">Document</p>
+      </div>
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <a id="doc-open-new" href="#" target="_blank" rel="noopener" class="hidden sm:inline-flex text-xs px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50" style="color: #0b1f3a;">Plein écran</a>
+        <button id="doc-close" class="text-2xl text-gray-400 hover:text-gray-600 leading-none px-2">×</button>
+      </div>
+    </div>
+    <div class="flex-1 bg-gray-100">
+      <iframe id="doc-iframe" src="about:blank" class="w-full h-full" title="Document"></iframe>
+    </div>
+    <div class="px-5 py-2.5 text-[11px] text-gray-400 flex items-center justify-between" style="border-top: 1px solid #f1f3f5;">
+      <span>Document consulté en ligne — il reste dans vos ressources.</span>
+      <a href="/adherent/ressources" class="font-semibold hover:underline" style="color: #d4a762;">Toutes mes ressources →</a>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL QUIZ -->
 <div id="modal-quiz" class="fixed inset-0 z-50 hidden items-center justify-center" style="background: rgba(0,0,0,0.5);">
@@ -499,5 +524,31 @@ function moduleHasQuiz(moduleId: string): boolean {
   document.querySelectorAll(".btn-faire-quiz").forEach(btn => {
     btn.addEventListener("click", () => openModal(btn.dataset.moduleId));
   });
+
+  // ─── Viewer document in-app ─────────────────────────────────────────────
+  const docModal = document.getElementById("modal-doc");
+  const docIframe = document.getElementById("doc-iframe");
+  const docTitre = document.getElementById("doc-titre");
+  const docOpenNew = document.getElementById("doc-open-new");
+  function openDoc(moduleId, titre) {
+    const url = `/api/cours/fichier/${encodeURIComponent(moduleId)}`;
+    docTitre.textContent = titre || "Document";
+    docOpenNew.href = url;
+    docIframe.src = url;
+    docModal.classList.remove("hidden");
+    docModal.classList.add("flex");
+    document.body.style.overflow = "hidden";
+  }
+  function closeDoc() {
+    docModal.classList.add("hidden");
+    docModal.classList.remove("flex");
+    docIframe.src = "about:blank";
+    document.body.style.overflow = "";
+  }
+  document.querySelectorAll(".btn-consulter-doc").forEach(btn => {
+    btn.addEventListener("click", () => openDoc(btn.dataset.moduleId, btn.dataset.moduleTitre));
+  });
+  document.getElementById("doc-close").addEventListener("click", closeDoc);
+  docModal.addEventListener("click", (e) => { if (e.target === docModal) closeDoc(); });
 })();
 </script>

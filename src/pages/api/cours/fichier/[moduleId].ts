@@ -2,7 +2,6 @@ import type { APIRoute } from "astro";
 import { getAdherentByEmail } from "../../../../lib/store";
 import {
   isCloudinaryUrl,
-  isSupabaseFileRef,
   parseSupabaseFileRef,
 } from "../../../../lib/module-fichier";
 import { downloadStorageFile } from "../../../../lib/storage";
@@ -25,7 +24,6 @@ export const GET: APIRoute = async ({ params, url, locals }) => {
   }
 
   const kind = url.searchParams.get("type") === "video" ? "video" : "fichier";
-  const inline = url.searchParams.get("inline") === "1" || kind === "video";
 
   const supa = getSupabase();
   const { data: moduleRow } = await supa
@@ -77,20 +75,21 @@ export const GET: APIRoute = async ({ params, url, locals }) => {
         : ".pdf";
       const filename = `${titreSafe}${ext}`;
       const buffer = Buffer.from(await dl.data.arrayBuffer());
+      // Toujours `inline` : le document s'affiche dans l'app, pas en téléchargement local.
       return new Response(buffer, {
         status: 200,
         headers: {
           "Content-Type": dl.contentType,
           "Content-Length": String(buffer.length),
           "Cache-Control": "private, max-age=300",
-          "Content-Disposition": `attachment; filename="${filename}"`,
+          "Content-Disposition": `inline; filename="${filename}"`,
           "X-Content-Type-Options": "nosniff",
           "Referrer-Policy": "no-referrer",
         },
       });
     }
 
-    if (isSupabaseFileRef(remoteRef) || !isCloudinaryUrl(remoteRef)) {
+    if (!isCloudinaryUrl(remoteRef)) {
       return new Response("Référence de fichier invalide. Ré-uploadez le document.", { status: 404 });
     }
 
@@ -100,52 +99,14 @@ export const GET: APIRoute = async ({ params, url, locals }) => {
     );
   }
 
-  // ─── Vidéo (Cloudinary ou URL externe) ────────────────────────────────────
+  // ─── Vidéo : redirection directe vers Cloudinary ──────────────────────────
+  // Les vidéos Cloudinary sont publiques et supportent le streaming Range nativement.
+  // Re-streamer depuis le serveur Astro casse la lecture (pas de support Range).
   if (!remoteRef.startsWith("http")) {
     return new Response("URL vidéo invalide.", { status: 404 });
   }
-
-  if (remoteRef.includes("youtube.com") || remoteRef.includes("youtu.be") || remoteRef.includes("vimeo.com")) {
-    return Response.redirect(remoteRef, 302);
-  }
-
-  const fetchTargets = [remoteRef];
-  if (remoteRef.includes("/image/upload/")) {
-    fetchTargets.push(remoteRef.replace("/image/upload/", "/raw/upload/"));
-  } else if (remoteRef.includes("/raw/upload/")) {
-    fetchTargets.push(remoteRef.replace("/raw/upload/", "/image/upload/"));
-  }
-
-  let upstream: Response | null = null;
-  for (const target of fetchTargets) {
-    try {
-      const r = await fetch(target);
-      if (r.ok) {
-        upstream = r;
-        break;
-      }
-    } catch {
-      /* essayer la cible suivante */
-    }
-  }
-
-  if (!upstream) {
-    return new Response("La vidéo n'a pas pu être récupérée.", { status: 502 });
-  }
-
-  const contentType = upstream.headers.get("content-type") ?? "video/mp4";
-  const contentLength = upstream.headers.get("content-length") ?? undefined;
-  const ext = remoteRef.includes(".mp4") ? ".mp4" : ".mp4";
-  const filename = `${titreSafe}${ext}`;
-
-  const headers: Record<string, string> = {
-    "Content-Type": contentType,
-    "Cache-Control": "private, max-age=300",
-    "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="${filename}"`,
-    "X-Content-Type-Options": "nosniff",
-    "Referrer-Policy": "no-referrer",
-  };
-  if (contentLength) headers["Content-Length"] = contentLength;
-
-  return new Response(upstream.body, { status: 200, headers });
+  return new Response(null, {
+    status: 302,
+    headers: { Location: remoteRef, "Cache-Control": "private, max-age=60" },
+  });
 };

@@ -1,7 +1,7 @@
 ---
 import AdherentMemberLayout from "../../layouts/AdherentMemberLayout.astro";
 import LogoJCBO from "../../components/ui/LogoJCBO.astro";
-import { getAdherentByEmail, getCoursTermines, getProgressions, getCours, genererCertificat } from "../../lib/store";
+import { getAdherentByEmail, getCoursTermines, getProgressions, getCours, genererCertificat, getMentionCertificat } from "../../lib/store";
 import { getCertificatCompetences } from "../../lib/store";
 
 const profil = await getAdherentByEmail(Astro.locals.session?.email ?? "");
@@ -43,6 +43,8 @@ const qrSrc = verificationUrl ? `https://api.qrserver.com/v1/create-qr-code/?siz
 const dateDelivrance = certEmis
   ? new Date(certEmis.dateEmission).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
   : new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+
+const mention = scoreGlobal > 0 ? getMentionCertificat(scoreGlobal) : null;
 ---
 
 <AdherentMemberLayout titre="Mon certificat">
@@ -136,11 +138,19 @@ const dateDelivrance = certEmis
           </p>
 
           {scoreGlobal > 0 && (
-            <div class="inline-flex items-center gap-2 mt-4 px-4 py-1.5 rounded-full" style="background-color: rgba(22,163,74,0.08); border: 1px solid rgba(22,163,74,0.2);">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2.5">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-              <span class="text-xs font-semibold" style="color: #15803d;">Score global : {scoreGlobal}%</span>
+            <div class="flex flex-col items-center gap-2 mt-4">
+              <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full" style="background-color: rgba(22,163,74,0.08); border: 1px solid rgba(22,163,74,0.2);">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2.5">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                <span class="text-xs font-semibold" style="color: #15803d;">Score global : {scoreGlobal}%</span>
+              </div>
+              {mention && mention.code !== "EN_COURS" && (
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full" style="background-color: rgba(212,167,98,0.12); border: 1px solid rgba(212,167,98,0.35);">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="#d4a762" stroke-width="2.5"><polygon points="12 2 15 8 22 9 17 14 18 21 12 17 6 21 7 14 2 9 9 8 12 2"/></svg>
+                  <span class="text-xs font-bold tracking-wide uppercase" style="color: #b48530;">Mention {mention.label}</span>
+                </div>
+              )}
             </div>
           )}
         </div>

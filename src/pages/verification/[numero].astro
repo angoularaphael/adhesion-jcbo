@@ -1,7 +1,7 @@
 ---
 import "../../styles/global.css";
 import LogoJCBO from "../../components/ui/LogoJCBO.astro";
-import { getCertificatByNumero, getAdherentByEmail, getCours } from "../../lib/store";
+import { getCertificatByNumero, getAdherentByEmail, getCours, getCompetencesProgramme, getProgressions, getMentionCertificat } from "../../lib/store";
 
 const { numero } = Astro.params;
 const cert = numero ? await getCertificatByNumero(numero) : null;
@@ -9,6 +9,17 @@ const adherent = cert ? await getAdherentByEmail(cert.adherentEmail) : null;
 const cours = cert ? (await getCours()).find(c => c.id === cert.coursId) : null;
 
 const valide = !!(cert && adherent && cours);
+const competences = cert ? getCompetencesProgramme(cert.programmeCode) : [];
+
+let scoreGlobal = 0;
+if (valide && cert && adherent) {
+  const progs = await getProgressions(adherent.email);
+  const prog = progs.find((p) => p.coursId === cert.coursId);
+  if (prog && prog.quizResultats.length > 0) {
+    scoreGlobal = Math.round(prog.quizResultats.reduce((s, q) => s + q.score, 0) / prog.quizResultats.length);
+  }
+}
+const mention = scoreGlobal > 0 ? getMentionCertificat(scoreGlobal) : null;
 const dateFormatee = cert
   ? new Date(cert.dateEmission).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
   : "";
@@ -101,7 +112,35 @@ const dateFormatee = cert
                     <p class="text-sm text-gray-600">{adherent!.entreprise}</p>
                   </div>
                 )}
+                {mention && mention.code !== "EN_COURS" && (
+                  <div class="flex justify-between items-center py-3">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Mention</p>
+                    <span class="text-xs font-bold px-3 py-1 rounded-full" style="background-color: rgba(212,167,98,0.12); color: #b48530;">{mention.label}</span>
+                  </div>
+                )}
+                {scoreGlobal > 0 && (
+                  <div class="flex justify-between items-center py-3">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Score global</p>
+                    <p class="text-sm font-bold" style="color: #15803d;">{scoreGlobal}%</p>
+                  </div>
+                )}
               </div>
+
+              {competences.length > 0 && (
+                <div class="mt-6 pt-5" style="border-top: 1px solid #f1f3f5;">
+                  <p class="text-xs font-semibold uppercase tracking-widest mb-3" style="color: #0b1f3a;">Compétences certifiées</p>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {competences.map((c) => (
+                      <div class="flex items-start gap-2">
+                        <div class="w-4 h-4 rounded flex items-center justify-center flex-shrink-0 mt-0.5" style="background-color: rgba(212,167,98,0.15);">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="#d4a762" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                        <p class="text-xs text-gray-600 leading-relaxed">{c}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           )}
 

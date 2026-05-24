@@ -507,12 +507,17 @@ export async function getCertificatCompetences(email: string, coursId: string) {
   const cert = await getCertificatAdherent(email, coursId);
   const adherent = await getAdherentByEmail(email);
   if (!cours || !adherent) return null;
+  const code = cert?.programmeCode ?? getProgrammeCode(cours.titre);
+  const officielles = getCompetencesProgramme(code);
   return {
     nom: `${adherent.prenom} ${adherent.nom}`,
     programme: cours.titre,
+    programmeCode: code,
     numero: cert?.numero ?? "",
     dateDelivrance: cert?.dateEmission ?? "",
-    competences: (cours as { competences?: string[] }).competences?.length
+    competences: officielles.length
+      ? officielles
+      : (cours as { competences?: string[] }).competences?.length
       ? (cours as { competences?: string[] }).competences!
       : cours.modules.filter((m) => m.type !== "Quiz").map((m) => m.titre),
   };
@@ -879,7 +884,7 @@ export async function marquerNotificationsLues(adherentEmail: string): Promise<v
 
 // ── Certificats ───────────────────────────────────────────────────────────────
 
-function getProgrammeCode(titre: string): string {
+export function getProgrammeCode(titre: string): string {
   const t = titre.toUpperCase();
   if (t.includes("MINDSET")) return "ME";
   if (t.includes("VENDEUR")) return "VA";
@@ -890,11 +895,69 @@ function getProgrammeCode(titre: string): string {
   return "PR";
 }
 
-function getNiveauCode(niveau: string): string {
+export function getNiveauCode(niveau: string): string {
   if (niveau === "Débutant") return "L1";
   if (niveau === "Intermédiaire") return "L2";
   if (niveau === "Avancé") return "L3";
   return "L1";
+}
+
+/** Mention officielle JCBO selon le score global du certifié. */
+export function getMentionCertificat(score: number): {
+  code: "EXCELLENCE" | "TRES_BIEN" | "BIEN" | "EN_COURS";
+  label: string;
+} {
+  if (score >= 95) return { code: "EXCELLENCE", label: "Excellence JCBO-CONSEIL" };
+  if (score >= 90) return { code: "TRES_BIEN", label: "Très Bien JCBO-CONSEIL" };
+  if (score >= 80) return { code: "BIEN", label: "Bien JCBO-CONSEIL" };
+  return { code: "EN_COURS", label: "Validation en cours" };
+}
+
+/** Compétences officielles par programme (cf. systeme-de-certif.txt). */
+export function getCompetencesProgramme(code: string): string[] {
+  switch (code) {
+    case "ME":
+      return [
+        "Développement du mindset entrepreneurial",
+        "Renforcement de la posture professionnelle",
+        "Structuration stratégique de l'activité",
+        "Prise de décision et pilotage",
+        "Leadership et discipline opérationnelle",
+        "Vision business et performance",
+        "Communication d'impact et crédibilité professionnelle",
+      ];
+    case "VA":
+      return [
+        "Posture commerciale",
+        "Persuasion & négociation",
+        "Communication d'impact",
+        "Leadership commercial",
+        "Confiance relationnelle",
+        "Développement business",
+      ];
+    case "LS":
+      return [
+        "Leadership décisionnel",
+        "Vision stratégique",
+        "Pilotage d'équipe",
+        "Management de la performance",
+        "Intelligence relationnelle",
+        "Posture dirigeant",
+        "Conduite du changement",
+      ];
+    case "BD":
+      return [
+        "Développement commercial",
+        "Stratégie de croissance",
+        "Prospection",
+        "Négociation B2B",
+        "Structuration d'offres",
+        "Acquisition clients",
+        "Stratégie de partenariats",
+      ];
+    default:
+      return [];
+  }
 }
 
 export async function getCertificatAdherent(email: string, coursId: string): Promise<CertificatEmis | null> {
