@@ -124,16 +124,31 @@ const certificats = coursTerminesIds.map((coursId) => {
     return doc.splitTextToSize(text, maxWidth);
   }
 
-  function drawCorner(doc, x, y, size, flipX, flipY) {
-    const s = flipX ? -size : size;
-    const v = flipY ? -size : size;
+  /** Cadre double doré + accents aux 4 coins, alignés sur le même rectangle. */
+  function drawCertificateFrame(doc, x, y, w, h, gap) {
     doc.setDrawColor(...GOLD);
-    doc.setLineWidth(0.8);
-    doc.line(x, y, x + s, y);
-    doc.line(x, y, x, y + v);
-    doc.setLineWidth(0.3);
-    doc.line(x + s * 0.15, y + v * 0.15, x + s * 0.85, y + v * 0.15);
-    doc.line(x + s * 0.15, y + v * 0.15, x + s * 0.15, y + v * 0.85);
+
+    // Bordure extérieure
+    doc.setLineWidth(0.9);
+    doc.rect(x, y, w, h);
+
+    // Bordure intérieure
+    doc.setLineWidth(0.25);
+    doc.rect(x + gap, y + gap, w - 2 * gap, h - 2 * gap);
+
+    // Accents de coin (L courts, même épaisseur que la bordure extérieure)
+    const len = 10;
+    doc.setLineWidth(0.9);
+    const corners = [
+      [x, y, 1, 1],
+      [x + w, y, -1, 1],
+      [x, y + h, 1, -1],
+      [x + w, y + h, -1, -1],
+    ];
+    corners.forEach(([cx, cy, dx, dy]) => {
+      doc.line(cx, cy, cx + dx * len, cy);
+      doc.line(cx, cy, cx, cy + dy * len);
+    });
   }
 
   document.querySelectorAll(".btn-download-pdf").forEach((btn) => {
@@ -162,42 +177,41 @@ const certificats = coursTerminesIds.map((coursId) => {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
         const W = 297, H = 210;
-        const M = 18;
+        const M = 12;
+        const GAP = 3;
+        const frameX = M;
+        const frameY = M;
+        const frameW = W - 2 * M;
+        const frameH = H - 2 * M;
+        const innerX = frameX + GAP;
+        const innerY = frameY + GAP;
+        const innerW = frameW - 2 * GAP;
+        const headerH = 28;
 
         // Fond blanc cassé
         doc.setFillColor(...LIGHT_GOLD);
         doc.rect(0, 0, W, H, "F");
 
-        // Bandeau header navy
+        // Cadre doré (dessiné en premier, tout le contenu à l'intérieur)
+        drawCertificateFrame(doc, frameX, frameY, frameW, frameH, GAP);
+
+        // Bandeau header navy — contenu dans le cadre
         doc.setFillColor(...NAVY);
-        doc.rect(0, 0, W, 38, "F");
+        doc.rect(innerX, innerY, innerW, headerH, "F");
         doc.setFillColor(...GOLD);
-        doc.rect(0, 36, W, 2, "F");
-
-        // Coins décoratifs
-        drawCorner(doc, M, M + 8, 12, false, false);
-        drawCorner(doc, W - M, M + 8, 12, true, false);
-        drawCorner(doc, M, H - M, 12, false, true);
-        drawCorner(doc, W - M, H - M, 12, true, true);
-
-        // Bordure double
-        doc.setDrawColor(...GOLD);
-        doc.setLineWidth(1);
-        doc.rect(M - 4, M - 4, W - 2 * M + 8, H - 2 * M + 8);
-        doc.setLineWidth(0.3);
-        doc.rect(M - 1, M - 1, W - 2 * M + 2, H - 2 * M + 2);
+        doc.rect(innerX, innerY + headerH - 1.5, innerW, 1.5, "F");
 
         // Titre header
         doc.setTextColor(255, 255, 255);
         doc.setFont("times", "bold");
-        doc.setFontSize(26);
-        doc.text("CERTIFICAT DE FORMATION", W / 2, 18, { align: "center" });
+        doc.setFontSize(24);
+        doc.text("CERTIFICAT DE FORMATION", W / 2, innerY + 12, { align: "center" });
         doc.setFont("helvetica", "normal");
-        doc.setFontSize(9);
+        doc.setFontSize(8.5);
         doc.setTextColor(...GOLD);
-        doc.text("JCBO-CONSEIL  ·  Cabinet de conseil aux entreprises", W / 2, 28, { align: "center", charSpace: 1.5 });
+        doc.text("JCBO-CONSEIL  ·  Cabinet de conseil aux entreprises", W / 2, innerY + 21, { align: "center", charSpace: 1.2 });
 
-        let y = 52;
+        let y = innerY + headerH + 14;
 
         // Corps principal
         doc.setFont("helvetica", "normal");
@@ -238,7 +252,7 @@ const certificats = coursTerminesIds.map((coursId) => {
 
         // Encadré compétences
         if (cert.competences && cert.competences.length > 0) {
-          const boxX = M + 10, boxW = W - 2 * M - 20;
+          const boxX = innerX + 8, boxW = innerW - 16;
           const compLines = cert.competences.flatMap((c) => wrap(doc, "•  " + c, boxW - 16));
           const boxH = 8 + compLines.length * 4.5 + 4;
 
@@ -273,7 +287,7 @@ const certificats = coursTerminesIds.map((coursId) => {
         doc.setFontSize(9);
         doc.setTextColor(70, 70, 70);
         const att = `la capacité du participant à mobiliser les fondamentaux du « ${cert.titre} » dans un contexte professionnel, entrepreneurial ou managérial.`;
-        wrap(doc, att, W - 2 * M - 30).forEach((line) => {
+        wrap(doc, att, innerW - 24).forEach((line) => {
           doc.text(line, W / 2, y, { align: "center" });
           y += 4.5;
         });
@@ -283,30 +297,30 @@ const certificats = coursTerminesIds.map((coursId) => {
           doc.setFont("helvetica", "italic");
           doc.setFontSize(8);
           doc.setTextColor(120, 120, 120);
-          wrap(doc, cert.certificatIntro, W - 2 * M - 30).forEach((line) => {
+          wrap(doc, cert.certificatIntro, innerW - 24).forEach((line) => {
             doc.text(line, W / 2, y, { align: "center" });
             y += 4;
           });
         }
 
         // Pied : date + numéro (gauche) + signature (droite)
-        const footerY = H - M - 28;
+        const footerY = frameY + frameH - GAP - 30;
         doc.setDrawColor(...GOLD);
         doc.setLineWidth(0.3);
-        doc.line(M + 5, footerY - 4, W - M - 5, footerY - 4);
+        doc.line(innerX + 6, footerY - 4, innerX + innerW - 6, footerY - 4);
 
         const dateStr = new Date(cert.dateDelivrance).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 
         doc.setFont("helvetica", "normal");
         doc.setFontSize(9);
         doc.setTextColor(60, 60, 60);
-        doc.text(`Délivré le : ${dateStr}`, M + 12, footerY + 2);
+        doc.text(`Délivré le : ${dateStr}`, innerX + 10, footerY + 2);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(...NAVY);
-        doc.text(`N° ${cert.numero}`, M + 12, footerY + 8);
+        doc.text(`N° ${cert.numero}`, innerX + 10, footerY + 8);
 
         // Signature + cachet
-        const sigX = W - M - 95;
+        const sigX = innerX + innerW - 95;
         if (signature && signature.data) {
           const sigW = 42;
           const sigH = (signature.height / signature.width) * sigW;
@@ -315,7 +329,7 @@ const certificats = coursTerminesIds.map((coursId) => {
         if (cachet && cachet.data) {
           const cW = 32;
           const cH = (cachet.height / cachet.width) * cW;
-          doc.addImage(cachet.data, "PNG", W - M - 38, footerY - cH - 4, cW, cH);
+          doc.addImage(cachet.data, "PNG", innerX + innerW - 38, footerY - cH - 4, cW, cH);
         }
 
         doc.setFont("helvetica", "bold");
@@ -331,7 +345,7 @@ const certificats = coursTerminesIds.map((coursId) => {
         // Footer discret
         doc.setFontSize(6.5);
         doc.setTextColor(160, 160, 160);
-        doc.text("Document officiel JCBO-CONSEIL — Toute falsification est passible de sanctions.", W / 2, H - 8, { align: "center" });
+        doc.text("Document officiel JCBO-CONSEIL — Toute falsification est passible de sanctions.", W / 2, frameY + frameH - 5, { align: "center" });
 
         doc.save(`Certificat_${cert.titre.replace(/[^a-zA-Z0-9]/g, "_")}_${cert.adherent.replace(/\s/g, "_")}.pdf`);
       } catch (err) {
