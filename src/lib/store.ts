@@ -66,6 +66,21 @@ export type CertificatEmis = {
   niveauCode: string;
   annee: number;
   dateEmission: string;
+  coursTitre: string;
+  coursNiveau: string;
+  competences: string[];
+  certificatIntro: string;
+  certificatCode: string;
+  quizScore?: number | null;
+};
+
+export type CertificatSnapshot = {
+  titre: string;
+  niveau: string;
+  competences?: string[];
+  certificatIntro?: string;
+  certificatCode?: string;
+  quizScore?: number;
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -538,20 +553,25 @@ export async function getCertificatCompetences(email: string, coursId: string) {
   const cours = await getCoursById(coursId);
   const cert = await getCertificatAdherent(email, coursId);
   const adherent = await getAdherentByEmail(email);
-  if (!cours || !adherent) return null;
-  const code = cert?.programmeCode ?? getProgrammeCode(cours.titre);
+  if (!adherent) return null;
+  const titre = cert?.coursTitre || cours?.titre;
+  if (!titre) return null;
+  const code = cert?.programmeCode ?? cert?.certificatCode ?? getProgrammeCode(titre);
   const officielles = getCompetencesProgramme(code);
+  const storedCompetences = cert?.competences?.length ? cert.competences : [];
   return {
     nom: `${adherent.prenom} ${adherent.nom}`,
-    programme: cours.titre,
+    programme: titre,
     programmeCode: code,
     numero: cert?.numero ?? "",
     dateDelivrance: cert?.dateEmission ?? "",
-    competences: officielles.length
+    competences: storedCompetences.length
+      ? storedCompetences
+      : officielles.length
       ? officielles
-      : (cours as { competences?: string[] }).competences?.length
+      : (cours as { competences?: string[] })?.competences?.length
       ? (cours as { competences?: string[] }).competences!
-      : cours.modules.filter((m) => m.type !== "Quiz").map((m) => m.titre),
+      : cours?.modules.filter((m) => m.type !== "Quiz").map((m) => m.titre) ?? [],
   };
 }
 
@@ -738,7 +758,28 @@ export async function updateCours(id: string, data: Partial<{
 }
 
 export async function deleteCours(id: string): Promise<boolean> {
-  const { error } = await getSupabase().from("cours").delete().eq("id", id);
+  const sb = getSupabase();
+  const { data: cours } = await sb
+    .from("cours")
+    .select("titre, niveau, competences, certificat_intro, certificat_code")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (cours) {
+    const emails = await getAdherentsCoursTermine(id);
+    const snapshot: CertificatSnapshot = {
+      titre: cours.titre,
+      niveau: cours.niveau,
+      competences: cours.competences ?? [],
+      certificatIntro: cours.certificat_intro ?? "",
+      certificatCode: cours.certificat_code ?? "",
+    };
+    for (const email of emails) {
+      await genererCertificat(email, id, snapshot);
+    }
+  }
+
+  const { error } = await sb.from("cours").delete().eq("id", id);
   return !error;
 }
 
@@ -803,8 +844,20 @@ export async function enregistrerQuizResultat(adherentEmail: string, coursId: st
   if (coursTermine) {
     try {
       const { notifyAdmin } = await import("./store-admin");
-      const { data: cours } = await getSupabase().from("cours").select("titre").eq("id", coursId).maybeSingle();
+      const { data: cours } = await getSupabase()
+        .from("cours")
+        .select("titre, niveau, competences, certificat_intro, certificat_code")
+        .eq("id", coursId)
+        .maybeSingle();
       const coursTitre = cours?.titre ?? coursId;
+      await genererCertificat(email, coursId, {
+        titre: coursTitre,
+        niveau: cours?.niveau ?? "Intermédiaire",
+        competences: cours?.competences ?? [],
+        certificatIntro: cours?.certificat_intro ?? "",
+        certificatCode: cours?.certificat_code ?? "",
+        quizScore: score,
+      });
       await notifyAdmin({
         type: "cours_termine",
         titre: `Formation terminée — ${coursTitre}`,
@@ -1012,21 +1065,126 @@ export function getCompetencesProgramme(code: string): string[] {
 export async function getCertificatAdherent(email: string, coursId: string): Promise<CertificatEmis | null> {
   const { data } = await getSupabase().from("certificats_emis").select("*").eq("adherent_email", email.toLowerCase()).eq("cours_id", coursId).maybeSingle();
   if (!data) return null;
-  return { id: data.id, adherentEmail: data.adherent_email, coursId: data.cours_id, numero: data.numero, programmeCode: data.programme_code, niveauCode: data.niveau_code, annee: data.annee, dateEmission: data.date_emission };
+  return toCertificatEmis(data);
+}
+
+export async function getCertificatsAdherent(email: string): Promise<CertificatEmis[]> {
+  const normalized = email.toLowerCase();
+  let { data } = await getSupabase()
+    .from("certificats_emis")
+    .select("*")
+    .eq("adherent_email", normalized)
+    .order("date_emission", { ascending: false });
+
+  const termines = await getCoursTermines(normalized);
+  for (const coursId of termines) {
+    if (data?.some((r) => r.cours_id === coursId)) continue;
+    const cours = await getCoursById(coursId);
+    if (!cours) continue;
+    await genererCertificat(normalized, coursId, {
+      titre: cours.titre,
+      niveau: cours.niveau,
+      competences: (cours as { competences?: string[] }).competences ?? [],
+      certificatIntro: (cours as { certificatIntro?: string }).certificatIntro ?? "",
+      certificatCode: (cours as { certificatCode?: string }).certificatCode ?? "",
+    });
+  }
+
+  if (termines.some((id) => !data?.some((r) => r.cours_id === id))) {
+    const refreshed = await getSupabase()
+      .from("certificats_emis")
+      .select("*")
+      .eq("adherent_email", normalized)
+      .order("date_emission", { ascending: false });
+    data = refreshed.data;
+  }
+
+  return (data ?? []).map(toCertificatEmis);
 }
 
 export async function getCertificatByNumero(numero: string): Promise<CertificatEmis | null> {
   const { data } = await getSupabase().from("certificats_emis").select("*").eq("numero", numero).maybeSingle();
   if (!data) return null;
-  return { id: data.id, adherentEmail: data.adherent_email, coursId: data.cours_id, numero: data.numero, programmeCode: data.programme_code, niveauCode: data.niveau_code, annee: data.annee, dateEmission: data.date_emission };
+  return toCertificatEmis(data);
 }
 
-export async function genererCertificat(email: string, coursId: string, coursTitre: string, niveauCours: string): Promise<CertificatEmis> {
-  const existing = await getCertificatAdherent(email, coursId);
-  if (existing) return existing;
+function toCertificatEmis(row: {
+  id: string;
+  adherent_email: string;
+  cours_id: string;
+  numero: string;
+  programme_code: string;
+  niveau_code: string;
+  annee: number;
+  date_emission: string;
+  cours_titre?: string;
+  cours_niveau?: string;
+  competences?: string[];
+  certificat_intro?: string;
+  certificat_code?: string;
+  quiz_score?: number | null;
+}): CertificatEmis {
+  return {
+    id: row.id,
+    adherentEmail: row.adherent_email,
+    coursId: row.cours_id,
+    numero: row.numero,
+    programmeCode: row.programme_code,
+    niveauCode: row.niveau_code,
+    annee: row.annee,
+    dateEmission: row.date_emission,
+    coursTitre: row.cours_titre ?? "",
+    coursNiveau: row.cours_niveau ?? "",
+    competences: row.competences ?? [],
+    certificatIntro: row.certificat_intro ?? "",
+    certificatCode: row.certificat_code ?? "",
+    quizScore: row.quiz_score ?? null,
+  };
+}
 
-  const programmeCode = getProgrammeCode(coursTitre);
-  const niveauCode = getNiveauCode(niveauCours);
+async function getAdherentsCoursTermine(coursId: string): Promise<string[]> {
+  const { QUIZ_FINAL_MODULE_ID } = await import("./store-admin");
+  const { data: progs } = await getSupabase().from("progressions").select("adherent_email, modules_termines").eq("cours_id", coursId);
+  if (!progs?.length) return [];
+  const { data: moduleRows } = await getSupabase().from("modules").select("id").eq("cours_id", coursId);
+  const total = moduleRows?.length ?? 0;
+  if (!total) return [];
+  const emails: string[] = [];
+  for (const p of progs) {
+    const { data: finalQuiz } = await getSupabase()
+      .from("quiz_resultats")
+      .select("passe, score")
+      .eq("adherent_email", p.adherent_email)
+      .eq("cours_id", coursId)
+      .eq("module_id", QUIZ_FINAL_MODULE_ID)
+      .maybeSingle();
+    if ((p.modules_termines?.length ?? 0) >= total && finalQuiz?.passe && (finalQuiz.score ?? 0) >= 80) {
+      emails.push(p.adherent_email);
+    }
+  }
+  return emails;
+}
+
+export async function genererCertificat(email: string, coursId: string, snapshot: CertificatSnapshot): Promise<CertificatEmis> {
+  const existing = await getCertificatAdherent(email, coursId);
+  if (existing) {
+    if (!existing.coursTitre && snapshot.titre) {
+      await getSupabase().from("certificats_emis").update({
+        cours_titre: snapshot.titre,
+        cours_niveau: snapshot.niveau,
+        competences: snapshot.competences ?? [],
+        certificat_intro: snapshot.certificatIntro ?? "",
+        certificat_code: snapshot.certificatCode ?? "",
+        quiz_score: snapshot.quizScore ?? null,
+      }).eq("adherent_email", email.toLowerCase()).eq("cours_id", coursId);
+      return { ...existing, ...snapshot, coursTitre: snapshot.titre, coursNiveau: snapshot.niveau, competences: snapshot.competences ?? [], certificatIntro: snapshot.certificatIntro ?? "", certificatCode: snapshot.certificatCode ?? "", quizScore: snapshot.quizScore ?? null };
+    }
+    return existing;
+  }
+
+  const coursTitre = snapshot.titre;
+  const programmeCode = snapshot.certificatCode || getProgrammeCode(coursTitre);
+  const niveauCode = getNiveauCode(snapshot.niveau);
   const annee = new Date().getFullYear();
   const cle = `${programmeCode}-${niveauCode}-${annee}`;
 
@@ -1044,6 +1202,12 @@ export async function genererCertificat(email: string, coursId: string, coursTit
     niveau_code: niveauCode,
     annee,
     date_emission: new Date().toISOString().split("T")[0],
+    cours_titre: snapshot.titre,
+    cours_niveau: snapshot.niveau,
+    competences: snapshot.competences ?? [],
+    certificat_intro: snapshot.certificatIntro ?? "",
+    certificat_code: snapshot.certificatCode ?? "",
+    quiz_score: snapshot.quizScore ?? null,
   };
   await getSupabase().from("certificats_emis").insert(cert);
 
@@ -1072,5 +1236,5 @@ export async function genererCertificat(email: string, coursId: string, coursTit
     console.error("[genererCertificat] notify admin failed:", err);
   }
 
-  return { id: cert.id, adherentEmail: cert.adherent_email, coursId: cert.cours_id, numero, programmeCode, niveauCode, annee, dateEmission: cert.date_emission };
+  return toCertificatEmis(cert);
 }

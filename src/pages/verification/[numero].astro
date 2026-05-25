@@ -1,22 +1,30 @@
 ---
 import "../../styles/global.css";
 import LogoJCBO from "../../components/ui/LogoJCBO.astro";
-import { getCertificatByNumero, getAdherentByEmail, getCours, getCompetencesProgramme, getProgressions, getMentionCertificat } from "../../lib/store";
+import { getCertificatByNumero, getAdherentByEmail, getCompetencesProgramme, getProgressions, getMentionCertificat } from "../../lib/store";
 
 const { numero } = Astro.params;
 const cert = numero ? await getCertificatByNumero(numero) : null;
 const adherent = cert ? await getAdherentByEmail(cert.adherentEmail) : null;
-const cours = cert ? (await getCours()).find(c => c.id === cert.coursId) : null;
 
-const valide = !!(cert && adherent && cours);
-const competences = cert ? getCompetencesProgramme(cert.programmeCode) : [];
+const valide = !!(cert && adherent);
+const programmeTitre = cert?.coursTitre ?? "";
+const competences = cert?.competences?.length
+  ? cert.competences
+  : cert
+  ? getCompetencesProgramme(cert.programmeCode)
+  : [];
 
 let scoreGlobal = 0;
 if (valide && cert && adherent) {
-  const progs = await getProgressions(adherent.email);
-  const prog = progs.find((p) => p.coursId === cert.coursId);
-  if (prog && prog.quizResultats.length > 0) {
-    scoreGlobal = Math.round(prog.quizResultats.reduce((s, q) => s + q.score, 0) / prog.quizResultats.length);
+  if (cert.quizScore != null) {
+    scoreGlobal = cert.quizScore;
+  } else {
+    const progs = await getProgressions(adherent.email);
+    const prog = progs.find((p) => p.coursId === cert.coursId);
+    if (prog && prog.quizResultats.length > 0) {
+      scoreGlobal = Math.round(prog.quizResultats.reduce((s, q) => s + q.score, 0) / prog.quizResultats.length);
+    }
   }
 }
 const mention = scoreGlobal > 0 ? getMentionCertificat(scoreGlobal) : null;
@@ -96,7 +104,7 @@ const dateFormatee = cert
                 </div>
                 <div class="flex justify-between items-center py-3">
                   <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Programme</p>
-                  <p class="text-sm font-semibold text-right max-w-xs" style="color: #0b1f3a;">{cours!.titre}</p>
+                  <p class="text-sm font-semibold text-right max-w-xs" style="color: #0b1f3a;">{programmeTitre}</p>
                 </div>
                 <div class="flex justify-between items-center py-3">
                   <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Niveau</p>

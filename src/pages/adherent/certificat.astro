@@ -1,40 +1,33 @@
 ---
 import AdherentMemberLayout from "../../layouts/AdherentMemberLayout.astro";
 import LogoJCBO from "../../components/ui/LogoJCBO.astro";
-import { getAdherentByEmail, getCoursTermines, getProgressions, getCours, genererCertificat, getMentionCertificat } from "../../lib/store";
+import { getAdherentByEmail, getCertificatsAdherent, getProgressions, getMentionCertificat } from "../../lib/store";
 import { getCertificatCompetences } from "../../lib/store";
 
 const profil = await getAdherentByEmail(Astro.locals.session?.email ?? "");
 if (!profil) return Astro.redirect("/login");
 
-const coursTerminesIds = await getCoursTermines(profil.email);
-const tousLesCours = await getCours();
+const certificatsEmis = await getCertificatsAdherent(profil.email);
+const certEmis = certificatsEmis[0] ?? null;
+const aCertificat = !!certEmis;
 const progressions = await getProgressions(profil.email);
 
-// Cherche un cours MINDSET terminé en priorité, sinon le premier cours terminé
-const coursPrincipal = tousLesCours.find(c => coursTerminesIds.includes(c.id) && c.titre.includes("MINDSET"))
-  ?? tousLesCours.find(c => coursTerminesIds.includes(c.id));
-
-const aCertificat = !!coursPrincipal;
-
-// Calcul du score global moyen sur le cours terminé
 let scoreGlobal = 0;
-if (coursPrincipal) {
-  const prog = progressions.find(p => p.coursId === coursPrincipal.id);
-  if (prog && prog.quizResultats.length > 0) {
-    scoreGlobal = Math.round(prog.quizResultats.reduce((sum, q) => sum + q.score, 0) / prog.quizResultats.length);
+if (certEmis) {
+  if (certEmis.quizScore != null) {
+    scoreGlobal = certEmis.quizScore;
+  } else {
+    const prog = progressions.find(p => p.coursId === certEmis.coursId);
+    if (prog && prog.quizResultats.length > 0) {
+      scoreGlobal = Math.round(prog.quizResultats.reduce((sum, q) => sum + q.score, 0) / prog.quizResultats.length);
+    }
   }
 }
 
-// Générer (ou récupérer) le numéro de certificat premium
-const certInfo = coursPrincipal
-  ? await getCertificatCompetences(profil.email, coursPrincipal.id)
+const certInfo = certEmis
+  ? await getCertificatCompetences(profil.email, certEmis.coursId)
   : null;
-const competences = certInfo?.competences ?? coursPrincipal?.modules.filter(m => m.type !== "Quiz").map(m => m.titre) ?? [];
-
-const certEmis = coursPrincipal
-  ? await genererCertificat(profil.email, coursPrincipal.id, coursPrincipal.titre, coursPrincipal.niveau)
-  : null;
+const competences = certInfo?.competences ?? [];
 
 const nomParticipant = `${profil.prenom} ${profil.nom}`;
 const numeroCertificat = certEmis?.numero ?? "";
@@ -117,7 +110,7 @@ const mention = scoreGlobal > 0 ? getMentionCertificat(scoreGlobal) : null;
             CERTIFICAT DE COMPÉTENCES
           </h1>
           <p class="text-sm font-semibold tracking-[0.2em] uppercase" style="color: #d4a762;">
-            {coursPrincipal?.titre ?? "MINDSET ENTREPRENEURIAL™"} by JCBO-CONSEIL
+            {certEmis?.coursTitre ?? "MINDSET ENTREPRENEURIAL™"} by JCBO-CONSEIL
           </p>
         </div>
 
@@ -131,7 +124,7 @@ const mention = scoreGlobal > 0 ? getMentionCertificat(scoreGlobal) : null;
           </div>
 
           <p class="text-sm text-gray-500 mb-2">a suivi avec succès le programme de formation :</p>
-          <p class="text-lg font-bold tracking-wide" style="color: #d4a762;">{coursPrincipal?.titre ?? "MINDSET ENTREPRENEURIAL™"}</p>
+          <p class="text-lg font-bold tracking-wide" style="color: #d4a762;">{certEmis?.coursTitre ?? "MINDSET ENTREPRENEURIAL™"}</p>
           <p class="text-xs text-gray-400 mt-2 leading-relaxed max-w-lg mx-auto">
             et a validé l'ensemble des modules, exercices et évaluations associés,
             conformément aux exigences pédagogiques du programme.

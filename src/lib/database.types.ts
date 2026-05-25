@@ -127,6 +127,12 @@ export type DbCertificat = {
   niveau_code: string;
   annee: number;
   date_emission: string;
+  cours_titre?: string;
+  cours_niveau?: string;
+  competences?: string[];
+  certificat_intro?: string;
+  certificat_code?: string;
+  quiz_score?: number | null;
 };
 
 export type DbAdminNotification = {
