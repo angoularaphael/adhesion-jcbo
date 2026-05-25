@@ -123,15 +123,6 @@ export function initCoursPage(): void {
             </label>
           </div>
         </div>
-        <div class="rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3" style="background:#f0fdf4;border-left:3px solid #16a34a;">
-          <div class="flex items-center gap-2 shrink-0 sm:w-28">
-            <span class="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold text-white" style="background:#16a34a;">3</span>
-            <span class="text-xs font-semibold uppercase tracking-wide" style="color:#0b1f3a;">Quiz</span>
-          </div>
-          <div class="flex-1">
-            <button type="button" class="btn-edit-quiz px-4 py-2 rounded-lg text-xs font-semibold text-white transition hover:opacity-90" style="background:#16a34a;">Gérer le quiz (80 % requis)</button>
-          </div>
-        </div>
       </div>
       <button type="button" class="btn-save-module mt-4 w-full px-4 py-3 rounded-xl text-sm font-semibold text-white transition hover:opacity-90" style="background:#0b1f3a;">Enregistrer le module</button>`;
 
@@ -151,12 +142,12 @@ export function initCoursPage(): void {
 
   type QuizQuestion = { id?: string; question: string; options: string[]; correcte: number };
 
-  function openQuizModal(moduleId: string, moduleTitre: string) {
+  function openFinalQuizModal(coursId: string, coursTitre: string) {
     const overlay = document.getElementById("modal-quiz-admin");
     if (!overlay) return;
 
     const titleEl = overlay.querySelector("#quiz-admin-titre");
-    if (titleEl) titleEl.textContent = "Quiz — " + moduleTitre;
+    if (titleEl) titleEl.textContent = "Quiz final — " + coursTitre;
 
     const list = overlay.querySelector("#quiz-admin-list") as HTMLElement | null;
     const errBox = overlay.querySelector("#quiz-admin-error") as HTMLElement | null;
@@ -292,7 +283,7 @@ export function initCoursPage(): void {
       }
 
       await withButtonLoading(btnSave, async () => {
-        const res = await fetch(`/api/modules/${moduleId}/quiz`, {
+        const res = await fetch(`/api/cours/${coursId}/quiz`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           credentials: "same-origin",
@@ -312,7 +303,7 @@ export function initCoursPage(): void {
     }, { once: false });
 
     // Charger les questions existantes
-    fetch(`/api/modules/${moduleId}/quiz`, { credentials: "same-origin" })
+    fetch(`/api/cours/${coursId}/quiz`, { credentials: "same-origin" })
       .then((r) => r.json())
       .then((data: { questions?: QuizQuestion[]; error?: string }) => {
         if (data.error) {
@@ -358,6 +349,57 @@ export function initCoursPage(): void {
     }
 
     bindModuleEvents();
+  }
+
+  async function saveAllModules() {
+    const btn = document.getElementById("btn-save-all-modules") as HTMLButtonElement | null;
+    const items = Array.from(modulesList?.querySelectorAll<HTMLElement>(".module-item") ?? []);
+    if (!items.length) {
+      alert("Aucun module à enregistrer.");
+      return;
+    }
+
+    await withButtonLoading(btn, async () => {
+      let saved = 0;
+      let errors = 0;
+      for (const item of items) {
+        const moduleId = item.getAttribute("data-module-id");
+        if (!moduleId) continue;
+        const body: Record<string, string> = {};
+        const videoUrl = item.querySelector<HTMLInputElement>(".input-module-video")?.value.trim() ?? "";
+        if (videoUrl) body.video_url = videoUrl;
+        const pendingFile = item.getAttribute("data-pending-file");
+        if (pendingFile) body.fichier_url = pendingFile;
+        if (!Object.keys(body).length) continue;
+
+        const res = await fetch(`/api/modules/${moduleId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(body),
+        });
+        if (res.ok) {
+          saved++;
+          item.removeAttribute("data-pending-file");
+        } else {
+          errors++;
+        }
+      }
+
+      if (saved === 0 && errors === 0) {
+        alert("Aucune modification à enregistrer.");
+        return;
+      }
+
+      if (currentCoursId) {
+        const titre = document.getElementById("modal-modules-titre")?.textContent?.replace("Contenu — ", "") ?? "";
+        await loadModules(currentCoursId, titre);
+      }
+
+      if (errors > 0) {
+        alert(`${saved} module(s) enregistré(s), ${errors} erreur(s).`);
+      }
+    }, "Enregistrement…");
   }
 
   function bindModuleEvents() {
@@ -457,16 +499,6 @@ export function initCoursPage(): void {
       });
     });
 
-    modulesList?.querySelectorAll<HTMLButtonElement>(".btn-edit-quiz").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const item = btn.closest(".module-item");
-        const moduleId = item?.getAttribute("data-module-id");
-        const titreEl = item?.querySelector("p.text-sm.font-semibold");
-        const titre = titreEl?.textContent ?? "Module";
-        if (moduleId) openQuizModal(moduleId, titre);
-      });
-    });
-
     modulesList?.querySelectorAll<HTMLButtonElement>(".btn-delete-module").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const item = btn.closest(".module-item");
@@ -524,6 +556,14 @@ export function initCoursPage(): void {
     const panel = modalModules.querySelector(".rounded-2xl.shadow-2xl");
     if (panel && !panel.contains(e.target as Node)) closeModulesModal();
   });
+
+  document.getElementById("btn-quiz-final")?.addEventListener("click", () => {
+    if (!currentCoursId) return;
+    const titre = document.getElementById("modal-modules-titre")?.textContent?.replace("Contenu — ", "") ?? "Cours";
+    openFinalQuizModal(currentCoursId, titre);
+  });
+
+  document.getElementById("btn-save-all-modules")?.addEventListener("click", saveAllModules);
 
   document.getElementById("form-add-module")?.addEventListener("submit", async (e) => {
     e.preventDefault();

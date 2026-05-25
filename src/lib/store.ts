@@ -778,47 +778,28 @@ export async function marquerModuleTermine(adherentEmail: string, coursId: strin
   const total = moduleRows?.length ?? 1;
   const pourcentage = Math.round((updated.length / total) * 100);
 
-  // ▶ Notif admin si tous les modules sont terminés (et qu'il n'y a pas de quiz à passer)
-  if (pourcentage === 100) {
-    try {
-      const { data: quizRows } = await getSupabase().from("quiz_questions").select("id").in("module_id", (moduleRows ?? []).map(m => m.id));
-      const aDesQuiz = (quizRows?.length ?? 0) > 0;
-      if (!aDesQuiz) {
-        const { notifyAdmin } = await import("./store-admin");
-        const { data: cours } = await getSupabase().from("cours").select("titre").eq("id", coursId).maybeSingle();
-        const coursTitre = cours?.titre ?? coursId;
-        await notifyAdmin({
-          type: "cours_termine",
-          titre: `Formation terminée — ${coursTitre}`,
-          message: `${email} a complété 100 % de la formation « ${coursTitre} ».`,
-          metadata: { adherentEmail: email, coursId, formation: coursTitre },
-        });
-      }
-    } catch (err) {
-      console.error("[marquerModuleTermine] notify admin failed:", err);
-    }
-  }
-
   return { adherentEmail: email, coursId, modulesTermines: updated, dateDebut: existing?.date_debut ?? new Date().toISOString().split("T")[0], quizResultats: [], pourcentage };
 }
 
 export async function enregistrerQuizResultat(adherentEmail: string, coursId: string, moduleId: string, score: number, passe: boolean) {
+  const { QUIZ_FINAL_MODULE_ID } = await import("./store-admin");
   const email = adherentEmail.toLowerCase();
   await getSupabase().from("quiz_resultats").upsert({ adherent_email: email, cours_id: coursId, module_id: moduleId, score, passe });
 
   const { data: existing } = await getSupabase().from("progressions").select("*").eq("adherent_email", email).eq("cours_id", coursId).maybeSingle();
   const current = existing?.modules_termines ?? [];
-  const updated = passe && !current.includes(moduleId) ? [...current, moduleId] : current;
-  await getSupabase().from("progressions").upsert({ adherent_email: email, cours_id: coursId, modules_termines: updated, date_debut: existing?.date_debut ?? new Date().toISOString().split("T")[0] });
 
   const { data: moduleRows } = await getSupabase().from("modules").select("id").eq("cours_id", coursId);
   const total = moduleRows?.length ?? 1;
-  const pourcentage = Math.round((updated.length / total) * 100);
-  const { data: allQuiz } = await getSupabase().from("quiz_resultats").select("passe").eq("adherent_email", email).eq("cours_id", coursId);
-  const passedCount = (allQuiz ?? []).filter(q => q.passe).length;
-  const coursTermine = pourcentage === 100 && passedCount >= total;
+  const pourcentage = Math.round((current.length / total) * 100);
+  const allModulesDone = current.length >= total;
+  const coursTermine =
+    moduleId === QUIZ_FINAL_MODULE_ID &&
+    allModulesDone &&
+    passe &&
+    score >= 80;
 
-  // ▶ Notif admin si la formation est entièrement terminée
+  // ▶ Notif admin si la formation est entièrement terminée (quiz final ≥ 80 %)
   if (coursTermine) {
     try {
       const { notifyAdmin } = await import("./store-admin");
@@ -827,7 +808,7 @@ export async function enregistrerQuizResultat(adherentEmail: string, coursId: st
       await notifyAdmin({
         type: "cours_termine",
         titre: `Formation terminée — ${coursTitre}`,
-        message: `${email} a complété 100 % de la formation « ${coursTitre} » (${passedCount}/${total} quiz validés).`,
+        message: `${email} a complété la formation « ${coursTitre} » (quiz final validé à ${score} %).`,
         metadata: { adherentEmail: email, coursId, formation: coursTitre },
       });
     } catch (err) {
@@ -835,7 +816,7 @@ export async function enregistrerQuizResultat(adherentEmail: string, coursId: st
     }
   }
 
-  return { adherentEmail: email, coursId, modulesTermines: updated, dateDebut: existing?.date_debut ?? new Date().toISOString().split("T")[0], quizResultats: [], pourcentage, coursTermine };
+  return { adherentEmail: email, coursId, modulesTermines: current, dateDebut: existing?.date_debut ?? new Date().toISOString().split("T")[0], quizResultats: [], pourcentage, coursTermine };
 }
 
 export async function getProgressionPourcentage(adherentEmail: string, coursId: string): Promise<number> {
@@ -848,6 +829,7 @@ export async function getProgressionPourcentage(adherentEmail: string, coursId: 
 }
 
 export async function getCoursTermines(adherentEmail: string): Promise<string[]> {
+  const { QUIZ_FINAL_MODULE_ID } = await import("./store-admin");
   const email = adherentEmail.toLowerCase();
   const { data: progs } = await getSupabase().from("progressions").select("cours_id, modules_termines").eq("adherent_email", email);
   if (!progs?.length) return [];
@@ -856,8 +838,14 @@ export async function getCoursTermines(adherentEmail: string): Promise<string[]>
     const { data: moduleRows } = await getSupabase().from("modules").select("id").eq("cours_id", p.cours_id);
     const total = moduleRows?.length ?? 0;
     if (!total) continue;
-    const { data: quizRows } = await getSupabase().from("quiz_resultats").select("passe").eq("adherent_email", email).eq("cours_id", p.cours_id).eq("passe", true);
-    if ((p.modules_termines?.length ?? 0) >= total && (quizRows?.length ?? 0) >= total) {
+    const { data: finalQuiz } = await getSupabase()
+      .from("quiz_resultats")
+      .select("passe, score")
+      .eq("adherent_email", email)
+      .eq("cours_id", p.cours_id)
+      .eq("module_id", QUIZ_FINAL_MODULE_ID)
+      .maybeSingle();
+    if ((p.modules_termines?.length ?? 0) >= total && finalQuiz?.passe && (finalQuiz.score ?? 0) >= 80) {
       results.push(p.cours_id);
     }
   }

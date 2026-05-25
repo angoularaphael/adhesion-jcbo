@@ -583,9 +583,13 @@ export async function notifyAdmin(payload: {
 
 // ── Quiz DB ───────────────────────────────────────────────────────────────────
 
+/** Identifiant stocké dans quiz_resultats pour le quiz final d'un cours. */
+export const QUIZ_FINAL_MODULE_ID = "QUIZ-FINAL";
+
 export type QuizQuestion = {
   id: string;
   moduleId: string;
+  coursId?: string;
   question: string;
   options: string[];
   correcte: number;
@@ -600,16 +604,37 @@ export async function getQuizQuestions(moduleId: string): Promise<QuizQuestion[]
   return (data ?? []).map((r) => ({
     id: r.id,
     moduleId: r.module_id,
+    coursId: r.cours_id ?? undefined,
     question: r.question,
     options: r.options as string[],
     correcte: r.correcte,
   }));
 }
 
-export async function upsertQuizQuestion(q: Omit<QuizQuestion, "id"> & { id?: string }): Promise<void> {
+export async function getQuizQuestionsFinal(coursId: string): Promise<QuizQuestion[]> {
+  const { data } = await getSupabase()
+    .from("quiz_questions")
+    .select("*")
+    .eq("cours_id", coursId)
+    .is("module_id", null)
+    .order("ordre", { ascending: true });
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    moduleId: QUIZ_FINAL_MODULE_ID,
+    coursId: r.cours_id,
+    question: r.question,
+    options: r.options as string[],
+    correcte: r.correcte,
+  }));
+}
+
+export async function upsertQuizQuestion(
+  q: Omit<QuizQuestion, "id" | "moduleId"> & { id?: string; moduleId?: string | null; coursId?: string | null }
+): Promise<void> {
   await getSupabase().from("quiz_questions").upsert({
     id: q.id ?? `QQ-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    module_id: q.moduleId,
+    module_id: q.moduleId ?? null,
+    cours_id: q.coursId ?? null,
     question: q.question,
     options: q.options,
     correcte: q.correcte,

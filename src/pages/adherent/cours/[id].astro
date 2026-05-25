@@ -2,7 +2,7 @@
 import AdherentMemberLayout from "../../../layouts/AdherentMemberLayout.astro";
 import Badge from "../../../components/ui/Badge.astro";
 import { getCours, getProgressions, getAdherentByEmail } from "../../../lib/store";
-import { getQuizQuestions } from "../../../lib/store-admin";
+import { getQuizQuestionsFinal, QUIZ_FINAL_MODULE_ID } from "../../../lib/store-admin";
 
 const { id } = Astro.params;
 const cours = (await getCours()).find(c => c.id === id && c.statut === "Publié");
@@ -18,7 +18,17 @@ const quizResultats = prog?.quizResultats ?? [];
 const pourcentage = cours.modules.length > 0
   ? Math.round((modulesTermines.length / cours.modules.length) * 100)
   : 0;
-const coursTermine = pourcentage === 100 && quizResultats.filter(q => q.passe).length >= cours.modules.length;
+const allModulesDone = pourcentage === 100;
+const finalQuizQuestions = await getQuizQuestionsFinal(cours.id);
+const hasFinalQuiz = finalQuizQuestions.length > 0;
+const finalQuizRes = quizResultats.find(q => q.moduleId === QUIZ_FINAL_MODULE_ID);
+const coursTermine = allModulesDone && finalQuizRes?.passe && (finalQuizRes.score ?? 0) >= 80;
+const quizFinalData = finalQuizQuestions.map((q) => ({
+  id: q.id,
+  question: q.question,
+  options: q.options,
+  correcte: q.correcte,
+}));
 
 const contenuParModule: Record<string, string> = {
   M01: `Le mindset entrepreneurial est avant tout une façon d'appréhender la réalité avec exigence et discernement. Il ne s'agit pas d'optimisme naïf, mais d'une capacité à maintenir une vision claire tout en naviguant dans l'incertitude.\n\nUn entrepreneur performant développe trois attitudes fondamentales : la responsabilité totale (ne jamais se poser en victime des circonstances), la pensée en termes de solutions plutôt que de problèmes, et la discipline de l'action quotidienne même en l'absence de motivation.\n\nCette première leçon pose les bases de votre transformation. Prenez le temps de noter dans votre journal les domaines où vous avez tendance à subir plutôt qu'à agir. C'est le premier pas vers un mindset de haute performance.`,
@@ -43,20 +53,6 @@ const typeIcon: Record<string, string> = {
 const modulesIds = cours.modules.map(m => m.id);
 const firstUndoneIndex = modulesIds.findIndex(mid => !modulesTermines.includes(mid));
 const defaultOpenId = firstUndoneIndex >= 0 ? modulesIds[firstUndoneIndex] : modulesIds[modulesIds.length - 1];
-
-const quizByModule = await Promise.all(
-  cours.modules.map(async (m) => [m.id, await getQuizQuestions(m.id)] as const)
-);
-const quizData = Object.fromEntries(
-  quizByModule.map(([id, questions]) => [
-    id,
-    questions.map((q) => ({ id: q.id, question: q.question, options: q.options, correcte: q.correcte })),
-  ])
-) as Record<string, { id: string; question: string; options: string[]; correcte: number }[]>;
-
-function moduleHasQuiz(moduleId: string): boolean {
-  return (quizData[moduleId] ?? []).length > 0;
-}
 ---
 
 <AdherentMemberLayout titre={cours.titre}>
@@ -72,10 +68,8 @@ function moduleHasQuiz(moduleId: string): boolean {
     <div class="lg:col-span-2 flex flex-col gap-2" id="modules-container">
       {cours.modules.map((mod) => {
         const termine = modulesTermines.includes(mod.id);
-        const quizRes = quizResultats.find(q => q.moduleId === mod.id);
         const isOpen = mod.id === defaultOpenId;
         const contenu = contenuParModule[mod.id];
-        const hasQuiz = moduleHasQuiz(mod.id);
         return (
           <div
             class="module-item rounded-2xl overflow-hidden transition-all"
@@ -98,15 +92,9 @@ function moduleHasQuiz(moduleId: string): boolean {
                   <span class="flex items-center gap-1" set:html={`${typeIcon[mod.type] ?? ""} ${mod.type}`} />
                   <span>·</span>
                   <span>{mod.duree}</span>
-                  {hasQuiz && <span>· <strong style="color: #d4a762;">Quiz inclus</strong></span>}
                 </div>
               </div>
               <div class="flex items-center gap-2 flex-shrink-0">
-                {termine && quizRes && (
-                  <span class="text-xs font-medium px-2 py-0.5 rounded-full" style="background-color: rgba(22,163,74,0.1); color: #16a34a;">
-                    {quizRes.score}%
-                  </span>
-                )}
                 {termine && <span class="text-xs font-medium" style="color: #16a34a;">Terminé</span>}
                 <svg class="module-chevron transition-transform duration-200" style={isOpen ? "transform: rotate(180deg);" : ""} xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#9ca3af" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
               </div>
@@ -170,20 +158,7 @@ function moduleHasQuiz(moduleId: string): boolean {
                     )}
                   </div>
 
-                  <!-- Bouton quiz / déjà terminé -->
-                  {!termine && hasQuiz && (
-                    <div class="mt-4 pt-4" style="border-top: 1px solid rgba(0,0,0,0.06);">
-                      <button
-                        class="btn-faire-quiz w-full py-2.5 rounded-xl text-sm font-semibold transition hover:opacity-90"
-                        style="background-color: #d4a762; color: #0b1f3a;"
-                        data-cours-id={cours.id}
-                        data-module-id={mod.id}
-                      >
-                        Faire le quiz
-                      </button>
-                    </div>
-                  )}
-                  {!termine && !hasQuiz && (
+                  {!termine && (
                     <div class="mt-4 pt-4" style="border-top: 1px solid rgba(0,0,0,0.06);">
                       <button
                         class="btn-marquer-termine w-full py-2.5 rounded-xl text-sm font-semibold text-white transition hover:opacity-90"
@@ -195,14 +170,6 @@ function moduleHasQuiz(moduleId: string): boolean {
                       </button>
                     </div>
                   )}
-                  {termine && quizRes && (
-                    <div class="mt-4 pt-4" style="border-top: 1px solid rgba(0,0,0,0.06);">
-                      <div class="rounded-xl px-4 py-3 text-sm" style="background-color: rgba(22,163,74,0.08);">
-                        <p class="font-semibold" style="color: #16a34a;">Quiz réussi — {quizRes.score}%</p>
-                        <p class="text-xs text-gray-400 mt-1">Module validé. Vous ne pouvez plus refaire ce quiz.</p>
-                      </div>
-                    </div>
-                  )}
 
                 </div>
               </div>
@@ -210,6 +177,45 @@ function moduleHasQuiz(moduleId: string): boolean {
           </div>
         );
       })}
+
+      {allModulesDone && hasFinalQuiz && (
+        <div class="rounded-2xl overflow-hidden mt-2" style="border: 2px solid #d4a762; box-shadow: 0 4px 20px rgba(212,167,98,0.15);">
+          <div class="px-5 py-4 flex items-center gap-4" style="background: linear-gradient(135deg, #0b1f3a, #162d4f);">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style="background:#d4a762;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#0b1f3a" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-bold text-white">Quiz final de certification</p>
+              <p class="text-xs text-white/60 mt-0.5">{finalQuizQuestions.length} question{finalQuizQuestions.length > 1 ? "s" : ""} · Score minimum : 80 %</p>
+            </div>
+            {finalQuizRes?.passe && (finalQuizRes.score ?? 0) >= 80 && (
+              <span class="text-xs font-semibold px-3 py-1 rounded-full" style="background:rgba(22,163,74,0.2); color:#86efac;">{finalQuizRes.score} %</span>
+            )}
+          </div>
+          <div class="p-5 bg-white">
+            {finalQuizRes?.passe && (finalQuizRes.score ?? 0) >= 80 ? (
+              <div class="rounded-xl px-4 py-4 text-sm text-center" style="background-color: rgba(22,163,74,0.08);">
+                <p class="font-semibold" style="color: #16a34a;">Quiz final validé — {finalQuizRes.score} %</p>
+                <p class="text-xs text-gray-400 mt-1">Votre certificat est disponible.</p>
+                <a href="/adherent/certificats" class="inline-block mt-3 text-xs font-semibold underline" style="color: #16a34a;">Voir mon certificat →</a>
+              </div>
+            ) : (
+              <>
+                <p class="text-sm text-gray-500 mb-4">
+                  Vous avez terminé tous les modules. Passez le quiz final pour obtenir votre certificat.
+                </p>
+                <button
+                  type="button"
+                  class="btn-faire-quiz-final w-full py-3 rounded-xl text-sm font-bold transition hover:opacity-90"
+                  style="background-color: #d4a762; color: #0b1f3a;"
+                >
+                  Passer le quiz final
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
 
     <!-- Sidebar -->
@@ -231,6 +237,9 @@ function moduleHasQuiz(moduleId: string): boolean {
           </div>
         </div>
         <p class="text-center text-xs text-gray-400">{modulesTermines.length} / {cours.modules.length} modules</p>
+        {allModulesDone && hasFinalQuiz && !coursTermine && (
+          <p class="text-center text-xs mt-2" style="color: #d4a762;">Quiz final à passer pour le certificat</p>
+        )}
         {coursTermine && (
           <div class="mt-3 p-3 rounded-xl text-center" style="background-color: rgba(22,163,74,0.08);">
             <p class="text-xs font-semibold" style="color: #16a34a;">Formation complétée !</p>
@@ -295,8 +304,8 @@ function moduleHasQuiz(moduleId: string): boolean {
   <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
     <div class="flex items-center justify-between px-6 pt-6 pb-4" style="border-bottom: 1px solid #f1f3f5;">
       <div>
-        <h3 id="quiz-titre" class="text-lg font-bold" style="color: #0b1f3a;">Quiz du module</h3>
-        <p class="text-xs text-gray-400 mt-0.5">Répondez à toutes les questions. Score minimum : 80%</p>
+        <h3 id="quiz-titre" class="text-lg font-bold" style="color: #0b1f3a;">Quiz final</h3>
+        <p class="text-xs text-gray-400 mt-0.5">Répondez à toutes les questions. Score minimum : 80 % pour le certificat.</p>
       </div>
       <button id="quiz-close" class="text-gray-400 hover:text-gray-600 text-xl font-bold">×</button>
     </div>
@@ -314,7 +323,7 @@ function moduleHasQuiz(moduleId: string): boolean {
   </div>
 </div>
 
-<script is:inline define:vars={{ quizData, coursId: cours.id }}>
+<script is:inline define:vars={{ quizFinalData, coursId: cours.id, quizFinalModuleId: QUIZ_FINAL_MODULE_ID }}>
 (function() {
   // Accordéon
   document.querySelectorAll(".module-header").forEach(btn => {
@@ -352,15 +361,14 @@ function moduleHasQuiz(moduleId: string): boolean {
   const quizResult = document.getElementById("quiz-result");
   const quizResultContent = document.getElementById("quiz-result-content");
   const quizTitre = document.getElementById("quiz-titre");
-  let currentModuleId = null;
   let currentReponses = [];
 
-  function openModal(moduleId) {
-    currentModuleId = moduleId;
-    const questions = quizData[moduleId] || [];
-    quizTitre.textContent = "Quiz — " + (questions[0] ? "Module en cours" : moduleId);
+  function openFinalQuizModal() {
+    const questions = quizFinalData || [];
+    quizTitre.textContent = "Quiz final de certification";
     quizBody.innerHTML = "";
     quizResult.classList.add("hidden");
+    quizBody.style.display = "";
 
     questions.forEach((q, qi) => {
       const div = document.createElement("div");
@@ -420,7 +428,7 @@ function moduleHasQuiz(moduleId: string): boolean {
   }
 
   async function submitQuiz() {
-    const questions = quizData[currentModuleId] || [];
+    const questions = quizFinalData || [];
     const err = document.getElementById("quiz-err");
     if (currentReponses.some(r => r === -1)) {
       err.classList.remove("hidden");
@@ -433,9 +441,16 @@ function moduleHasQuiz(moduleId: string): boolean {
 
     const res = await fetch("/api/quiz", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ coursId, moduleId: currentModuleId, reponses: currentReponses }),
+      body: JSON.stringify({ coursId, moduleId: quizFinalModuleId, reponses: currentReponses }),
     });
     const data = await res.json();
+
+    if (!res.ok && !data.score) {
+      alert(data.error || "Erreur lors de la soumission.");
+      btn.disabled = false;
+      btn.textContent = "Valider mes réponses";
+      return;
+    }
 
     quizBody.style.display = "none";
     quizResult.classList.remove("hidden");
@@ -450,12 +465,12 @@ function moduleHasQuiz(moduleId: string): boolean {
         </div>
         <h4 class="text-xl font-bold mb-1" style="color:#16a34a;">Félicitations !</h4>
         <p class="text-sm text-gray-500 mb-3">Score : <strong style="color:#0b1f3a;">${data.score}%</strong> — ${data.bonnes}/${data.total} bonnes réponses</p>
-        <p class="text-xs text-gray-400">Ce module est maintenant validé.</p>
+        <p class="text-xs text-gray-400">Votre certificat est maintenant disponible.</p>
       `;
       quizResultContent.style.backgroundColor = "rgba(22,163,74,0.05)";
       retryBtn.style.display = "none";
       continueBtn.style.display = "";
-      continueBtn.textContent = "Continuer →";
+      continueBtn.textContent = "Voir mon certificat →";
     } else {
       quizResultContent.innerHTML = `
         <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background-color: rgba(220,38,38,0.08);">
@@ -463,7 +478,7 @@ function moduleHasQuiz(moduleId: string): boolean {
         </div>
         <h4 class="text-xl font-bold mb-1" style="color:#dc2626;">Pas encore !</h4>
         <p class="text-sm text-gray-500 mb-1">Score : <strong style="color:#0b1f3a;">${data.score}%</strong> — ${data.bonnes}/${data.total} bonnes réponses</p>
-        <p class="text-xs text-gray-400">Il faut <strong>80%</strong> minimum pour valider. Relisez le module et réessayez.</p>
+        <p class="text-xs text-gray-400">Il faut <strong>80 %</strong> minimum pour obtenir le certificat. Révisez le cours et réessayez.</p>
       `;
       quizResultContent.style.backgroundColor = "rgba(220,38,38,0.03)";
       retryBtn.style.display = "";
@@ -477,10 +492,14 @@ function moduleHasQuiz(moduleId: string): boolean {
     document.getElementById("quiz-continue").style.display = "";
     quizBody.style.display = "";
     quizResult.classList.add("hidden");
-    openModal(currentModuleId);
+    openFinalQuizModal();
   });
 
   document.getElementById("quiz-continue").addEventListener("click", () => {
+    if (document.getElementById("quiz-continue").textContent.includes("certificat")) {
+      window.location.href = "/adherent/certificats";
+      return;
+    }
     modal.classList.add("hidden");
     modal.classList.remove("flex");
     location.reload();
@@ -491,9 +510,7 @@ function moduleHasQuiz(moduleId: string): boolean {
     modal.classList.remove("flex");
   });
 
-  document.querySelectorAll(".btn-faire-quiz").forEach(btn => {
-    btn.addEventListener("click", () => openModal(btn.dataset.moduleId));
-  });
+  document.querySelector(".btn-faire-quiz-final")?.addEventListener("click", openFinalQuizModal);
 
   // ─── Viewer document in-app ─────────────────────────────────────────────
   const docModal = document.getElementById("modal-doc");
