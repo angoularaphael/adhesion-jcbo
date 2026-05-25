@@ -19,6 +19,16 @@ export function initCoursPage(): void {
   let currentCoursId: string | null = null;
   let modulesLoadSeq = 0;
 
+  function openModulesModal() {
+    modalModules?.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeModulesModal() {
+    modalModules?.classList.add("hidden");
+    document.body.style.overflow = "";
+  }
+
   function openModal(mode: "create" | "edit", data?: Record<string, string>) {
     const titre = document.getElementById("modal-cours-titre");
     if (titre) titre.textContent = mode === "create" ? "Nouveau cours" : "Modifier le cours";
@@ -75,8 +85,16 @@ export function initCoursPage(): void {
       ? `<span class="inline-flex items-center gap-1 text-xs font-medium text-green-700"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>PDF enregistré</span>`
       : `<span class="text-xs text-gray-400">Aucun PDF</span>`;
 
+    const videoUrlDisplay = hasVideo && mod.videoUrl!.startsWith("http")
+      ? mod.videoUrl!.includes("cloudinary.com")
+        ? "Vidéo Cloudinary enregistrée"
+        : mod.videoUrl!.slice(0, 60) + (mod.videoUrl!.length > 60 ? "…" : "")
+      : hasVideo
+        ? "Vidéo enregistrée"
+        : "";
+
     const bodyHtml = `
-      <div class="grid gap-3">
+      <div class="grid gap-3 module-body">
         <div class="rounded-xl p-4 flex flex-col sm:flex-row sm:items-start gap-3" style="background:#f8fafc;border-left:3px solid #0b1f3a;">
           <div class="flex items-center gap-2 shrink-0 sm:w-28">
             <span class="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold text-white" style="background:#0b1f3a;">1</span>
@@ -84,9 +102,10 @@ export function initCoursPage(): void {
           </div>
           <div class="flex-1 min-w-0 space-y-2">
             <div class="video-info">${videoPreview}</div>
-            <input type="url" class="input-module-video w-full border rounded-lg px-3 py-2 text-xs bg-white" placeholder="Lien YouTube / Vimeo (optionnel)" value="${escapeHtml(mod.videoUrl ?? "")}" />
+            <input type="url" class="input-module-video w-full border rounded-lg px-3 py-2 text-xs bg-white" placeholder="Lien YouTube / Vimeo ou laisser vide si upload MP4" value="${escapeHtml(mod.videoUrl ?? "")}" title="${escapeHtml(mod.videoUrl ?? "")}" />
+            ${videoUrlDisplay ? `<p class="text-[10px] text-gray-400 truncate">${escapeHtml(videoUrlDisplay)}</p>` : ""}
             <label class="inline-flex cursor-pointer">
-              <span class="btn-upload-video px-3 py-1.5 rounded-lg text-xs font-medium border transition hover:bg-white" style="border-color:#0b1f3a;color:#0b1f3a;">📤 Uploader une vidéo (MP4)</span>
+              <span class="btn-upload-video px-3 py-1.5 rounded-lg text-xs font-medium border transition hover:bg-white" style="border-color:#0b1f3a;color:#0b1f3a;">Uploader une vidéo (MP4)</span>
               <input type="file" class="input-module-video-file hidden" accept="video/mp4,video/webm,video/quicktime" />
             </label>
           </div>
@@ -99,7 +118,7 @@ export function initCoursPage(): void {
           <div class="flex-1 min-w-0 space-y-2">
             <div class="file-info">${filePreview}</div>
             <label class="inline-flex cursor-pointer">
-              <span class="btn-upload-file px-3 py-1.5 rounded-lg text-xs font-medium border transition hover:bg-white" style="border-color:#d4a762;color:#0b1f3a;">📄 Choisir un PDF</span>
+              <span class="btn-upload-file px-3 py-1.5 rounded-lg text-xs font-medium border transition hover:bg-white" style="border-color:#d4a762;color:#0b1f3a;">Choisir un PDF</span>
               <input type="file" class="input-module-file hidden" accept=".pdf,application/pdf" />
             </label>
           </div>
@@ -110,22 +129,23 @@ export function initCoursPage(): void {
             <span class="text-xs font-semibold uppercase tracking-wide" style="color:#0b1f3a;">Quiz</span>
           </div>
           <div class="flex-1">
-            <button type="button" class="btn-edit-quiz px-4 py-2 rounded-lg text-xs font-semibold text-white transition hover:opacity-90" style="background:#16a34a;">✏️ Gérer le quiz (80 % requis)</button>
+            <button type="button" class="btn-edit-quiz px-4 py-2 rounded-lg text-xs font-semibold text-white transition hover:opacity-90" style="background:#16a34a;">Gérer le quiz (80 % requis)</button>
           </div>
         </div>
       </div>
       <button type="button" class="btn-save-module mt-4 w-full px-4 py-3 rounded-xl text-sm font-semibold text-white transition hover:opacity-90" style="background:#0b1f3a;">Enregistrer le module</button>`;
 
     return `
-      <div class="border border-gray-200 rounded-2xl overflow-hidden module-item shadow-sm" data-module-id="${escapeHtml(mod.id)}" data-module-type="Vidéo">
-        <div class="flex items-center justify-between gap-3 px-5 py-3" style="background:linear-gradient(135deg,#0b1f3a,#162d4f);">
-          <div class="min-w-0">
+      <div class="border border-gray-200 rounded-2xl module-item shadow-sm" data-module-id="${escapeHtml(mod.id)}" data-module-type="Vidéo">
+        <div class="flex items-center justify-between gap-3 px-5 py-3 rounded-t-2xl" style="background:linear-gradient(135deg,#0b1f3a,#162d4f);">
+          <div class="min-w-0 flex-1">
             <p class="text-sm font-semibold text-white truncate">${escapeHtml(mod.titre)}</p>
             <p class="text-[11px] text-white/50">${mod.duree ? escapeHtml(mod.duree) : "Module"}</p>
           </div>
+          <button type="button" class="btn-toggle-module shrink-0 text-[11px] text-white/80 hover:text-white px-2 py-1 rounded border border-white/20" title="Replier / déplier">▼</button>
           <button type="button" class="btn-delete-module text-[11px] text-red-300 hover:text-red-100 shrink-0 px-2 py-1 rounded border border-red-400/30">Supprimer</button>
         </div>
-        <div class="p-5">${bodyHtml}</div>
+        <div class="module-body-wrap p-5">${bodyHtml}</div>
       </div>`;
   }
 
@@ -318,7 +338,7 @@ export function initCoursPage(): void {
     const titleEl = document.getElementById("modal-modules-titre");
     if (titleEl) titleEl.textContent = "Contenu — " + coursTitre;
     if (modulesList) modulesList.innerHTML = `<p class="text-sm text-gray-400">Chargement…</p>`;
-    modalModules?.classList.remove("hidden");
+    openModulesModal();
 
     const res = await fetch(`/api/cours/${coursId}/modules`, { credentials: "same-origin" });
     const data = (await res.json()) as { modules?: ModuleRow[]; error?: string };
@@ -341,6 +361,15 @@ export function initCoursPage(): void {
   }
 
   function bindModuleEvents() {
+    modulesList?.querySelectorAll<HTMLButtonElement>(".btn-toggle-module").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const wrap = btn.closest(".module-item")?.querySelector(".module-body-wrap");
+        if (!wrap) return;
+        const collapsed = wrap.classList.toggle("hidden");
+        btn.textContent = collapsed ? "▶" : "▼";
+      });
+    });
+
     modulesList?.querySelectorAll<HTMLInputElement>(".input-module-file").forEach((input) => {
       input.addEventListener("change", async () => {
         const file = input.files?.[0];
@@ -489,9 +518,11 @@ export function initCoursPage(): void {
     });
   });
 
-  document.getElementById("btn-annuler-modules")?.addEventListener("click", () => modalModules?.classList.add("hidden"));
+  document.getElementById("btn-annuler-modules")?.addEventListener("click", closeModulesModal);
+  document.getElementById("btn-annuler-modules-top")?.addEventListener("click", closeModulesModal);
   modalModules?.addEventListener("click", (e) => {
-    if (e.target === modalModules) modalModules.classList.add("hidden");
+    const panel = modalModules.querySelector(".rounded-2xl.shadow-2xl");
+    if (panel && !panel.contains(e.target as Node)) closeModulesModal();
   });
 
   document.getElementById("form-add-module")?.addEventListener("submit", async (e) => {

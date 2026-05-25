@@ -232,15 +232,20 @@ const cours = await getCours();
   </div>
 
   <!-- Modal gestion modules / fichiers / vidéos -->
-  <div id="modal-modules" class="fixed inset-0 z-50 hidden overflow-y-auto py-6 px-4" style="background:rgba(0,0,0,0.5);">
-    <div class="flex min-h-full items-start justify-center">
-      <div class="bg-white rounded-2xl shadow-xl w-full max-w-3xl my-4 flex flex-col max-h-[calc(100vh-3rem)]">
-        <div class="flex-shrink-0 px-6 md:px-8 pt-6 pb-4 border-b border-gray-100">
-          <h3 id="modal-modules-titre" class="text-lg font-bold" style="color: #0b1f3a;">Contenu du cours</h3>
-          <p class="text-xs text-gray-400 mt-1">Chaque module : vidéo → PDF → quiz (tous optionnels).</p>
+  <div id="modal-modules" class="fixed inset-0 z-[100] hidden" style="background:rgba(0,0,0,0.55);">
+    <div class="flex h-full w-full items-center justify-center p-3 sm:p-6">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl flex flex-col overflow-hidden" style="height: min(92vh, 900px); max-height: 92vh;">
+        <div class="flex-shrink-0 px-5 sm:px-8 pt-5 sm:pt-6 pb-4 border-b border-gray-100">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h3 id="modal-modules-titre" class="text-lg font-bold" style="color: #0b1f3a;">Contenu du cours</h3>
+              <p class="text-xs text-gray-400 mt-1">Vidéo → PDF → Quiz par module. Faites défiler pour voir tout le contenu.</p>
+            </div>
+            <button type="button" id="btn-annuler-modules-top" class="text-gray-400 hover:text-gray-600 text-2xl leading-none px-1" aria-label="Fermer">×</button>
+          </div>
         </div>
-        <div id="modules-list" class="overflow-y-auto flex-1 px-6 md:px-8 py-4 flex flex-col gap-4 min-h-0"></div>
-        <form id="form-add-module" class="flex-shrink-0 border-t border-gray-100 px-6 md:px-8 py-5 bg-gray-50/60 rounded-b-2xl">
+        <div id="modules-list" class="flex-1 overflow-y-auto overscroll-contain px-5 sm:px-8 py-4 flex flex-col gap-4" style="min-height: 0; -webkit-overflow-scrolling: touch;"></div>
+        <form id="form-add-module" class="flex-shrink-0 border-t border-gray-100 px-5 sm:px-8 py-4 bg-gray-50/80">
           <p class="text-[11px] font-bold uppercase tracking-wider mb-3" style="color:#d4a762;">+ Nouveau module</p>
           <div class="grid sm:grid-cols-3 gap-3 mb-3">
             <input id="new-module-titre" type="text" required placeholder="Titre du module"
@@ -261,7 +266,7 @@ const cours = await getCours();
   </div>
 
   <!-- Modal gestion quiz d'un module -->
-  <div id="modal-quiz-admin" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 overflow-y-auto" style="background:rgba(0,0,0,0.55);">
+  <div id="modal-quiz-admin" class="fixed inset-0 z-[110] hidden items-center justify-center p-4 overflow-y-auto" style="background:rgba(0,0,0,0.55);">
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 md:p-8 my-8 max-h-[90vh] flex flex-col">
       <div class="flex items-start justify-between gap-3 mb-2">
         <div>
