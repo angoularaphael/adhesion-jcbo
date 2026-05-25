@@ -28,9 +28,28 @@ export function initCoursPage(): void {
     (document.getElementById("cours-duree") as HTMLInputElement).value = data?.duree ?? "";
     (document.getElementById("cours-niveau") as HTMLSelectElement).value = data?.niveau ?? "Débutant";
     (document.getElementById("cours-statut") as HTMLSelectElement).value = data?.statut ?? "Brouillon";
+
+    let competencesArr: string[] = [];
+    if (data?.competences) {
+      try { competencesArr = JSON.parse(data.competences); } catch { competencesArr = []; }
+    }
+    const compEl = document.getElementById("cours-competences") as HTMLTextAreaElement | null;
+    if (compEl) compEl.value = competencesArr.join("\n");
+    const codeEl = document.getElementById("cours-certificat-code") as HTMLInputElement | null;
+    if (codeEl) codeEl.value = data?.certificatCode ?? "";
+    const introEl = document.getElementById("cours-certificat-intro") as HTMLTextAreaElement | null;
+    if (introEl) introEl.value = data?.certificatIntro ?? "";
+    const certBox = document.getElementById("certificat-config");
+    const hasCert = (data?.certificatCode || data?.certificatIntro);
+    if (certBox) certBox.classList.toggle("hidden", !hasCert);
+
     document.getElementById("cours-erreur")?.classList.add("hidden");
     modal?.classList.remove("hidden");
   }
+
+  document.getElementById("btn-toggle-certificat")?.addEventListener("click", () => {
+    document.getElementById("certificat-config")?.classList.toggle("hidden");
+  });
 
   function escapeHtml(s: string): string {
     return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
@@ -445,6 +464,9 @@ export function initCoursPage(): void {
         duree: btn.dataset.duree ?? "",
         niveau: btn.dataset.niveau ?? "Débutant",
         statut: btn.dataset.statut ?? "Brouillon",
+        competences: btn.dataset.competences ?? "[]",
+        certificatCode: btn.dataset.certificatCode ?? "",
+        certificatIntro: btn.dataset.certificatIntro ?? "",
       });
     });
   });
@@ -518,12 +540,23 @@ export function initCoursPage(): void {
     e.preventDefault();
     const submitBtn = form.querySelector<HTMLButtonElement>('button[type="submit"]');
     const id = (document.getElementById("cours-id") as HTMLInputElement).value;
+    const competencesRaw = (document.getElementById("cours-competences") as HTMLTextAreaElement | null)?.value ?? "";
+    const competences = competencesRaw
+      .split("\n")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+    const certificatCode = (document.getElementById("cours-certificat-code") as HTMLInputElement | null)?.value.trim().toUpperCase() ?? "";
+    const certificatIntro = (document.getElementById("cours-certificat-intro") as HTMLTextAreaElement | null)?.value.trim() ?? "";
+
     const body = {
       titre: (document.getElementById("cours-titre") as HTMLInputElement).value.trim(),
       description: (document.getElementById("cours-description") as HTMLTextAreaElement).value.trim(),
       duree: (document.getElementById("cours-duree") as HTMLInputElement).value.trim(),
       niveau: (document.getElementById("cours-niveau") as HTMLSelectElement).value,
       statut: (document.getElementById("cours-statut") as HTMLSelectElement).value,
+      competences,
+      certificatCode,
+      certificatIntro,
     };
     await withButtonLoading(submitBtn, async () => {
       const url = id ? "/api/cours/" + id : "/api/cours";

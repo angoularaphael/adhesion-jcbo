@@ -85,6 +85,9 @@ export const coursSchema = z.object({
   duree: z.string().min(1, "Durée requise").max(20).trim(),
   niveau: z.enum(["Débutant", "Intermédiaire", "Avancé"], "Niveau invalide"),
   statut: z.enum(["Publié", "Brouillon"], "Statut invalide"),
+  competences: z.array(z.string().max(200)).max(20).optional(),
+  certificatIntro: z.string().max(2000).optional(),
+  certificatCode: z.string().max(20).optional(),
 });
 
 export const progressionSchema = z.object({

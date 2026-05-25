@@ -131,6 +131,9 @@ function toCours(row: any, modules: any[] = []) {
     niveau: row.niveau as "Débutant" | "Intermédiaire" | "Avancé",
     statut: row.statut as "Publié" | "Brouillon",
     prix: row.prix !== null ? Number(row.prix) : undefined,
+    competences: (row.competences as string[] | null) ?? [],
+    certificatIntro: row.certificat_intro ?? "",
+    certificatCode: row.certificat_code ?? "",
     date: row.date,
     modules: modules
       .filter((m: any) => m.cours_id === row.id)
@@ -694,14 +697,43 @@ export async function getCoursById(id: string) {
 export async function createCours(data: {
   titre: string; description: string; duree: string;
   niveau: "Débutant" | "Intermédiaire" | "Avancé"; statut: "Publié" | "Brouillon";
+  competences?: string[];
+  certificatIntro?: string;
+  certificatCode?: string;
 }) {
-  const item = { id: `COURS-${Date.now()}`, ...data, date: new Date().toISOString().split("T")[0], prix: null };
-  await getSupabase().from("cours").insert(item);
-  return { ...item, modules: [] };
+  const id = `COURS-${Date.now()}`;
+  const row = {
+    id,
+    titre: data.titre,
+    description: data.description,
+    duree: data.duree,
+    niveau: data.niveau,
+    statut: data.statut,
+    competences: data.competences ?? [],
+    certificat_intro: data.certificatIntro ?? null,
+    certificat_code: data.certificatCode ?? null,
+    date: new Date().toISOString().split("T")[0],
+    prix: null,
+  };
+  await getSupabase().from("cours").insert(row);
+  return { id, ...data, date: row.date, modules: [] };
 }
 
-export async function updateCours(id: string, data: Partial<{ titre: string; description: string; duree: string; niveau: string; statut: string }>) {
-  const { data: row } = await getSupabase().from("cours").update(data).eq("id", id).select().single();
+export async function updateCours(id: string, data: Partial<{
+  titre: string; description: string; duree: string; niveau: string; statut: string;
+  competences: string[]; certificatIntro: string; certificatCode: string;
+}>) {
+  const patch: Record<string, unknown> = {};
+  if (data.titre !== undefined) patch.titre = data.titre;
+  if (data.description !== undefined) patch.description = data.description;
+  if (data.duree !== undefined) patch.duree = data.duree;
+  if (data.niveau !== undefined) patch.niveau = data.niveau;
+  if (data.statut !== undefined) patch.statut = data.statut;
+  if (data.competences !== undefined) patch.competences = data.competences;
+  if (data.certificatIntro !== undefined) patch.certificat_intro = data.certificatIntro;
+  if (data.certificatCode !== undefined) patch.certificat_code = data.certificatCode;
+
+  const { data: row } = await getSupabase().from("cours").update(patch).eq("id", id).select().single();
   return row ? toCours(row, []) : null;
 }
 

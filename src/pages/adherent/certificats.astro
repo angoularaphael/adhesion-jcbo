@@ -8,17 +8,30 @@ if (!profil) return Astro.redirect("/login");
 
 const coursTerminesIds = await getCoursTermines(profil.email);
 const tousLesCours = await getCours();
-const certificats = coursTerminesIds.map(coursId => {
-  const c = tousLesCours.find(x => x.id === coursId);
+const certificats = coursTerminesIds.map((coursId) => {
+  const c = tousLesCours.find((x) => x.id === coursId);
   if (!c) return null;
+  const code = (c as { certificatCode?: string }).certificatCode || "ME";
+  const competences = (c as { competences?: string[] }).competences ?? [];
+  const adherentNumber = profil.numeroAdherent.split("-").pop() ?? "000000";
   return {
     coursId,
     titre: c.titre,
-    numero: `JCBO-${coursId.replace("COURS-", "")}-${profil.numeroAdherent.split("-").pop()}`,
+    numero: `JCBO-${code}-${adherentNumber}`,
     dateDelivrance: new Date().toISOString().split("T")[0],
     adherent: `${profil.prenom} ${profil.nom}`,
+    competences,
+    certificatIntro: (c as { certificatIntro?: string }).certificatIntro ?? "",
   };
-}).filter(Boolean) as { coursId: string; titre: string; numero: string; dateDelivrance: string; adherent: string }[];
+}).filter(Boolean) as {
+  coursId: string;
+  titre: string;
+  numero: string;
+  dateDelivrance: string;
+  adherent: string;
+  competences: string[];
+  certificatIntro: string;
+}[];
 ---
 
 <AdherentMemberLayout titre="Mes certificats">
@@ -26,7 +39,7 @@ const certificats = coursTerminesIds.map(coursId => {
   <div class="mb-8 flex items-center justify-between">
     <div>
       <h2 class="text-2xl font-bold" style="color: #0b1f3a;">Mes certificats</h2>
-      <p class="text-sm text-gray-500 mt-1">Les certificats sont générés à la completion de chaque cours (100% des modules + quiz réussis).</p>
+      <p class="text-sm text-gray-500 mt-1">Délivrés à la complétion d'un cours (100 % des modules + quiz validés à 80 %).</p>
     </div>
   </div>
 
@@ -37,8 +50,8 @@ const certificats = coursTerminesIds.map(coursId => {
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="#d4a762" stroke-width="1.5"><circle cx="12" cy="9" r="4"/><path stroke-linecap="round" stroke-linejoin="round" d="M9 21l3-3 3 3V15a6 6 0 10-6 0v6z"/></svg>
         </div>
         <p class="text-base font-semibold mb-1" style="color: #0b1f3a;">Aucun certificat pour le moment</p>
-        <p class="text-sm text-gray-400">Completez un cours en réussissant tous les quiz pour obtenir votre certificat.</p>
-        <a href="/adherent/cours" class="mt-5 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition hover:opacity-90" style="background-color: #d4a762; color: #0b1f3a;">
+        <p class="text-sm text-gray-400">Complétez un cours en réussissant tous les quiz pour obtenir votre certificat.</p>
+        <a href="/adherent/cours" class="mt-5 px-5 py-2.5 rounded-xl text-sm font-semibold transition hover:opacity-90" style="background-color: #d4a762; color: #0b1f3a;">
           Voir mes cours
         </a>
       </div>
@@ -46,9 +59,8 @@ const certificats = coursTerminesIds.map(coursId => {
   )}
 
   <div class="flex flex-col gap-6">
-    {certificats.map(cert => (
+    {certificats.map((cert) => (
       <div class="bg-white rounded-2xl shadow-sm overflow-hidden" style="border: 1px solid #f1f3f5;" id={`cert-${cert.coursId}`}>
-        <!-- Aperçu certificat -->
         <div class="relative overflow-hidden p-8 text-center" style="background: linear-gradient(135deg, #0b1f3a 0%, #162d4f 100%); min-height: 240px;">
           <div class="absolute top-0 right-0 w-64 h-64 rounded-full -translate-y-1/2 translate-x-1/4 opacity-[0.04]" style="background-color: #d4a762;"></div>
           <div class="absolute bottom-0 left-0 w-48 h-48 rounded-full translate-y-1/2 -translate-x-1/4 opacity-[0.05]" style="background-color: #d4a762;"></div>
@@ -56,7 +68,7 @@ const certificats = coursTerminesIds.map(coursId => {
             <p class="text-xs font-medium uppercase tracking-[0.25em] mb-4" style="color: rgba(212,167,98,0.6);">Certificat de Formation</p>
             <p class="text-sm mb-2" style="color: rgba(255,255,255,0.5);">Décerné à</p>
             <h3 class="text-2xl font-bold text-white mb-3" style="font-family: Georgia, serif;">{cert.adherent}</h3>
-            <p class="text-sm mb-1" style="color: rgba(255,255,255,0.5);">pour avoir complété</p>
+            <p class="text-sm mb-1" style="color: rgba(255,255,255,0.5);">pour avoir suivi avec succès</p>
             <h4 class="text-lg font-semibold mb-4" style="color: #d4a762;">{cert.titre}</h4>
             <div class="flex items-center justify-center gap-8 text-xs" style="color: rgba(255,255,255,0.3);">
               <span>N° {cert.numero}</span>
@@ -65,7 +77,6 @@ const certificats = coursTerminesIds.map(coursId => {
             </div>
           </div>
         </div>
-        <!-- Actions -->
         <div class="px-6 py-4 flex items-center justify-between" style="border-top: 1px solid #f1f3f5;">
           <div>
             <p class="text-sm font-semibold" style="color: #0b1f3a;">{cert.titre}</p>
@@ -94,19 +105,23 @@ const certificats = coursTerminesIds.map(coursId => {
       img.crossOrigin = "anonymous";
       img.onload = () => {
         const canvas = document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
+        canvas.width = img.naturalWidth || img.width;
+        canvas.height = img.naturalHeight || img.height;
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0);
-        resolve(canvas.toDataURL("image/jpeg"));
+        resolve({ data: canvas.toDataURL("image/png"), width: canvas.width, height: canvas.height });
       };
       img.onerror = () => resolve(null);
       img.src = src;
     });
   }
 
-  document.querySelectorAll(".btn-download-pdf").forEach(btn => {
-    btn.addEventListener("click", async function() {
+  function wrap(doc, text, maxWidth) {
+    return doc.splitTextToSize(text, maxWidth);
+  }
+
+  document.querySelectorAll(".btn-download-pdf").forEach((btn) => {
+    btn.addEventListener("click", async function () {
       const cert = JSON.parse(this.dataset.cert);
       this.textContent = "Génération…";
       this.disabled = true;
@@ -121,102 +136,161 @@ const certificats = coursTerminesIds.map(coursId => {
         });
       }
 
-      const [cachetData, signatureData] = await Promise.all([
-        loadImage("/images/cachet.jpeg"),
-        loadImage("/images/signature-jcbo.jpeg"),
+      const [cachet, signature] = await Promise.all([
+        loadImage("/images/cachet.png"),
+        loadImage("/images/signature-jcbo.png"),
       ]);
 
       const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-      const W = 297, H = 210;
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const W = 210, H = 297;
 
-      // Fond bleu marine
-      doc.setFillColor(11, 31, 58);
+      doc.setFillColor(255, 255, 255);
       doc.rect(0, 0, W, H, "F");
 
-      // Bordure dorée
+      // Bordure dorée double
       doc.setDrawColor(212, 167, 98);
-      doc.setLineWidth(1.5);
+      doc.setLineWidth(1.2);
       doc.rect(10, 10, W - 20, H - 20);
       doc.setLineWidth(0.4);
       doc.rect(13, 13, W - 26, H - 26);
 
-      // Titre certificat
-      doc.setTextColor(212, 167, 98);
+      // En-tête
+      doc.setTextColor(11, 31, 58);
+      doc.setFont("times", "bold");
+      doc.setFontSize(22);
+      doc.text("CERTIFICAT", W / 2, 32, { align: "center" });
       doc.setFontSize(11);
       doc.setFont("helvetica", "normal");
-      doc.text("CERTIFICAT DE FORMATION", W / 2, 38, { align: "center", charSpace: 3 });
+      doc.setTextColor(120, 120, 120);
+      doc.text("DE FORMATION", W / 2, 39, { align: "center", charSpace: 4 });
 
-      // Ligne décorative
       doc.setDrawColor(212, 167, 98);
       doc.setLineWidth(0.5);
-      doc.line(W / 2 - 40, 43, W / 2 + 40, 43);
+      doc.line(W / 2 - 25, 43, W / 2 + 25, 43);
 
-      // "Décerné à"
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(10);
+      // Cabinet
       doc.setFont("helvetica", "normal");
-      doc.text("Décerné à", W / 2, 58, { align: "center" });
+      doc.setFontSize(11);
+      doc.setTextColor(60, 60, 60);
+      doc.text("Le cabinet JCBO-CONSEIL certifie que :", W / 2, 56, { align: "center" });
 
       // Nom adhérent
-      doc.setFontSize(26);
       doc.setFont("times", "bold");
-      doc.setTextColor(255, 255, 255);
-      doc.text(cert.adherent, W / 2, 75, { align: "center" });
+      doc.setFontSize(20);
+      doc.setTextColor(11, 31, 58);
+      doc.text(cert.adherent, W / 2, 70, { align: "center" });
 
-      // "pour avoir complété"
+      // Phrase de validation
+      let y = 84;
+      doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(180, 180, 180);
-      doc.text("pour avoir complété avec succès la formation", W / 2, 90, { align: "center" });
+      doc.setTextColor(60, 60, 60);
+      const phrase1 =
+        `a suivi avec succès le programme de formation : `;
+      doc.text(phrase1, W / 2, y, { align: "center" });
+      y += 6;
 
-      // Titre cours
-      doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(212, 167, 98);
-      doc.text(cert.titre, W / 2, 103, { align: "center" });
-
-      // Ligne séparatrice
-      doc.setDrawColor(212, 167, 98);
-      doc.setLineWidth(0.3);
-      doc.line(W / 2 - 60, 112, W / 2 + 60, 112);
-
-      // Infos bas
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(140, 140, 140);
-      const dateStr = new Date(cert.dateDelivrance).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
-      doc.text(`N° ${cert.numero}`, W / 2 - 40, 125, { align: "center" });
-      doc.text(`Délivré le ${dateStr}`, W / 2 + 40, 125, { align: "center" });
-
-      // Signature et cachet
-      if (signatureData) {
-        doc.addImage(signatureData, "JPEG", W / 2 - 50, 135, 35, 20);
-      }
-      if (cachetData) {
-        doc.addImage(cachetData, "JPEG", W / 2 + 15, 132, 35, 25);
-      }
-
-      // Texte sous signature/cachet
-      doc.setFontSize(8);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(140, 140, 140);
-      doc.text("Signature", W / 2 - 33, 158, { align: "center" });
-      doc.text("Cachet", W / 2 + 33, 160, { align: "center" });
-
-      // JCBO Conseil
-      doc.setFontSize(10);
       doc.setFont("times", "italic");
+      doc.setFontSize(13);
       doc.setTextColor(212, 167, 98);
-      doc.text("JCBO Conseil", W / 2, 172, { align: "center" });
-      doc.setFontSize(8);
+      doc.text(cert.titre, W / 2, y, { align: "center" });
+      y += 8;
+
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(100, 100, 100);
-      doc.text("Cabinet de conseil aux entreprises", W / 2, 178, { align: "center" });
+      doc.setFontSize(10);
+      doc.setTextColor(60, 60, 60);
+      const phrase2 = "et a validé l'ensemble des modules, exercices et évaluations associés,";
+      const phrase3 = "conformément aux exigences pédagogiques du programme.";
+      doc.text(phrase2, W / 2, y, { align: "center" }); y += 5;
+      doc.text(phrase3, W / 2, y, { align: "center" }); y += 9;
+
+      // Compétences
+      if (cert.competences && cert.competences.length > 0) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.setTextColor(11, 31, 58);
+        doc.text("Compétences développées :", W / 2, y, { align: "center" });
+        y += 6;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9.5);
+        doc.setTextColor(70, 70, 70);
+        const liste = cert.competences.join(" · ");
+        const lines = wrap(doc, liste, W - 50);
+        lines.forEach((line) => {
+          doc.text(line, W / 2, y, { align: "center" });
+          y += 4.6;
+        });
+        y += 4;
+      }
+
+      // Atteste de
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(11, 31, 58);
+      doc.text("Ce certificat atteste de :", W / 2, y, { align: "center" });
+      y += 6;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9.5);
+      doc.setTextColor(70, 70, 70);
+      const atteste = `la capacité du participant à mobiliser les fondamentaux du « ${cert.titre} » dans un contexte professionnel, entrepreneurial ou managérial.`;
+      const attesteLines = wrap(doc, atteste, W - 50);
+      attesteLines.forEach((line) => {
+        doc.text(line, W / 2, y, { align: "center" });
+        y += 4.8;
+      });
+      y += 4;
+
+      // Texte additionnel optionnel
+      if (cert.certificatIntro) {
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(9);
+        doc.setTextColor(120, 120, 120);
+        const introLines = wrap(doc, cert.certificatIntro, W - 50);
+        introLines.forEach((line) => {
+          doc.text(line, W / 2, y, { align: "center" });
+          y += 4.2;
+        });
+        y += 3;
+      }
+
+      // Date + numéro
+      const dateStr = new Date(cert.dateDelivrance).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(60, 60, 60);
+      doc.text(`Délivré le : ${dateStr}`, W / 2, y, { align: "center" }); y += 5;
+      doc.text(`Numéro du certificat : ${cert.numero}`, W / 2, y, { align: "center" });
+      y += 12;
+
+      // Cachet (gauche) + Signature (droite)
+      const baseY = Math.max(y, 230);
+      if (signature && signature.data) {
+        const sigW = 50;
+        const sigH = (signature.height / signature.width) * sigW;
+        doc.addImage(signature.data, "PNG", W / 2 - 70, baseY - sigH / 2, sigW, sigH);
+      }
+      if (cachet && cachet.data) {
+        const cW = 45;
+        const cH = (cachet.height / cachet.width) * cW;
+        doc.addImage(cachet.data, "PNG", W / 2 + 25, baseY - cH / 2, cW, cH);
+      }
+
+      // Identité signataire (sous la signature)
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(11, 31, 58);
+      doc.text("Jean-Christophe BOYANG-TSANG", W / 2 - 45, baseY + 22, { align: "center" });
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(110, 110, 110);
+      doc.text("Consultant en Business Development", W / 2 - 45, baseY + 27, { align: "center" });
+      doc.text("Fondateur du cabinet JCBO-CONSEIL", W / 2 - 45, baseY + 31, { align: "center" });
 
       doc.save(`Certificat_${cert.titre.replace(/[^a-zA-Z0-9]/g, "_")}_${cert.adherent.replace(/\s/g, "_")}.pdf`);
 
-      this.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5l5 5v14a2 2 0 01-2 2z"/></svg> Télécharger PDF`;
+      this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5l5 5v14a2 2 0 01-2 2z"/></svg> Télécharger PDF';
       this.disabled = false;
     });
   });

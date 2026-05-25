@@ -68,6 +68,9 @@ export type DbCours = {
   statut: string;
   prix: number | null;
   date: string;
+  competences?: string[];
+  certificat_intro?: string | null;
+  certificat_code?: string | null;
 };
 
 export type DbModule = {

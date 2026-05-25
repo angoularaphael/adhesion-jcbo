@@ -70,11 +70,13 @@ export async function parseJsonResponse<T>(res: Response): Promise<T> {
   }
 }
 
-export async function uploadFile(
-  file: File,
-  bucket: "actualites" | "cours-fichiers" | "videos-formation" | "profils" | "ressources-vitrine",
-  pathPrefix: string
-): Promise<{ url: string }> {
+type AdminBucket = "cours-fichiers" | "videos-formation" | "ressources-vitrine";
+type SmallBucket = "actualites" | "profils";
+
+/**
+ * Upload via Vercel pour les petits fichiers (images de profil, actualités).
+ */
+async function uploadSmallFile(file: File, bucket: SmallBucket, pathPrefix: string): Promise<{ url: string }> {
   const fd = new FormData();
   fd.append("file", file);
   fd.append("bucket", bucket);
@@ -83,4 +85,51 @@ export async function uploadFile(
   const data = await parseJsonResponse<{ url?: string; error?: string }>(res);
   if (!res.ok || !data.url) throw new Error(data.error || "Échec de l'upload");
   return { url: data.url };
+}
+
+/**
+ * Upload direct vers Supabase Storage (contourne la limite 4,5 Mo de Vercel).
+ */
+async function uploadLargeFile(file: File, bucket: AdminBucket): Promise<{ url: string }> {
+  const signedRes = await fetch("/api/upload/signed-url", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    body: JSON.stringify({
+      bucket,
+      filename: file.name,
+      size: file.size,
+      contentType: file.type,
+    }),
+  });
+  const signed = await parseJsonResponse<{
+    uploadUrl?: string;
+    token?: string;
+    ref?: string;
+    error?: string;
+  }>(signedRes);
+  if (!signedRes.ok || !signed.uploadUrl || !signed.ref) {
+    throw new Error(signed.error || "URL d'upload indisponible");
+  }
+
+  const putRes = await fetch(signed.uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": file.type || "application/octet-stream" },
+    body: file,
+  });
+  if (!putRes.ok) {
+    throw new Error(`Échec de l'upload (${putRes.status}). Vérifiez la taille du fichier.`);
+  }
+  return { url: signed.ref };
+}
+
+export async function uploadFile(
+  file: File,
+  bucket: SmallBucket | AdminBucket,
+  pathPrefix: string
+): Promise<{ url: string }> {
+  if (bucket === "actualites" || bucket === "profils") {
+    return uploadSmallFile(file, bucket, pathPrefix);
+  }
+  return uploadLargeFile(file, bucket);
 }

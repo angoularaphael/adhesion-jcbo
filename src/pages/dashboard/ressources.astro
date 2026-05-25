@@ -203,7 +203,7 @@ const variantByCategorie: Record<string, "or" | "vert" | "gris"> = {
               <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
             </svg>
             <p id="drop-label" class="text-sm text-gray-500">Glisser-déposer ou <span class="font-medium" style="color: #d4a762;">parcourir</span></p>
-            <p class="text-xs text-gray-400 mt-1">PDF, images (max 25 Mo)</p>
+            <p class="text-xs text-gray-400 mt-1">PDF, images (max 50 Mo)</p>
             <input id="ressource-fichier-input" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" class="hidden" />
           </div>
           <p id="fichier-selectionne" class="text-xs text-green-600 mt-1.5 hidden"></p>
@@ -321,31 +321,44 @@ const variantByCategorie: Record<string, "or" | "vert" | "gris"> = {
   async function handleFile(file) {
     const errEl = document.getElementById("ressource-erreur");
     const btnSubmit = document.getElementById("btn-submit-ressource");
-    if (file.size > 25 * 1024 * 1024) {
-      errEl.textContent = "Fichier trop volumineux (max 25 Mo)";
+    if (file.size > 50 * 1024 * 1024) {
+      errEl.textContent = "Fichier trop volumineux (max 50 Mo)";
       errEl.classList.remove("hidden");
       return;
     }
     fichierNom = file.name;
     fichierUploading = true;
     if (btnSubmit) btnSubmit.disabled = true;
-    document.getElementById("drop-label").innerHTML = "Envoi du fichier…";
+    document.getElementById("drop-label").innerHTML = "Préparation…";
     errEl.classList.add("hidden");
 
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("bucket", "ressources-vitrine");
-    fd.append("path", "ressource");
-
     try {
-      const res = await fetch("/api/upload", { method: "POST", body: fd, credentials: "same-origin" });
-      const text = await res.text();
-      let data = {};
-      try { data = JSON.parse(text); } catch {
-        throw new Error(res.status === 413 ? "Fichier trop volumineux." : "Erreur serveur (" + res.status + ")");
-      }
-      if (!res.ok || !data.url) throw new Error(data.error || "Échec upload");
-      fichierRef = data.url;
+      const sigRes = await fetch("/api/upload/signed-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          bucket: "ressources-vitrine",
+          filename: file.name,
+          size: file.size,
+          contentType: file.type || "application/octet-stream",
+        }),
+      });
+      const sigText = await sigRes.text();
+      let sig = {};
+      try { sig = JSON.parse(sigText); } catch { throw new Error("Erreur serveur (" + sigRes.status + ")"); }
+      if (!sigRes.ok || !sig.uploadUrl || !sig.ref) throw new Error(sig.error || "URL indisponible");
+
+      document.getElementById("drop-label").innerHTML = "Envoi du fichier…";
+
+      const putRes = await fetch(sig.uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type || "application/octet-stream" },
+        body: file,
+      });
+      if (!putRes.ok) throw new Error("Échec upload (" + putRes.status + ")");
+
+      fichierRef = sig.ref;
       document.getElementById("drop-label").innerHTML = '<span style="color:#16a34a;">✓ ' + file.name + '</span>';
       const info = document.getElementById("fichier-selectionne");
       info.textContent = file.name + " (" + (file.size / 1024).toFixed(0) + " Ko) — prêt";

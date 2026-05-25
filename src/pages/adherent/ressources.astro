@@ -13,7 +13,7 @@ const variantByCategorie: Record<string, "or" | "vert" | "gris"> = {
   Autre: "gris",
 };
 
-// Documents PDF des cours auxquels l'adhérent est inscrit
+// Documents PDF des cours auxquels l'adhérent est inscrit (tout module avec un PDF, consultation seule)
 const profil = await getAdherentByEmail(Astro.locals.session?.email ?? "");
 const tousLesCours = await getCours();
 const documentsCours = profil
@@ -21,13 +21,12 @@ const documentsCours = profil
       .filter((c) => profil.coursInscrits.includes(c.id))
       .flatMap((c) =>
         c.modules
-          .filter((m) => m.type === "Document" && m.fichierUrl)
+          .filter((m) => m.fichierUrl)
           .map((m) => ({ coursId: c.id, coursTitre: c.titre, moduleId: m.id, moduleTitre: m.titre, duree: m.duree }))
       )
   : [];
 
 const categories = ["Tous", ...Array.from(new Set(ressources.map(r => r.categorie)))];
-const ressourcesJson = JSON.stringify(ressources.map(r => ({ id: r.id, nom_fichier: r.nom_fichier ?? "", fichier: r.fichier })));
 ---
 
 <AdherentMemberLayout titre="Ressources">
@@ -104,15 +103,16 @@ const ressourcesJson = JSON.stringify(ressources.map(r => ({ id: r.id, nom_fichi
           <div class="flex items-center gap-3 flex-shrink-0">
             <Badge variant={variantByCategorie[r.categorie] ?? "gris"}>{r.categorie}</Badge>
             <button
-              class="btn-telecharger text-xs font-semibold px-3 py-1.5 rounded-lg transition hover:opacity-80 flex items-center gap-1.5"
+              class="btn-consulter-ressource text-xs font-semibold px-3 py-1.5 rounded-lg transition hover:opacity-80 flex items-center gap-1.5"
               style={r.fichier && r.fichier !== "#" ? "background-color: #0b1f3a; color: white;" : "background-color: #f1f3f5; color: #9ca3af; cursor: not-allowed;"}
               data-id={r.id}
+              data-titre={r.titre}
               disabled={!r.fichier || r.fichier === "#"}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>
               </svg>
-              {r.fichier && r.fichier !== "#" ? "Télécharger" : "Indisponible"}
+              {r.fichier && r.fichier !== "#" ? "Consulter" : "Indisponible"}
             </button>
           </div>
         </div>
@@ -137,25 +137,23 @@ const ressourcesJson = JSON.stringify(ressources.map(r => ({ id: r.id, nom_fichi
         <iframe id="doc-iframe" src="about:blank" class="w-full h-full" title="Document"></iframe>
       </div>
       <div class="px-5 py-2.5 text-[11px] text-gray-400" style="border-top: 1px solid #f1f3f5;">
-        Document consulté en ligne — il reste dans vos ressources, aucun fichier n'est enregistré sur votre appareil.
+        Document consultable en ligne uniquement. Aucun téléchargement ni copie locale.
       </div>
     </div>
   </div>
 
 </AdherentMemberLayout>
 
-<script is:inline define:vars={{ ressourcesJson }}>
-  const ressourcesData = JSON.parse(ressourcesJson);
-
-  // Viewer document in-app
+<script is:inline>
   const docModal = document.getElementById("modal-doc");
   const docIframe = document.getElementById("doc-iframe");
   const docTitre = document.getElementById("doc-titre");
   const docOpenNew = document.getElementById("doc-open-new");
+
   function openDoc(url, titre) {
     docTitre.textContent = titre || "Document";
-    docOpenNew.href = url;
-    docIframe.src = url;
+    if (docOpenNew) docOpenNew.classList.add("hidden");
+    docIframe.src = url + "#toolbar=0&navpanes=0";
     docModal.classList.remove("hidden");
     docModal.classList.add("flex");
     document.body.style.overflow = "hidden";
@@ -169,15 +167,18 @@ const ressourcesJson = JSON.stringify(ressources.map(r => ({ id: r.id, nom_fichi
   document.getElementById("doc-close")?.addEventListener("click", closeDoc);
   docModal?.addEventListener("click", (e) => { if (e.target === docModal) closeDoc(); });
 
-  // Documents de cours → modal in-app
   document.querySelectorAll(".btn-consulter-cours-doc").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const moduleId = btn.dataset.moduleId;
-      openDoc(`/api/cours/fichier/${encodeURIComponent(moduleId)}`, btn.dataset.moduleTitre);
+      openDoc(`/api/cours/fichier/${encodeURIComponent(btn.dataset.moduleId)}`, btn.dataset.moduleTitre);
     });
   });
 
-  // Filtre catégories
+  document.querySelectorAll(".btn-consulter-ressource").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      openDoc(`/api/ressources/fichier/${encodeURIComponent(btn.dataset.id)}`, btn.dataset.titre);
+    });
+  });
+
   document.querySelectorAll(".filtre-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".filtre-btn").forEach((b) => {
@@ -192,48 +193,6 @@ const ressourcesJson = JSON.stringify(ressources.map(r => ({ id: r.id, nom_fichi
       document.querySelectorAll(".ressource-item").forEach((item) => {
         item.style.display = (cat === "Tous" || item.dataset.cat === cat) ? "" : "none";
       });
-    });
-  });
-
-  // Téléchargement via Blob URL
-  document.querySelectorAll(".btn-telecharger").forEach((btn) => {
-    btn.addEventListener("click", async function () {
-      const id = this.dataset.id;
-      this.disabled = true;
-      this.textContent = "...";
-
-      try {
-        const res = await fetch("/api/ressources/" + id);
-        if (!res.ok) throw new Error("Fichier indisponible");
-        const data = await res.json();
-
-        if (!data.fichier || data.fichier === "#") throw new Error("Fichier indisponible");
-
-        const dataUrl = data.fichier;
-        const nom = data.nom_fichier || "fichier";
-
-        // Blob URL pour download propre
-        const parts = dataUrl.split(",");
-        const mime = parts[0].split(":")[1].split(";")[0];
-        const binaryStr = atob(parts[1]);
-        const bytes = new Uint8Array(binaryStr.length);
-        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-        const blob = new Blob([bytes], { type: mime });
-        const url = URL.createObjectURL(blob);
-
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = nom;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      } catch (err) {
-        alert(err.message || "Impossible de télécharger ce fichier.");
-      } finally {
-        this.disabled = false;
-        this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"/></svg> Télécharger';
-      }
     });
   });
 </script>
