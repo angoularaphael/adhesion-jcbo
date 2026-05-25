@@ -32,6 +32,26 @@ WHERE adherent_email IN ('linuxcam05@gmail.com', 'farenogif05@gmail.com');
 DELETE FROM diagnostic_acces
 WHERE email IN ('linuxcam05@gmail.com', 'farenogif05@gmail.com');
 
+-- Soumissions diagnostic
+DELETE FROM diagnostic_soumissions
+WHERE email IN ('linuxcam05@gmail.com', 'farenogif05@gmail.com');
+
+-- Newsletter
+DELETE FROM newsletter_abonnes
+WHERE email IN ('linuxcam05@gmail.com', 'farenogif05@gmail.com');
+
+-- Téléchargements ressources vitrine
+DELETE FROM telechargements_ressources
+WHERE email IN ('linuxcam05@gmail.com', 'farenogif05@gmail.com');
+
+-- Checkout en attente
+DELETE FROM checkout_pending
+WHERE adherent_email IN ('linuxcam05@gmail.com', 'farenogif05@gmail.com');
+
+-- Notifications admin liées aux comptes test
+DELETE FROM admin_notifications
+WHERE metadata->>'email' IN ('linuxcam05@gmail.com', 'farenogif05@gmail.com');
+
 -- Comptes adhérents
 DELETE FROM adherents
 WHERE email IN ('linuxcam05@gmail.com', 'farenogif05@gmail.com');
