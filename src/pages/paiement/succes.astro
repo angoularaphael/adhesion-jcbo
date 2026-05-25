@@ -69,7 +69,7 @@ const dateFormatee = recu
 
 <AdherentMemberLayout titre="Mes formations">
 
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+  <div class="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
     <div>
       <h2 class="text-2xl font-bold" style="color: #0b1f3a;">Inscription confirmée</h2>
       <p class="text-sm text-gray-500 mt-1">Votre inscription a bien été enregistrée.</p>
@@ -188,18 +188,33 @@ const dateFormatee = recu
 
 </AdherentMemberLayout>
 
-<style>
+<style is:global>
   @media print {
-    .no-print { display: none !important; }
-    #sidebar-adherent { display: none !important; }
-    #sidebar-overlay-adherent { display: none !important; }
-    header { display: none !important; }
-    body { background: white !important; }
-    main { padding: 0 !important; }
+    .no-print,
+    #sidebar-adherent,
+    #sidebar-overlay-adherent,
+    #jcbo-page-loader,
+    body > .flex > header {
+      display: none !important;
+    }
+    body {
+      background: white !important;
+    }
+    body > .flex {
+      display: block !important;
+    }
+    body > .flex > .flex-col {
+      width: 100% !important;
+    }
+    main {
+      padding: 0 !important;
+    }
     #recu-paiement {
       box-shadow: none !important;
       border-radius: 0 !important;
       max-width: 100% !important;
+      margin: 0 !important;
+      border: none !important;
     }
   }
 </style>

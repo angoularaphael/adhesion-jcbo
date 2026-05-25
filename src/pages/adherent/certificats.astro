@@ -104,7 +104,7 @@ const certificats = coursTerminesIds.map((coursId) => {
   const GOLD = [212, 167, 98];
   const LIGHT_GOLD = [248, 246, 242];
 
-  function loadImage(src) {
+  function loadImage(src, stripLightBackground) {
     return new Promise((resolve) => {
       const img = new Image();
       img.crossOrigin = "anonymous";
@@ -112,7 +112,19 @@ const certificats = coursTerminesIds.map((coursId) => {
         const canvas = document.createElement("canvas");
         canvas.width = img.naturalWidth || img.width;
         canvas.height = img.naturalHeight || img.height;
-        canvas.getContext("2d").drawImage(img, 0, 0);
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        if (stripLightBackground) {
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const px = imageData.data;
+          for (let i = 0; i < px.length; i += 4) {
+            const r = px[i], g = px[i + 1], b = px[i + 2];
+            const light = r > 210 && g > 210 && b > 210;
+            const grey = r > 170 && g > 170 && b > 170 && Math.abs(r - g) < 25 && Math.abs(g - b) < 25;
+            if (light || grey) px[i + 3] = 0;
+          }
+          ctx.putImageData(imageData, 0, 0);
+        }
         resolve({ data: canvas.toDataURL("image/png"), width: canvas.width, height: canvas.height });
       };
       img.onerror = () => resolve(null);
@@ -170,8 +182,8 @@ const certificats = coursTerminesIds.map((coursId) => {
         }
 
         const [cachet, signature] = await Promise.all([
-          loadImage("/images/cachet.png"),
-          loadImage("/images/signature-jcbo.png"),
+          loadImage("/images/cachet.png", true),
+          loadImage("/images/signature-jcbo.png", false),
         ]);
 
         const { jsPDF } = window.jspdf;
@@ -303,49 +315,54 @@ const certificats = coursTerminesIds.map((coursId) => {
           });
         }
 
-        // Pied : date + numéro (gauche) + signature (droite)
-        const footerY = frameY + frameH - GAP - 30;
+        // Pied : séparé du texte, signature/cachet sous la ligne (sans chevauchement)
+        const sigW = 36;
+        const sigH = signature ? (signature.height / signature.width) * sigW : 0;
+        const cW = 28;
+        const cH = cachet ? (cachet.height / cachet.width) * cW : 0;
+        const sigBlockH = Math.max(sigH, cH) + 22;
+        const legalY = frameY + frameH - 5;
+        const maxFooterLine = legalY - sigBlockH - 4;
+        const footerLineY = Math.min(Math.max(y + 10, innerY + headerH + 72), maxFooterLine);
+
         doc.setDrawColor(...GOLD);
         doc.setLineWidth(0.3);
-        doc.line(innerX + 6, footerY - 4, innerX + innerW - 6, footerY - 4);
+        doc.line(innerX + 6, footerLineY, innerX + innerW - 6, footerLineY);
 
         const dateStr = new Date(cert.dateDelivrance).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+        const infoY = footerLineY + 7;
 
         doc.setFont("helvetica", "normal");
         doc.setFontSize(9);
         doc.setTextColor(60, 60, 60);
-        doc.text(`Délivré le : ${dateStr}`, innerX + 10, footerY + 2);
+        doc.text(`Délivré le : ${dateStr}`, innerX + 10, infoY);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(...NAVY);
-        doc.text(`N° ${cert.numero}`, innerX + 10, footerY + 8);
+        doc.text(`N° ${cert.numero}`, innerX + 10, infoY + 6);
 
-        // Signature + cachet
-        const sigX = innerX + innerW - 95;
+        const sigX = innerX + innerW - 98;
+        const imgY = footerLineY + 3;
         if (signature && signature.data) {
-          const sigW = 42;
-          const sigH = (signature.height / signature.width) * sigW;
-          doc.addImage(signature.data, "PNG", sigX, footerY - sigH - 2, sigW, sigH);
+          doc.addImage(signature.data, "PNG", sigX, imgY, sigW, sigH);
         }
         if (cachet && cachet.data) {
-          const cW = 32;
-          const cH = (cachet.height / cachet.width) * cW;
-          doc.addImage(cachet.data, "PNG", innerX + innerW - 38, footerY - cH - 4, cW, cH);
+          doc.addImage(cachet.data, "PNG", innerX + innerW - cW - 8, imgY, cW, cH);
         }
 
+        const nameY = imgY + Math.max(sigH, cH) + 5;
         doc.setFont("helvetica", "bold");
         doc.setFontSize(8.5);
         doc.setTextColor(...NAVY);
-        doc.text("Jean-Christophe BOYANG-TSANG", sigX + 21, footerY + 14, { align: "center" });
+        doc.text("Jean-Christophe BOYANG-TSANG", sigX + sigW / 2, nameY, { align: "center" });
         doc.setFont("helvetica", "normal");
         doc.setFontSize(7.5);
         doc.setTextColor(100, 100, 100);
-        doc.text("Consultant en Business Development", sigX + 21, footerY + 18, { align: "center" });
-        doc.text("Fondateur du cabinet JCBO-CONSEIL", sigX + 21, footerY + 22, { align: "center" });
+        doc.text("Consultant en Business Development", sigX + sigW / 2, nameY + 4, { align: "center" });
+        doc.text("Fondateur du cabinet JCBO-CONSEIL", sigX + sigW / 2, nameY + 8, { align: "center" });
 
-        // Footer discret
         doc.setFontSize(6.5);
         doc.setTextColor(160, 160, 160);
-        doc.text("Document officiel JCBO-CONSEIL — Toute falsification est passible de sanctions.", W / 2, frameY + frameH - 5, { align: "center" });
+        doc.text("Document officiel JCBO-CONSEIL — Toute falsification est passible de sanctions.", W / 2, legalY, { align: "center" });
 
         doc.save(`Certificat_${cert.titre.replace(/[^a-zA-Z0-9]/g, "_")}_${cert.adherent.replace(/\s/g, "_")}.pdf`);
       } catch (err) {
