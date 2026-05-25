@@ -454,13 +454,42 @@ export async function getRessource(id: string) {
   return data ?? null;
 }
 
-export async function createRessource(data: { titre: string; categorie: string; fichier: string; nom_fichier?: string }) {
-  const item = { id: `RES-${Date.now()}`, ...data, date: new Date().toISOString().split("T")[0] };
+export async function createRessource(data: {
+  titre: string;
+  categorie: string;
+  fichier: string;
+  nom_fichier?: string;
+  description?: string;
+  affiche_vitrine?: boolean;
+}) {
+  const item = {
+    id: `RES-${Date.now()}`,
+    ...data,
+    description: data.description ?? "",
+    affiche_vitrine: data.affiche_vitrine ?? false,
+    date: new Date().toISOString().split("T")[0],
+  };
   await getSupabase().from("ressources").insert(item);
   return item;
 }
 
-export async function updateRessource(id: string, data: Partial<{ titre: string; categorie: string; fichier: string; nom_fichier: string }>) {
+export async function getRessourcesVitrine() {
+  const { data } = await getSupabase()
+    .from("ressources")
+    .select("id, titre, categorie, date, description, nom_fichier")
+    .eq("affiche_vitrine", true)
+    .order("date", { ascending: false });
+  return data ?? [];
+}
+
+export async function updateRessource(id: string, data: Partial<{
+  titre: string;
+  categorie: string;
+  fichier: string;
+  nom_fichier: string;
+  description: string;
+  affiche_vitrine: boolean;
+}>) {
   const { data: row } = await getSupabase().from("ressources").update(data).eq("id", id).select().single();
   return row ?? null;
 }

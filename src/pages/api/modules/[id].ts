@@ -28,25 +28,19 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
     return new Response(JSON.stringify({ error: "Module introuvable" }), { status: 404 });
   }
 
-  /** Selon le type : un seul type de média actif ; le quiz ne garde pas de fichier/vidéo. */
+  /** Module composite : vidéo + PDF + quiz peuvent coexister. */
   const patch: Record<string, string | null> = {};
-  const t = existingMod.type as string;
 
-  if (t === "Quiz") {
-    patch.fichier_url = null;
-    patch.video_url = null;
-    if (body.contenu_md !== undefined) patch.contenu_md = body.contenu_md || null;
-  } else if (t === "Document") {
-    patch.video_url = null;
-    if (body.fichier_url !== undefined) {
-      const url = body.fichier_url || null;
-      patch.fichier_url =
-        url && !isSupabaseFileRef(url) ? normalizeCloudinaryDeliveryUrl(url) : url;
-    }
-  } else {
-    /* Vidéo (ou valeur héritée) */
-    patch.fichier_url = null;
-    if (body.video_url !== undefined) patch.video_url = body.video_url || null;
+  if (body.video_url !== undefined) {
+    patch.video_url = body.video_url || null;
+  }
+  if (body.fichier_url !== undefined) {
+    const url = body.fichier_url || null;
+    patch.fichier_url =
+      url && !isSupabaseFileRef(url) ? normalizeCloudinaryDeliveryUrl(url) : url;
+  }
+  if (body.contenu_md !== undefined) {
+    patch.contenu_md = body.contenu_md || null;
   }
 
   const row = await updateModule(id, patch);

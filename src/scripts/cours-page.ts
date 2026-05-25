@@ -319,7 +319,7 @@ export function initCoursPage(): void {
           item?.setAttribute("data-pending-file", url);
           const fileBlock = item?.querySelector(".file-info");
           if (fileBlock) {
-            fileBlock.innerHTML = `<span class="text-xs text-green-700">Fichier prêt — cliquez sur « Enregistrer le document »</span>`;
+            fileBlock.innerHTML = `<span class="text-xs text-green-700">Fichier prêt — cliquez sur « Enregistrer le module »</span>`;
           }
         } catch (e) {
           alert(e instanceof Error ? e.message : "Erreur upload");

@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { z } from "zod";
 import { subscribeNewsletter, enregistrerTelechargement } from "../../../../lib/store-admin";
 import { getRessources } from "../../../../lib/store";
+import { findRessourceMatch, getRessourceFileAttachment } from "../../../../lib/ressource-fichier";
 import { sendResourceDownloadEmail } from "../../../../lib/email";
 import { handleCorsPreflight, jsonCorsResponse } from "../../../../lib/cors";
 import { checkRateLimit } from "../../../../lib/rateLimit";
@@ -12,6 +13,7 @@ const schema = z.object({
   prenom: z.string().min(2).max(120),
   profession: z.string().min(2).max(200),
   resource: z.string().min(2).max(300),
+  resourceId: z.string().max(80).optional(),
   newsletter: z.boolean().optional(),
 });
 
@@ -55,17 +57,19 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
   try {
     const ressources = await getRessources();
-    const match = ressources.find(
-      (r: { titre?: string; nom_fichier?: string }) =>
-        r.titre === parsed.data.resource || r.nom_fichier === parsed.data.resource
-    );
-    if (match && match.fichier && match.fichier.startsWith("data:")) {
-      const parts = match.fichier.split(",");
-      fileBuffer = Buffer.from(parts[1], "base64");
-      fileName = match.nom_fichier || `${parsed.data.resource}.pdf`;
+    const match = findRessourceMatch(ressources, {
+      resourceId: parsed.data.resourceId,
+      resourceTitle: parsed.data.resource,
+    });
+    if (match) {
+      const attachment = await getRessourceFileAttachment(match);
+      if (attachment) {
+        fileBuffer = attachment.buffer;
+        fileName = attachment.fileName;
+      }
     }
   } catch {
-    // Si pas trouvé, on envoie sans pièce jointe
+    // envoi sans pièce jointe si erreur lecture fichier
   }
 
   const emailResult = await sendResourceDownloadEmail({
@@ -80,5 +84,13 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     return jsonCorsResponse(request, { error: emailResult.error ?? "Échec envoi e-mail" }, 502);
   }
 
-  return jsonCorsResponse(request, { success: true, emailSent: true });
+  if (!fileBuffer) {
+    return jsonCorsResponse(request, {
+      success: true,
+      emailSent: true,
+      warning: "Email envoyé sans pièce jointe : vérifiez que la ressource existe dans l'admin avec le même titre et un fichier uploadé.",
+    });
+  }
+
+  return jsonCorsResponse(request, { success: true, emailSent: true, attachment: true });
 };

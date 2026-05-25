@@ -116,11 +116,13 @@ function moduleHasQuiz(moduleId: string): boolean {
               <div class="px-4 pb-5 pt-1">
                 <div class="rounded-xl p-5" style="background-color: #f8f6f2;">
 
-                  {mod.type === "Vidéo" && (
+                  <div class="space-y-5">
+                    {/* 1. Vidéo */}
                     <div>
+                      <p class="text-xs font-semibold uppercase tracking-wide mb-2" style="color: #0b1f3a;">1. Vidéo</p>
                       {mod.videoUrl ? (
                         mod.videoUrl.includes("youtube.com") || mod.videoUrl.includes("youtu.be") || mod.videoUrl.includes("vimeo.com") ? (
-                          <div class="aspect-video rounded-xl overflow-hidden mb-4 bg-black">
+                          <div class="aspect-video rounded-xl overflow-hidden bg-black">
                             <iframe
                               src={mod.videoUrl.replace("watch?v=", "embed/").replace("youtu.be/", "youtube.com/embed/")}
                               class="w-full h-full"
@@ -133,38 +135,17 @@ function moduleHasQuiz(moduleId: string): boolean {
                           <video
                             src={`/api/cours/fichier/${mod.id}?type=video`}
                             controls
-                            class="w-full rounded-xl mb-4 bg-black"
+                            class="w-full rounded-xl bg-black"
                           />
                         )
                       ) : (
-                        <div class="flex flex-col items-center justify-center gap-3 py-10 rounded-xl mb-4" style="background-color: #0b1f3a;">
-                          <div class="w-14 h-14 rounded-full flex items-center justify-center" style="background-color: rgba(212,167,98,0.2);">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="#d4a762" stroke-width="1.8"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                          </div>
-                          <p class="text-sm font-medium text-white">{mod.titre}</p>
-                          <p class="text-xs" style="color: rgba(255,255,255,0.4);">Vidéo bientôt disponible</p>
-                        </div>
+                        <p class="text-xs text-gray-400 py-4 text-center rounded-xl bg-white">Aucune vidéo pour ce module.</p>
                       )}
-                      {mod.fichierUrl && (
-                        <button type="button" class="btn-consulter-doc w-full flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm hover:shadow transition mb-4 text-left"
-                          data-module-id={mod.id} data-module-titre={mod.titre}>
-                          <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style="background-color: rgba(212,167,98,0.1);">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#d4a762" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5l5 5v14a2 2 0 01-2 2z"/></svg>
-                          </div>
-                          <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium truncate" style="color: #0b1f3a;">Support écrit du module</p>
-                            <p class="text-xs text-gray-400">Consulter dans Mes ressources</p>
-                          </div>
-                          <span class="text-xs font-medium px-3 py-1.5 rounded-lg" style="background-color: #f1f3f5; color: #0b1f3a;">Consulter</span>
-                        </button>
-                      )}
-                      {contenu && <div class="text-sm leading-relaxed space-y-3" style="color: #374151;">{contenu.split("\n\n").map(para => <p>{para}</p>)}</div>}
                     </div>
-                  )}
 
-                  {mod.type === "Document" && (
+                    {/* 2. PDF de cours */}
                     <div>
-                      {contenu && <div class="text-sm leading-relaxed space-y-3 mb-5" style="color: #374151;">{contenu.split("\n\n").map(para => <p>{para}</p>)}</div>}
+                      <p class="text-xs font-semibold uppercase tracking-wide mb-2" style="color: #0b1f3a;">2. Support de cours (PDF)</p>
                       {mod.fichierUrl ? (
                         <button type="button" class="btn-consulter-doc w-full flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm hover:shadow transition text-left"
                           data-module-id={mod.id} data-module-titre={mod.titre}>
@@ -172,31 +153,22 @@ function moduleHasQuiz(moduleId: string): boolean {
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#d4a762" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5l5 5v14a2 2 0 01-2 2z"/></svg>
                           </div>
                           <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium truncate" style="color: #0b1f3a;">{mod.titre} — Support de cours</p>
-                            <p class="text-xs text-gray-400">Document PDF · {mod.duree} de lecture</p>
+                            <p class="text-sm font-medium truncate" style="color: #0b1f3a;">{mod.titre} — PDF de cours</p>
+                            <p class="text-xs text-gray-400">Consulter le document en ligne</p>
                           </div>
                           <span class="text-xs font-medium px-3 py-1.5 rounded-lg" style="background-color: #d4a762; color: #0b1f3a;">Consulter</span>
                         </button>
                       ) : (
-                        <div class="flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm">
-                          <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style="background-color: rgba(212,167,98,0.1);">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#d4a762" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5l5 5v14a2 2 0 01-2 2z"/></svg>
-                          </div>
-                          <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium truncate" style="color: #0b1f3a;">{mod.titre} — Support de cours</p>
-                            <p class="text-xs text-gray-400">Document PDF · {mod.duree} de lecture</p>
-                          </div>
-                          <span class="text-xs font-medium px-3 py-1.5 rounded-lg" style="background-color: #f1f3f5; color: #9ca3af;">Bientôt dispo</span>
-                        </div>
+                        <p class="text-xs text-gray-400 py-4 text-center rounded-xl bg-white">Aucun PDF pour ce module.</p>
                       )}
                     </div>
-                  )}
 
-                  {mod.type === "Quiz" && contenu && (
-                    <div class="text-sm leading-relaxed space-y-3 mb-4" style="color: #374151;">
-                      {contenu.split("\n\n").map(para => <p>{para}</p>)}
-                    </div>
-                  )}
+                    {contenu && (
+                      <div class="text-sm leading-relaxed space-y-3" style="color: #374151;">
+                        {contenu.split("\n\n").map(para => <p>{para}</p>)}
+                      </div>
+                    )}
+                  </div>
 
                   <!-- Bouton quiz / déjà terminé -->
                   {!termine && hasQuiz && (

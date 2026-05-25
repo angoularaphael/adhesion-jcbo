@@ -22,7 +22,12 @@ const variantByCategorie: Record<string, "or" | "vert" | "gris"> = {
   <div class="flex items-center justify-between mb-8">
     <div>
       <h2 class="text-2xl font-bold" style="color: #0b1f3a;">Ressources</h2>
-      <p class="text-sm text-gray-500 mt-1">Gérez les documents et fichiers mis à disposition des adhérents.</p>
+      <p class="text-sm text-gray-500 mt-1">
+        Gérez les documents pour les adhérents et pour le site vitrine.
+        Cochez <strong>« Afficher sur la vitrine »</strong> pour qu’une ressource apparaisse sur la page publique
+        <a href={import.meta.env.PUBLIC_VITRINE_URL + "/ressources"} target="_blank" rel="noopener" class="underline" style="color:#d4a762;">Ressources (vitrine)</a>
+        — le titre doit correspondre au nom affiché sur la carte.
+      </p>
     </div>
     <button id="btn-nouvelle-ressource"
       class="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white transition hover:opacity-90"
@@ -39,6 +44,7 @@ const variantByCategorie: Record<string, "or" | "vert" | "gris"> = {
         <thead>
           <tr style="border-bottom: 2px solid #f1f3f5;">
             <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide pb-3 pr-4">Titre</th>
+            <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide pb-3 pr-4">Vitrine</th>
             <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide pb-3 pr-4">Catégorie</th>
             <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide pb-3 pr-4">Fichier</th>
             <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide pb-3 pr-4">Date</th>
@@ -55,6 +61,13 @@ const variantByCategorie: Record<string, "or" | "vert" | "gris"> = {
                   </div>
                   <span class="font-medium" style="color: #0b1f3a;">{r.titre}</span>
                 </div>
+              </td>
+              <td class="py-3 pr-4">
+                {(r as { affiche_vitrine?: boolean }).affiche_vitrine ? (
+                  <span class="text-xs font-semibold px-2 py-1 rounded-full" style="background:rgba(212,167,98,0.15);color:#0b1f3a;">Oui</span>
+                ) : (
+                  <span class="text-xs text-gray-400">Non</span>
+                )}
               </td>
               <td class="py-3 pr-4">
                 <Badge variant={variantByCategorie[r.categorie] ?? "gris"}>{r.categorie}</Badge>
@@ -81,6 +94,8 @@ const variantByCategorie: Record<string, "or" | "vert" | "gris"> = {
                     data-titre={r.titre}
                     data-categorie={r.categorie}
                     data-nom={r.nom_fichier ?? ""}
+                    data-description={(r as { description?: string }).description ?? ""}
+                    data-vitrine={(r as { affiche_vitrine?: boolean }).affiche_vitrine ? "1" : "0"}
                   >Modifier</button>
                   <button
                     class="btn-delete-ressource text-xs px-3 py-1.5 rounded-lg font-medium border transition hover:bg-red-50"
@@ -155,6 +170,21 @@ const variantByCategorie: Record<string, "or" | "vert" | "gris"> = {
             placeholder="Nom de la ressource"
           />
         </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1.5">Description (texte sur la vitrine)</label>
+          <textarea id="ressource-description" rows="2"
+            class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none"
+            style="border-color: #e5e7eb;"
+            placeholder="Courte description affichée sur la carte vitrine"
+          ></textarea>
+        </div>
+        <label class="flex items-start gap-3 p-3 rounded-xl cursor-pointer" style="background:#f8f6f2;border:1px solid rgba(212,167,98,0.25);">
+          <input type="checkbox" id="ressource-vitrine" class="w-5 h-5 mt-0.5 accent-[#d4a762]" />
+          <span>
+            <span class="text-sm font-semibold block" style="color:#0b1f3a;">Afficher sur la vitrine publique</span>
+            <span class="text-xs text-gray-500">La ressource apparaîtra sur jcbo-vitrine /ressources. Le PDF sera envoyé par e-mail au téléchargement.</span>
+          </span>
+        </label>
         <div>
           <label class="block text-xs font-medium text-gray-500 mb-1.5">Catégorie</label>
           <select id="ressource-categorie"
@@ -233,6 +263,10 @@ const variantByCategorie: Record<string, "or" | "vert" | "gris"> = {
     document.getElementById("modal-ressource-titre").textContent = editMode ? "Modifier la ressource" : "Nouvelle ressource";
     document.getElementById("ressource-id").value = data?.id ?? "";
     document.getElementById("ressource-titre").value = data?.titre ?? "";
+    const descEl = document.getElementById("ressource-description");
+    if (descEl) descEl.value = data?.description ?? "";
+    const vitrineEl = document.getElementById("ressource-vitrine");
+    if (vitrineEl) vitrineEl.checked = data?.vitrine === "1";
     document.getElementById("ressource-categorie").value = data?.categorie ?? "Guide";
     document.getElementById("drop-label").innerHTML = 'Glisser-déposer ou <span class="font-medium" style="color:#d4a762;">parcourir</span>';
     document.getElementById("fichier-selectionne").classList.add("hidden");
@@ -240,13 +274,25 @@ const variantByCategorie: Record<string, "or" | "vert" | "gris"> = {
     modal.classList.remove("hidden");
   }
 
-  document.getElementById("btn-nouvelle-ressource").addEventListener("click", () => openModal("create"));
+  document.getElementById("btn-nouvelle-ressource").addEventListener("click", () => {
+    openModal("create");
+    const vitrineEl = document.getElementById("ressource-vitrine");
+    if (vitrineEl) vitrineEl.checked = false;
+    const descEl = document.getElementById("ressource-description");
+    if (descEl) descEl.value = "";
+  });
   document.getElementById("btn-annuler-ressource").addEventListener("click", () => modal.classList.add("hidden"));
   modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.add("hidden"); });
 
   document.querySelectorAll(".btn-edit-ressource").forEach(btn => {
     btn.addEventListener("click", () => {
-      openModal("edit", { id: btn.dataset.id, titre: btn.dataset.titre, categorie: btn.dataset.categorie });
+      openModal("edit", {
+        id: btn.dataset.id,
+        titre: btn.dataset.titre,
+        categorie: btn.dataset.categorie,
+        description: btn.dataset.description,
+        vitrine: btn.dataset.vitrine,
+      });
       if (btn.dataset.nom) {
         document.getElementById("fichier-selectionne").textContent = "Fichier actuel : " + btn.dataset.nom;
         document.getElementById("fichier-selectionne").classList.remove("hidden");
@@ -325,9 +371,14 @@ const variantByCategorie: Record<string, "or" | "vert" | "gris"> = {
       return;
     }
 
+    const description = document.getElementById("ressource-description")?.value.trim() ?? "";
+    const affiche_vitrine = document.getElementById("ressource-vitrine")?.checked ?? false;
+
     const body = {
       titre,
       categorie,
+      description,
+      affiche_vitrine,
       ...(fichierDataUrl ? { fichier: fichierDataUrl, nom_fichier: fichierNom } : {}),
     };
 

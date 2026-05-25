@@ -75,6 +75,8 @@ export const ressourceSchema = z.object({
   categorie: z.enum(["Guide", "Modèle", "Outil", "Vidéo", "Autre"], "Catégorie invalide"),
   fichier: z.string().min(1, "Fichier requis"),
   nom_fichier: z.string().optional(),
+  description: z.string().max(500).optional(),
+  affiche_vitrine: z.boolean().optional(),
 });
 
 export const coursSchema = z.object({
