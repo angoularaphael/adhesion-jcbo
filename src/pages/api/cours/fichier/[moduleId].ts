@@ -99,9 +99,36 @@ export const GET: APIRoute = async ({ params, url, locals }) => {
     );
   }
 
-  // ─── Vidéo : redirection directe vers Cloudinary ──────────────────────────
-  // Les vidéos Cloudinary sont publiques et supportent le streaming Range nativement.
-  // Re-streamer depuis le serveur Astro casse la lecture (pas de support Range).
+  // ─── Vidéo : Supabase Storage ou URL externe (YouTube, Cloudinary…) ────────
+  const storageRef = parseSupabaseFileRef(remoteRef);
+  if (storageRef) {
+    const dl = await downloadStorageFile(
+      storageRef.bucket as "cours-fichiers" | "videos-formation" | "ressources-vitrine",
+      storageRef.path
+    );
+    if ("error" in dl) {
+      return new Response(
+        "La vidéo n'a pas pu être récupérée. Ré-uploadez-la depuis l'administration.",
+        { status: 502 }
+      );
+    }
+    const ext = storageRef.path.includes(".")
+      ? storageRef.path.slice(storageRef.path.lastIndexOf("."))
+      : ".mp4";
+    const filename = `${titreSafe}${ext}`;
+    const buffer = Buffer.from(await dl.data.arrayBuffer());
+    return new Response(buffer, {
+      status: 200,
+      headers: {
+        "Content-Type": dl.contentType || "video/mp4",
+        "Content-Length": String(buffer.length),
+        "Cache-Control": "private, max-age=300",
+        "Content-Disposition": `inline; filename="${filename}"`,
+        "Accept-Ranges": "bytes",
+      },
+    });
+  }
+
   if (!remoteRef.startsWith("http")) {
     return new Response("URL vidéo invalide.", { status: 404 });
   }

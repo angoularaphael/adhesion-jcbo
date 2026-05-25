@@ -167,6 +167,8 @@ if (!profil) return Astro.redirect("/login");
   </div>
 
   <script>
+    import { uploadFile } from "../../scripts/ui-loading";
+
     const profilView = document.getElementById("profil-view") as HTMLElement;
     const formProfil = document.getElementById("form-profil") as HTMLFormElement;
 
@@ -181,47 +183,41 @@ if (!profil) return Astro.redirect("/login");
       inputPhoto.addEventListener("change", async () => {
         const file = inputPhoto.files?.[0];
         if (!file || !photoStatus || !avatarEl) return;
-        if (file.size > 4 * 1024 * 1024) {
-          photoStatus.textContent = "Image trop volumineuse (max 4 Mo).";
+        if (file.size > 10 * 1024 * 1024) {
+          photoStatus.textContent = "Image trop volumineuse (max 10 Mo).";
           photoStatus.style.color = "#ef4444";
           photoStatus.classList.remove("hidden");
           return;
         }
-        photoStatus.textContent = "Envoi en cours…";
+        photoStatus.textContent = "Envoi vers Cloudinary…";
         photoStatus.style.color = "#9ca3af";
         photoStatus.classList.remove("hidden");
 
-        const fd = new FormData();
-        fd.append("file", file);
-        fd.append("bucket", "profils");
-        fd.append("path", "adherent");
-        const up = await fetch("/api/upload", { method: "POST", body: fd });
-        const upData = await up.json();
-        if (!up.ok) {
-          photoStatus.textContent = upData.error || "Erreur d'envoi.";
-          photoStatus.style.color = "#ef4444";
-          return;
-        }
+        try {
+          const { url } = await uploadFile(file, "profils", "adherent");
+          const save = await fetch("/api/profil/photo", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ photoUrl: url }),
+          });
+          const saveData = await save.json();
+          if (!save.ok) {
+            photoStatus.textContent = saveData.error || "Erreur d'enregistrement.";
+            photoStatus.style.color = "#ef4444";
+            return;
+          }
 
-        const save = await fetch("/api/profil/photo", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ photoUrl: upData.url }),
-        });
-        const saveData = await save.json();
-        if (!save.ok) {
-          photoStatus.textContent = saveData.error || "Erreur d'enregistrement.";
+          avatarEl.style.backgroundImage = `url('${url}')`;
+          avatarEl.style.backgroundSize = "cover";
+          avatarEl.style.backgroundPosition = "center";
+          avatarEl.innerHTML = "";
+          photoStatus.textContent = "Photo de profil mise à jour.";
+          photoStatus.style.color = "#16a34a";
+          setTimeout(() => photoStatus.classList.add("hidden"), 2500);
+        } catch (e) {
+          photoStatus.textContent = e instanceof Error ? e.message : "Erreur d'envoi.";
           photoStatus.style.color = "#ef4444";
-          return;
         }
-
-        avatarEl.style.backgroundImage = `url('${upData.url}')`;
-        avatarEl.style.backgroundSize = "cover";
-        avatarEl.style.backgroundPosition = "center";
-        avatarEl.innerHTML = "";
-        photoStatus.textContent = "Photo de profil mise à jour.";
-        photoStatus.style.color = "#16a34a";
-        setTimeout(() => photoStatus.classList.add("hidden"), 2500);
       });
     }
 

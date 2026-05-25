@@ -70,27 +70,73 @@ export async function parseJsonResponse<T>(res: Response): Promise<T> {
   }
 }
 
-type AdminBucket = "cours-fichiers" | "videos-formation" | "ressources-vitrine";
-type SmallBucket = "actualites" | "profils";
+type SupabaseBucket = "cours-fichiers" | "ressources-vitrine";
+type CloudinaryMediaFolder = "actualites" | "profils" | "videos-formation";
 
 /**
- * Upload via Vercel pour les petits fichiers (images de profil, actualités).
+ * Upload direct navigateur → Cloudinary (vidéos + photos).
+ * Ne consomme pas le stockage Supabase ni la limite 4,5 Mo de Vercel.
  */
-async function uploadSmallFile(file: File, bucket: SmallBucket, pathPrefix: string): Promise<{ url: string }> {
+async function uploadToCloudinaryDirect(
+  file: File,
+  folder: CloudinaryMediaFolder,
+  pathPrefix: string
+): Promise<{ url: string }> {
+  const signRes = await fetch("/api/upload/cloudinary-sign", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    body: JSON.stringify({
+      folder,
+      filename: file.name,
+      size: file.size,
+      contentType: file.type || "application/octet-stream",
+      pathPrefix,
+    }),
+  });
+  const sign = await parseJsonResponse<{
+    cloudName?: string;
+    apiKey?: string;
+    timestamp?: number;
+    folder?: string;
+    publicId?: string;
+    signature?: string;
+    resourceType?: string;
+    uploadUrl?: string;
+    error?: string;
+  }>(signRes);
+
+  if (!signRes.ok || !sign.uploadUrl || !sign.apiKey || !sign.signature) {
+    throw new Error(sign.error || "Signature Cloudinary indisponible");
+  }
+
   const fd = new FormData();
   fd.append("file", file);
-  fd.append("bucket", bucket);
-  fd.append("path", pathPrefix);
-  const res = await fetch("/api/upload", { method: "POST", body: fd, credentials: "same-origin" });
-  const data = await parseJsonResponse<{ url?: string; error?: string }>(res);
-  if (!res.ok || !data.url) throw new Error(data.error || "Échec de l'upload");
-  return { url: data.url };
+  fd.append("api_key", sign.apiKey);
+  fd.append("timestamp", String(sign.timestamp));
+  fd.append("folder", sign.folder ?? folder);
+  fd.append("public_id", sign.publicId ?? "");
+  fd.append("signature", sign.signature);
+
+  const upRes = await fetch(sign.uploadUrl, { method: "POST", body: fd });
+  const upText = await upRes.text();
+  let up: { secure_url?: string; error?: { message?: string } };
+  try {
+    up = JSON.parse(upText);
+  } catch {
+    throw new Error(`Échec upload Cloudinary (${upRes.status})`);
+  }
+  if (!upRes.ok || !up.secure_url) {
+    throw new Error(up.error?.message || "Échec upload Cloudinary");
+  }
+
+  return { url: up.secure_url };
 }
 
 /**
- * Upload direct vers Supabase Storage (contourne la limite 4,5 Mo de Vercel).
+ * Upload direct vers Supabase Storage (PDF uniquement — documents privés).
  */
-async function uploadLargeFile(file: File, bucket: AdminBucket): Promise<{ url: string }> {
+async function uploadToSupabaseDirect(file: File, bucket: SupabaseBucket): Promise<{ url: string }> {
   const signedRes = await fetch("/api/upload/signed-url", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -104,7 +150,6 @@ async function uploadLargeFile(file: File, bucket: AdminBucket): Promise<{ url: 
   });
   const signed = await parseJsonResponse<{
     uploadUrl?: string;
-    token?: string;
     ref?: string;
     error?: string;
   }>(signedRes);
@@ -118,18 +163,19 @@ async function uploadLargeFile(file: File, bucket: AdminBucket): Promise<{ url: 
     body: file,
   });
   if (!putRes.ok) {
-    throw new Error(`Échec de l'upload (${putRes.status}). Vérifiez la taille du fichier.`);
+    throw new Error(`Échec upload PDF (${putRes.status})`);
   }
-  return { url: signed.ref };
+  return { url: signed.ref! };
 }
 
+/** Vidéos + photos → Cloudinary. PDF modules / ressources → Supabase Storage. */
 export async function uploadFile(
   file: File,
-  bucket: SmallBucket | AdminBucket,
+  bucket: CloudinaryMediaFolder | SupabaseBucket,
   pathPrefix: string
 ): Promise<{ url: string }> {
-  if (bucket === "actualites" || bucket === "profils") {
-    return uploadSmallFile(file, bucket, pathPrefix);
+  if (bucket === "cours-fichiers" || bucket === "ressources-vitrine") {
+    return uploadToSupabaseDirect(file, bucket);
   }
-  return uploadLargeFile(file, bucket);
+  return uploadToCloudinaryDirect(file, bucket, pathPrefix);
 }

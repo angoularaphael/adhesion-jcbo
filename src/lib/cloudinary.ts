@@ -9,6 +9,19 @@ import crypto from "node:crypto";
 
 export type CloudinaryFolder = "actualites" | "profils" | "cours-fichiers" | "videos-formation";
 
+export const CLOUDINARY_MAX_SIZE: Record<CloudinaryFolder, number> = {
+  actualites: 15 * 1024 * 1024,
+  profils: 10 * 1024 * 1024,
+  "cours-fichiers": 25 * 1024 * 1024,
+  "videos-formation": 500 * 1024 * 1024,
+};
+
+export const CLOUDINARY_MEDIA_FOLDERS: CloudinaryFolder[] = [
+  "actualites",
+  "profils",
+  "videos-formation",
+];
+
 type CloudinaryConfig = {
   cloudName: string;
   apiKey: string;
@@ -74,6 +87,47 @@ export function normalizeCloudinaryDeliveryUrl(url: string): string {
     return url.replace("/image/upload/", "/raw/upload/");
   }
   return url;
+}
+
+/** Paramètres signés pour upload direct navigateur → Cloudinary (sans passer par Vercel). */
+export function buildSignedUploadParams(
+  folder: CloudinaryFolder,
+  pathPrefix = "upload",
+  fileName?: string,
+  mimeType?: string
+): {
+  cloudName: string;
+  apiKey: string;
+  timestamp: number;
+  folder: string;
+  publicId: string;
+  signature: string;
+  resourceType: "image" | "video" | "raw";
+} {
+  const { cloudName, apiKey, apiSecret } = getConfig();
+  const timestamp = Math.floor(Date.now() / 1000);
+  const resourceType = resolveCloudinaryResourceType(mimeType ?? "", fileName);
+  const ext = fileName?.includes(".") ? fileName.slice(fileName.lastIndexOf(".")) : "";
+  const publicIdSafe = `${pathPrefix}-${timestamp}-${Math.random().toString(36).slice(2, 8)}${ext}`.replace(
+    /[^a-zA-Z0-9_.-]/g,
+    ""
+  );
+
+  const paramsToSign: Record<string, string | number> = {
+    folder,
+    public_id: publicIdSafe,
+    timestamp,
+  };
+
+  return {
+    cloudName,
+    apiKey,
+    timestamp,
+    folder,
+    publicId: publicIdSafe,
+    signature: signParams(paramsToSign, apiSecret),
+    resourceType,
+  };
 }
 
 export async function uploadToCloudinary(

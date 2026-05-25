@@ -1,24 +1,22 @@
-import { runWhenReady, withButtonLoading } from "./ui-loading";
+import { runWhenReady, uploadFile, withButtonLoading } from "./ui-loading";
 
 export function initProfilPage(): void {
   const photoInput = document.getElementById("photo-input") as HTMLInputElement | null;
   photoInput?.addEventListener("change", async () => {
     const file = photoInput.files?.[0];
     if (!file) return;
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("bucket", "profils");
-    fd.append("path", "admin");
-    const up = await fetch("/api/upload", { method: "POST", body: fd, credentials: "same-origin" });
-    const data = (await up.json()) as { url?: string; error?: string };
-    if (!up.ok) return alert(data.error || "Erreur upload");
-    await fetch("/api/admin/profil", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      credentials: "same-origin",
-      body: JSON.stringify({ photoUrl: data.url }),
-    });
-    location.reload();
+    try {
+      const { url } = await uploadFile(file, "profils", "admin");
+      await fetch("/api/admin/profil", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ photoUrl: url }),
+      });
+      location.reload();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Erreur upload");
+    }
   });
 
   document.getElementById("form-profil")?.addEventListener("submit", async (e) => {

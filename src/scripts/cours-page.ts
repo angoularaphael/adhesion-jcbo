@@ -63,54 +63,69 @@ export function initCoursPage(): void {
   }
 
   function renderModuleItem(mod: ModuleRow): string {
-    const fileInfo = mod.fichierUrl
-      ? `<a href="/api/cours/fichier/${escapeHtml(mod.id)}" class="text-xs text-blue-600 hover:underline">Document enregistré — tester le téléchargement</a>`
-      : `<span class="text-xs text-gray-400">Aucun fichier</span>`;
-    const videoInfo = mod.videoUrl
-      ? `<a href="${escapeHtml(mod.videoUrl)}" target="_blank" class="text-xs text-blue-600 hover:underline truncate block max-w-xs">${escapeHtml(mod.videoUrl)}</a>`
+    const hasFile = !!mod.fichierUrl;
+    const hasVideo = !!mod.videoUrl;
+    const isSupabaseVideo = hasVideo && !mod.videoUrl!.startsWith("http");
+    const videoPreview = hasVideo
+      ? isSupabaseVideo
+        ? `<span class="inline-flex items-center gap-1 text-xs font-medium text-green-700"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>Vidéo enregistrée</span>`
+        : `<span class="inline-flex items-center gap-1 text-xs text-blue-600 truncate max-w-full"><span class="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0"></span>${escapeHtml(mod.videoUrl!.slice(0, 50))}${mod.videoUrl!.length > 50 ? "…" : ""}</span>`
       : `<span class="text-xs text-gray-400">Aucune vidéo</span>`;
+    const filePreview = hasFile
+      ? `<span class="inline-flex items-center gap-1 text-xs font-medium text-green-700"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>PDF enregistré</span>`
+      : `<span class="text-xs text-gray-400">Aucun PDF</span>`;
 
     const bodyHtml = `
-      <div class="space-y-4">
-        <!-- Vidéo -->
-        <div class="rounded-lg border border-gray-100 p-3">
-          <p class="text-xs font-semibold uppercase tracking-wide mb-2" style="color:#0b1f3a;">1. Vidéo <span class="text-gray-400 font-normal">(optionnel)</span></p>
-          <div class="video-info">${videoInfo}</div>
-          <input type="url" class="input-module-video w-full mt-2 border rounded-lg px-3 py-2 text-xs" placeholder="https://youtu.be/…" value="${escapeHtml(mod.videoUrl ?? "")}" />
-          <label class="mt-2 inline-flex cursor-pointer">
-            <span class="btn-upload-video px-3 py-1.5 rounded-lg text-xs border border-gray-200 hover:bg-gray-50">Uploader une vidéo</span>
-            <input type="file" class="input-module-video-file hidden" accept="video/mp4,video/webm,video/quicktime" />
-          </label>
+      <div class="grid gap-3">
+        <div class="rounded-xl p-4 flex flex-col sm:flex-row sm:items-start gap-3" style="background:#f8fafc;border-left:3px solid #0b1f3a;">
+          <div class="flex items-center gap-2 shrink-0 sm:w-28">
+            <span class="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold text-white" style="background:#0b1f3a;">1</span>
+            <span class="text-xs font-semibold uppercase tracking-wide" style="color:#0b1f3a;">Vidéo</span>
+          </div>
+          <div class="flex-1 min-w-0 space-y-2">
+            <div class="video-info">${videoPreview}</div>
+            <input type="url" class="input-module-video w-full border rounded-lg px-3 py-2 text-xs bg-white" placeholder="Lien YouTube / Vimeo (optionnel)" value="${escapeHtml(mod.videoUrl ?? "")}" />
+            <label class="inline-flex cursor-pointer">
+              <span class="btn-upload-video px-3 py-1.5 rounded-lg text-xs font-medium border transition hover:bg-white" style="border-color:#0b1f3a;color:#0b1f3a;">📤 Uploader une vidéo (MP4)</span>
+              <input type="file" class="input-module-video-file hidden" accept="video/mp4,video/webm,video/quicktime" />
+            </label>
+          </div>
         </div>
-        <!-- PDF de cours -->
-        <div class="rounded-lg border border-gray-100 p-3">
-          <p class="text-xs font-semibold uppercase tracking-wide mb-2" style="color:#0b1f3a;">2. PDF de cours <span class="text-gray-400 font-normal">(optionnel)</span></p>
-          <div class="file-info">${fileInfo}</div>
-          <label class="mt-2 inline-flex cursor-pointer">
-            <span class="btn-upload-file px-3 py-1.5 rounded-lg text-xs border border-gray-200 hover:bg-gray-50">Choisir un fichier</span>
-            <input type="file" class="input-module-file hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,application/pdf" />
-          </label>
+        <div class="rounded-xl p-4 flex flex-col sm:flex-row sm:items-start gap-3" style="background:#fffbf5;border-left:3px solid #d4a762;">
+          <div class="flex items-center gap-2 shrink-0 sm:w-28">
+            <span class="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold text-white" style="background:#d4a762;">2</span>
+            <span class="text-xs font-semibold uppercase tracking-wide" style="color:#0b1f3a;">PDF</span>
+          </div>
+          <div class="flex-1 min-w-0 space-y-2">
+            <div class="file-info">${filePreview}</div>
+            <label class="inline-flex cursor-pointer">
+              <span class="btn-upload-file px-3 py-1.5 rounded-lg text-xs font-medium border transition hover:bg-white" style="border-color:#d4a762;color:#0b1f3a;">📄 Choisir un PDF</span>
+              <input type="file" class="input-module-file hidden" accept=".pdf,application/pdf" />
+            </label>
+          </div>
         </div>
-        <!-- Quiz -->
-        <div class="rounded-lg border border-gray-100 p-3">
-          <p class="text-xs font-semibold uppercase tracking-wide mb-2" style="color:#0b1f3a;">3. Quiz <span class="text-gray-400 font-normal">(optionnel)</span></p>
-          <button type="button" class="btn-edit-quiz px-4 py-2 rounded-lg text-xs font-semibold text-white" style="background:#d4a762;">Gérer les questions du quiz</button>
+        <div class="rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3" style="background:#f0fdf4;border-left:3px solid #16a34a;">
+          <div class="flex items-center gap-2 shrink-0 sm:w-28">
+            <span class="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold text-white" style="background:#16a34a;">3</span>
+            <span class="text-xs font-semibold uppercase tracking-wide" style="color:#0b1f3a;">Quiz</span>
+          </div>
+          <div class="flex-1">
+            <button type="button" class="btn-edit-quiz px-4 py-2 rounded-lg text-xs font-semibold text-white transition hover:opacity-90" style="background:#16a34a;">✏️ Gérer le quiz (80 % requis)</button>
+          </div>
         </div>
       </div>
-      <button type="button" class="btn-save-module mt-4 w-full px-4 py-2.5 rounded-lg text-xs font-semibold text-white" style="background:#0b1f3a;">Enregistrer le module</button>`;
+      <button type="button" class="btn-save-module mt-4 w-full px-4 py-3 rounded-xl text-sm font-semibold text-white transition hover:opacity-90" style="background:#0b1f3a;">Enregistrer le module</button>`;
 
     return `
-      <div class="border border-gray-100 rounded-xl p-4 module-item" data-module-id="${escapeHtml(mod.id)}" data-module-type="Vidéo">
-        <div class="flex items-start justify-between gap-3 mb-3">
-          <div>
-            <p class="text-sm font-semibold" style="color:#0b1f3a;">${escapeHtml(mod.titre)}</p>
-            <p class="text-xs text-gray-400">Module${mod.duree ? " · " + escapeHtml(mod.duree) : ""}</p>
+      <div class="border border-gray-200 rounded-2xl overflow-hidden module-item shadow-sm" data-module-id="${escapeHtml(mod.id)}" data-module-type="Vidéo">
+        <div class="flex items-center justify-between gap-3 px-5 py-3" style="background:linear-gradient(135deg,#0b1f3a,#162d4f);">
+          <div class="min-w-0">
+            <p class="text-sm font-semibold text-white truncate">${escapeHtml(mod.titre)}</p>
+            <p class="text-[11px] text-white/50">${mod.duree ? escapeHtml(mod.duree) : "Module"}</p>
           </div>
-          <div class="flex items-center gap-3">
-            <button type="button" class="btn-delete-module text-xs text-red-500 hover:underline" title="Supprimer ce module">Supprimer</button>
-          </div>
+          <button type="button" class="btn-delete-module text-[11px] text-red-300 hover:text-red-100 shrink-0 px-2 py-1 rounded border border-red-400/30">Supprimer</button>
         </div>
-        ${bodyHtml}
+        <div class="p-5">${bodyHtml}</div>
       </div>`;
   }
 
@@ -362,7 +377,7 @@ export function initCoursPage(): void {
           if (videoInput) videoInput.value = url;
           const videoBlock = item?.querySelector(".video-info");
           if (videoBlock) {
-            videoBlock.innerHTML = `<a href="${url}" target="_blank" class="text-xs text-blue-600 hover:underline truncate block max-w-xs">Vidéo prête à enregistrer</a>`;
+            videoBlock.innerHTML = `<span class="inline-flex items-center gap-1 text-xs font-medium text-green-700"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>Vidéo prête — cliquez « Enregistrer le module »</span>`;
           }
         } catch (e) {
           alert(e instanceof Error ? e.message : "Erreur upload vidéo");
@@ -386,11 +401,6 @@ export function initCoursPage(): void {
 
         const pendingFile = item?.getAttribute("data-pending-file");
         if (pendingFile) body.fichier_url = pendingFile;
-
-        if (!videoUrl && !pendingFile && !item?.querySelector(".file-info a") && !item?.querySelector(".video-info a")) {
-          alert("Ajoutez au moins une vidéo ou un document.");
-          return;
-        }
 
         await withButtonLoading(btn, async () => {
           const res = await fetch(`/api/modules/${moduleId}`, {

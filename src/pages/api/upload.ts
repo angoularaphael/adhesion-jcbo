@@ -94,8 +94,20 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  // PDF / documents → Supabase Storage (privé)
+  // PDF / documents → Supabase Storage (privé). Images → Cloudinary.
   if (bucket === "cours-fichiers" || bucket === "ressources-vitrine") {
+    const isImage = file.type.startsWith("image/");
+    if (isImage) {
+      const result = await uploadToCloudinary(buffer, file.type, "cours-fichiers", pathPrefix, file.name);
+      if (!result.ok) {
+        return new Response(JSON.stringify({ error: result.error }), { status: 500 });
+      }
+      return new Response(
+        JSON.stringify({ url: result.data.url, publicId: result.data.publicId, cloudinary: true }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     const ext = file.name.includes(".") ? file.name.slice(file.name.lastIndexOf(".")) : "";
     const safeName = `${pathPrefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}${ext}`.replace(
       /[^a-zA-Z0-9_.-]/g,

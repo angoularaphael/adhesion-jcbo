@@ -3,12 +3,11 @@ import { getSupabase } from "../../../lib/supabase";
 import { SUPABASE_FILE_PREFIX } from "../../../lib/module-fichier";
 import type { StorageBucket } from "../../../lib/storage";
 
-const ALLOWED: StorageBucket[] = ["cours-fichiers", "ressources-vitrine", "videos-formation"];
+const ALLOWED: StorageBucket[] = ["cours-fichiers", "ressources-vitrine"];
 
 const MAX_SIZE: Record<string, number> = {
   "cours-fichiers": 50 * 1024 * 1024,
   "ressources-vitrine": 50 * 1024 * 1024,
-  "videos-formation": 500 * 1024 * 1024,
 };
 
 /**
@@ -48,7 +47,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const supa = getSupabase();
   const { data, error } = await supa.storage.from(bucket).createSignedUploadUrl(safeName);
   if (error || !data) {
-    return new Response(JSON.stringify({ error: error?.message ?? "Échec génération URL" }), { status: 500 });
+    const raw = error?.message ?? "Échec génération URL";
+    const msg = raw.includes("does not exist")
+      ? `Le stockage « ${bucket} » n'est pas configuré. Exécutez les migrations Supabase (014 pour les vidéos).`
+      : raw;
+    return new Response(JSON.stringify({ error: msg }), { status: 500 });
   }
 
   const ref = `${SUPABASE_FILE_PREFIX}${bucket}/${safeName}`;

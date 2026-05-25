@@ -61,18 +61,19 @@ const certificats = coursTerminesIds.map((coursId) => {
   <div class="flex flex-col gap-6">
     {certificats.map((cert) => (
       <div class="bg-white rounded-2xl shadow-sm overflow-hidden" style="border: 1px solid #f1f3f5;" id={`cert-${cert.coursId}`}>
-        <div class="relative overflow-hidden p-8 text-center" style="background: linear-gradient(135deg, #0b1f3a 0%, #162d4f 100%); min-height: 240px;">
-          <div class="absolute top-0 right-0 w-64 h-64 rounded-full -translate-y-1/2 translate-x-1/4 opacity-[0.04]" style="background-color: #d4a762;"></div>
-          <div class="absolute bottom-0 left-0 w-48 h-48 rounded-full translate-y-1/2 -translate-x-1/4 opacity-[0.05]" style="background-color: #d4a762;"></div>
+        <div class="relative overflow-hidden p-8 text-center" style="background: linear-gradient(135deg, #0b1f3a 0%, #162d4f 100%); min-height: 200px;">
+          <div class="absolute inset-0 opacity-[0.06]" style="background: repeating-linear-gradient(45deg, #d4a762 0, #d4a762 1px, transparent 0, transparent 50%); background-size: 8px 8px;"></div>
+          <div class="absolute top-0 left-0 right-0 h-1" style="background: linear-gradient(90deg, transparent, #d4a762, transparent);"></div>
           <div class="relative z-10">
-            <p class="text-xs font-medium uppercase tracking-[0.25em] mb-4" style="color: rgba(212,167,98,0.6);">Certificat de Formation</p>
-            <p class="text-sm mb-2" style="color: rgba(255,255,255,0.5);">Décerné à</p>
+            <p class="text-[10px] font-bold uppercase tracking-[0.3em] mb-3" style="color: #d4a762;">JCBO-CONSEIL</p>
+            <p class="text-xs font-medium uppercase tracking-[0.2em] mb-4 text-white/60">Certificat de Formation</p>
+            <p class="text-sm mb-1 text-white/50">Décerné à</p>
             <h3 class="text-2xl font-bold text-white mb-3" style="font-family: Georgia, serif;">{cert.adherent}</h3>
-            <p class="text-sm mb-1" style="color: rgba(255,255,255,0.5);">pour avoir suivi avec succès</p>
-            <h4 class="text-lg font-semibold mb-4" style="color: #d4a762;">{cert.titre}</h4>
-            <div class="flex items-center justify-center gap-8 text-xs" style="color: rgba(255,255,255,0.3);">
+            <div class="inline-block px-4 py-1 rounded-full mb-3" style="background: rgba(212,167,98,0.15); border: 1px solid rgba(212,167,98,0.3);">
+              <h4 class="text-sm font-semibold" style="color: #d4a762;">{cert.titre}</h4>
+            </div>
+            <div class="flex items-center justify-center gap-6 text-xs text-white/40">
               <span>N° {cert.numero}</span>
-              <span>·</span>
               <span>{new Date(cert.dateDelivrance).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</span>
             </div>
           </div>
@@ -99,6 +100,10 @@ const certificats = coursTerminesIds.map((coursId) => {
 
 <script is:inline>
 (function() {
+  const NAVY = [11, 31, 58];
+  const GOLD = [212, 167, 98];
+  const LIGHT_GOLD = [248, 246, 242];
+
   function loadImage(src) {
     return new Promise((resolve) => {
       const img = new Image();
@@ -107,8 +112,7 @@ const certificats = coursTerminesIds.map((coursId) => {
         const canvas = document.createElement("canvas");
         canvas.width = img.naturalWidth || img.width;
         canvas.height = img.naturalHeight || img.height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0);
+        canvas.getContext("2d").drawImage(img, 0, 0);
         resolve({ data: canvas.toDataURL("image/png"), width: canvas.width, height: canvas.height });
       };
       img.onerror = () => resolve(null);
@@ -120,178 +124,222 @@ const certificats = coursTerminesIds.map((coursId) => {
     return doc.splitTextToSize(text, maxWidth);
   }
 
+  function drawCorner(doc, x, y, size, flipX, flipY) {
+    const s = flipX ? -size : size;
+    const v = flipY ? -size : size;
+    doc.setDrawColor(...GOLD);
+    doc.setLineWidth(0.8);
+    doc.line(x, y, x + s, y);
+    doc.line(x, y, x, y + v);
+    doc.setLineWidth(0.3);
+    doc.line(x + s * 0.15, y + v * 0.15, x + s * 0.85, y + v * 0.15);
+    doc.line(x + s * 0.15, y + v * 0.15, x + s * 0.15, y + v * 0.85);
+  }
+
   document.querySelectorAll(".btn-download-pdf").forEach((btn) => {
     btn.addEventListener("click", async function () {
       const cert = JSON.parse(this.dataset.cert);
+      const origHtml = this.innerHTML;
       this.textContent = "Génération…";
       this.disabled = true;
 
-      if (!window.jspdf) {
-        await new Promise((resolve, reject) => {
-          const s = document.createElement("script");
-          s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-          s.onload = resolve;
-          s.onerror = reject;
-          document.head.appendChild(s);
-        });
-      }
+      try {
+        if (!window.jspdf) {
+          await new Promise((resolve, reject) => {
+            const s = document.createElement("script");
+            s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+            s.onload = resolve;
+            s.onerror = reject;
+            document.head.appendChild(s);
+          });
+        }
 
-      const [cachet, signature] = await Promise.all([
-        loadImage("/images/cachet.png"),
-        loadImage("/images/signature-jcbo.png"),
-      ]);
+        const [cachet, signature] = await Promise.all([
+          loadImage("/images/cachet.png"),
+          loadImage("/images/signature-jcbo.png"),
+        ]);
 
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      const W = 210, H = 297;
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+        const W = 297, H = 210;
+        const M = 18;
 
-      doc.setFillColor(255, 255, 255);
-      doc.rect(0, 0, W, H, "F");
+        // Fond blanc cassé
+        doc.setFillColor(...LIGHT_GOLD);
+        doc.rect(0, 0, W, H, "F");
 
-      // Bordure dorée double
-      doc.setDrawColor(212, 167, 98);
-      doc.setLineWidth(1.2);
-      doc.rect(10, 10, W - 20, H - 20);
-      doc.setLineWidth(0.4);
-      doc.rect(13, 13, W - 26, H - 26);
+        // Bandeau header navy
+        doc.setFillColor(...NAVY);
+        doc.rect(0, 0, W, 38, "F");
+        doc.setFillColor(...GOLD);
+        doc.rect(0, 36, W, 2, "F");
 
-      // En-tête
-      doc.setTextColor(11, 31, 58);
-      doc.setFont("times", "bold");
-      doc.setFontSize(22);
-      doc.text("CERTIFICAT", W / 2, 32, { align: "center" });
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(120, 120, 120);
-      doc.text("DE FORMATION", W / 2, 39, { align: "center", charSpace: 4 });
+        // Coins décoratifs
+        drawCorner(doc, M, M + 8, 12, false, false);
+        drawCorner(doc, W - M, M + 8, 12, true, false);
+        drawCorner(doc, M, H - M, 12, false, true);
+        drawCorner(doc, W - M, H - M, 12, true, true);
 
-      doc.setDrawColor(212, 167, 98);
-      doc.setLineWidth(0.5);
-      doc.line(W / 2 - 25, 43, W / 2 + 25, 43);
+        // Bordure double
+        doc.setDrawColor(...GOLD);
+        doc.setLineWidth(1);
+        doc.rect(M - 4, M - 4, W - 2 * M + 8, H - 2 * M + 8);
+        doc.setLineWidth(0.3);
+        doc.rect(M - 1, M - 1, W - 2 * M + 2, H - 2 * M + 2);
 
-      // Cabinet
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(11);
-      doc.setTextColor(60, 60, 60);
-      doc.text("Le cabinet JCBO-CONSEIL certifie que :", W / 2, 56, { align: "center" });
+        // Titre header
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("times", "bold");
+        doc.setFontSize(26);
+        doc.text("CERTIFICAT DE FORMATION", W / 2, 18, { align: "center" });
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(...GOLD);
+        doc.text("JCBO-CONSEIL  ·  Cabinet de conseil aux entreprises", W / 2, 28, { align: "center", charSpace: 1.5 });
 
-      // Nom adhérent
-      doc.setFont("times", "bold");
-      doc.setFontSize(20);
-      doc.setTextColor(11, 31, 58);
-      doc.text(cert.adherent, W / 2, 70, { align: "center" });
+        let y = 52;
 
-      // Phrase de validation
-      let y = 84;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.setTextColor(60, 60, 60);
-      const phrase1 =
-        `a suivi avec succès le programme de formation : `;
-      doc.text(phrase1, W / 2, y, { align: "center" });
-      y += 6;
+        // Corps principal
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10.5);
+        doc.setTextColor(55, 55, 55);
+        doc.text("Le cabinet JCBO-CONSEIL certifie que :", W / 2, y, { align: "center" });
+        y += 10;
 
-      doc.setFont("times", "italic");
-      doc.setFontSize(13);
-      doc.setTextColor(212, 167, 98);
-      doc.text(cert.titre, W / 2, y, { align: "center" });
-      y += 8;
+        doc.setFont("times", "bolditalic");
+        doc.setFontSize(22);
+        doc.setTextColor(...NAVY);
+        doc.text(cert.adherent, W / 2, y, { align: "center" });
+        y += 3;
+        doc.setDrawColor(...GOLD);
+        doc.setLineWidth(0.4);
+        doc.line(W / 2 - 55, y + 2, W / 2 + 55, y + 2);
+        y += 10;
 
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.setTextColor(60, 60, 60);
-      const phrase2 = "et a validé l'ensemble des modules, exercices et évaluations associés,";
-      const phrase3 = "conformément aux exigences pédagogiques du programme.";
-      doc.text(phrase2, W / 2, y, { align: "center" }); y += 5;
-      doc.text(phrase3, W / 2, y, { align: "center" }); y += 9;
-
-      // Compétences
-      if (cert.competences && cert.competences.length > 0) {
-        doc.setFont("helvetica", "bold");
+        doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
-        doc.setTextColor(11, 31, 58);
-        doc.text("Compétences développées :", W / 2, y, { align: "center" });
-        y += 6;
+        doc.setTextColor(65, 65, 65);
+        doc.text("a suivi avec succès le programme de formation :", W / 2, y, { align: "center" });
+        y += 7;
+
+        doc.setFont("times", "bold");
+        doc.setFontSize(15);
+        doc.setTextColor(...GOLD);
+        doc.text(`« ${cert.titre} »`, W / 2, y, { align: "center" });
+        y += 8;
+
         doc.setFont("helvetica", "normal");
         doc.setFontSize(9.5);
-        doc.setTextColor(70, 70, 70);
-        const liste = cert.competences.join(" · ");
-        const lines = wrap(doc, liste, W - 50);
-        lines.forEach((line) => {
-          doc.text(line, W / 2, y, { align: "center" });
-          y += 4.6;
-        });
-        y += 4;
-      }
+        doc.setTextColor(75, 75, 75);
+        const p2 = "et a validé l'ensemble des modules, exercices et évaluations associés,";
+        const p3 = "conformément aux exigences pédagogiques du programme.";
+        doc.text(p2, W / 2, y, { align: "center" }); y += 4.5;
+        doc.text(p3, W / 2, y, { align: "center" }); y += 10;
 
-      // Atteste de
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      doc.setTextColor(11, 31, 58);
-      doc.text("Ce certificat atteste de :", W / 2, y, { align: "center" });
-      y += 6;
+        // Encadré compétences
+        if (cert.competences && cert.competences.length > 0) {
+          const boxX = M + 10, boxW = W - 2 * M - 20;
+          const compLines = cert.competences.flatMap((c) => wrap(doc, "•  " + c, boxW - 16));
+          const boxH = 8 + compLines.length * 4.5 + 4;
 
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9.5);
-      doc.setTextColor(70, 70, 70);
-      const atteste = `la capacité du participant à mobiliser les fondamentaux du « ${cert.titre} » dans un contexte professionnel, entrepreneurial ou managérial.`;
-      const attesteLines = wrap(doc, atteste, W - 50);
-      attesteLines.forEach((line) => {
-        doc.text(line, W / 2, y, { align: "center" });
-        y += 4.8;
-      });
-      y += 4;
+          doc.setFillColor(255, 255, 255);
+          doc.setDrawColor(...GOLD);
+          doc.setLineWidth(0.5);
+          doc.roundedRect(boxX, y - 2, boxW, boxH, 2, 2, "FD");
 
-      // Texte additionnel optionnel
-      if (cert.certificatIntro) {
-        doc.setFont("helvetica", "italic");
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(9);
+          doc.setTextColor(...NAVY);
+          doc.text("Compétences développées :", boxX + 8, y + 4);
+
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(8.5);
+          doc.setTextColor(70, 70, 70);
+          let cy = y + 9;
+          compLines.forEach((line) => {
+            doc.text(line, boxX + 8, cy);
+            cy += 4.5;
+          });
+          y += boxH + 6;
+        }
+
+        // Attestation
+        doc.setFont("helvetica", "bold");
         doc.setFontSize(9);
-        doc.setTextColor(120, 120, 120);
-        const introLines = wrap(doc, cert.certificatIntro, W - 50);
-        introLines.forEach((line) => {
+        doc.setTextColor(...NAVY);
+        doc.text("Ce certificat atteste de :", W / 2, y, { align: "center" });
+        y += 5;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(70, 70, 70);
+        const att = `la capacité du participant à mobiliser les fondamentaux du « ${cert.titre} » dans un contexte professionnel, entrepreneurial ou managérial.`;
+        wrap(doc, att, W - 2 * M - 30).forEach((line) => {
           doc.text(line, W / 2, y, { align: "center" });
-          y += 4.2;
+          y += 4.5;
         });
-        y += 3;
+
+        if (cert.certificatIntro) {
+          y += 3;
+          doc.setFont("helvetica", "italic");
+          doc.setFontSize(8);
+          doc.setTextColor(120, 120, 120);
+          wrap(doc, cert.certificatIntro, W - 2 * M - 30).forEach((line) => {
+            doc.text(line, W / 2, y, { align: "center" });
+            y += 4;
+          });
+        }
+
+        // Pied : date + numéro (gauche) + signature (droite)
+        const footerY = H - M - 28;
+        doc.setDrawColor(...GOLD);
+        doc.setLineWidth(0.3);
+        doc.line(M + 5, footerY - 4, W - M - 5, footerY - 4);
+
+        const dateStr = new Date(cert.dateDelivrance).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(60, 60, 60);
+        doc.text(`Délivré le : ${dateStr}`, M + 12, footerY + 2);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...NAVY);
+        doc.text(`N° ${cert.numero}`, M + 12, footerY + 8);
+
+        // Signature + cachet
+        const sigX = W - M - 95;
+        if (signature && signature.data) {
+          const sigW = 42;
+          const sigH = (signature.height / signature.width) * sigW;
+          doc.addImage(signature.data, "PNG", sigX, footerY - sigH - 2, sigW, sigH);
+        }
+        if (cachet && cachet.data) {
+          const cW = 32;
+          const cH = (cachet.height / cachet.width) * cW;
+          doc.addImage(cachet.data, "PNG", W - M - 38, footerY - cH - 4, cW, cH);
+        }
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8.5);
+        doc.setTextColor(...NAVY);
+        doc.text("Jean-Christophe BOYANG-TSANG", sigX + 21, footerY + 14, { align: "center" });
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7.5);
+        doc.setTextColor(100, 100, 100);
+        doc.text("Consultant en Business Development", sigX + 21, footerY + 18, { align: "center" });
+        doc.text("Fondateur du cabinet JCBO-CONSEIL", sigX + 21, footerY + 22, { align: "center" });
+
+        // Footer discret
+        doc.setFontSize(6.5);
+        doc.setTextColor(160, 160, 160);
+        doc.text("Document officiel JCBO-CONSEIL — Toute falsification est passible de sanctions.", W / 2, H - 8, { align: "center" });
+
+        doc.save(`Certificat_${cert.titre.replace(/[^a-zA-Z0-9]/g, "_")}_${cert.adherent.replace(/\s/g, "_")}.pdf`);
+      } catch (err) {
+        alert(err.message || "Erreur lors de la génération du certificat.");
+      } finally {
+        this.innerHTML = origHtml;
+        this.disabled = false;
       }
-
-      // Date + numéro
-      const dateStr = new Date(cert.dateDelivrance).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.setTextColor(60, 60, 60);
-      doc.text(`Délivré le : ${dateStr}`, W / 2, y, { align: "center" }); y += 5;
-      doc.text(`Numéro du certificat : ${cert.numero}`, W / 2, y, { align: "center" });
-      y += 12;
-
-      // Cachet (gauche) + Signature (droite)
-      const baseY = Math.max(y, 230);
-      if (signature && signature.data) {
-        const sigW = 50;
-        const sigH = (signature.height / signature.width) * sigW;
-        doc.addImage(signature.data, "PNG", W / 2 - 70, baseY - sigH / 2, sigW, sigH);
-      }
-      if (cachet && cachet.data) {
-        const cW = 45;
-        const cH = (cachet.height / cachet.width) * cW;
-        doc.addImage(cachet.data, "PNG", W / 2 + 25, baseY - cH / 2, cW, cH);
-      }
-
-      // Identité signataire (sous la signature)
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      doc.setTextColor(11, 31, 58);
-      doc.text("Jean-Christophe BOYANG-TSANG", W / 2 - 45, baseY + 22, { align: "center" });
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8.5);
-      doc.setTextColor(110, 110, 110);
-      doc.text("Consultant en Business Development", W / 2 - 45, baseY + 27, { align: "center" });
-      doc.text("Fondateur du cabinet JCBO-CONSEIL", W / 2 - 45, baseY + 31, { align: "center" });
-
-      doc.save(`Certificat_${cert.titre.replace(/[^a-zA-Z0-9]/g, "_")}_${cert.adherent.replace(/\s/g, "_")}.pdf`);
-
-      this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5l5 5v14a2 2 0 01-2 2z"/></svg> Télécharger PDF';
-      this.disabled = false;
     });
   });
 })();

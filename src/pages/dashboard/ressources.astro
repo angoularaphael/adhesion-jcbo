@@ -333,32 +333,65 @@ const variantByCategorie: Record<string, "or" | "vert" | "gris"> = {
     errEl.classList.add("hidden");
 
     try {
-      const sigRes = await fetch("/api/upload/signed-url", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({
-          bucket: "ressources-vitrine",
-          filename: file.name,
-          size: file.size,
-          contentType: file.type || "application/octet-stream",
-        }),
-      });
-      const sigText = await sigRes.text();
-      let sig = {};
-      try { sig = JSON.parse(sigText); } catch { throw new Error("Erreur serveur (" + sigRes.status + ")"); }
-      if (!sigRes.ok || !sig.uploadUrl || !sig.ref) throw new Error(sig.error || "URL indisponible");
+      const isImage = file.type.startsWith("image/");
 
-      document.getElementById("drop-label").innerHTML = "Envoi du fichier…";
+      if (isImage) {
+        document.getElementById("drop-label").innerHTML = "Envoi vers Cloudinary…";
+        const signRes = await fetch("/api/upload/cloudinary-sign", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({
+            folder: "actualites",
+            filename: file.name,
+            size: file.size,
+            contentType: file.type,
+            pathPrefix: "ressource",
+          }),
+        });
+        const signText = await signRes.text();
+        let sign = {};
+        try { sign = JSON.parse(signText); } catch { throw new Error("Erreur serveur (" + signRes.status + ")"); }
+        if (!signRes.ok || !sign.uploadUrl) throw new Error(sign.error || "Signature Cloudinary indisponible");
 
-      const putRes = await fetch(sig.uploadUrl, {
-        method: "PUT",
-        headers: { "Content-Type": file.type || "application/octet-stream" },
-        body: file,
-      });
-      if (!putRes.ok) throw new Error("Échec upload (" + putRes.status + ")");
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("api_key", sign.apiKey);
+        fd.append("timestamp", String(sign.timestamp));
+        fd.append("folder", sign.folder);
+        fd.append("public_id", sign.publicId);
+        fd.append("signature", sign.signature);
+        const upRes = await fetch(sign.uploadUrl, { method: "POST", body: fd });
+        const up = await upRes.json();
+        if (!upRes.ok || !up.secure_url) throw new Error(up.error?.message || "Échec upload Cloudinary");
+        fichierRef = up.secure_url;
+      } else {
+        document.getElementById("drop-label").innerHTML = "Envoi du PDF…";
+        const sigRes = await fetch("/api/upload/signed-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({
+            bucket: "ressources-vitrine",
+            filename: file.name,
+            size: file.size,
+            contentType: file.type || "application/octet-stream",
+          }),
+        });
+        const sigText = await sigRes.text();
+        let sig = {};
+        try { sig = JSON.parse(sigText); } catch { throw new Error("Erreur serveur (" + sigRes.status + ")"); }
+        if (!sigRes.ok || !sig.uploadUrl || !sig.ref) throw new Error(sig.error || "URL indisponible");
 
-      fichierRef = sig.ref;
+        const putRes = await fetch(sig.uploadUrl, {
+          method: "PUT",
+          headers: { "Content-Type": file.type || "application/octet-stream" },
+          body: file,
+        });
+        if (!putRes.ok) throw new Error("Échec upload (" + putRes.status + ")");
+        fichierRef = sig.ref;
+      }
+
       document.getElementById("drop-label").innerHTML = '<span style="color:#16a34a;">✓ ' + file.name + '</span>';
       const info = document.getElementById("fichier-selectionne");
       info.textContent = file.name + " (" + (file.size / 1024).toFixed(0) + " Ko) — prêt";

@@ -82,107 +82,132 @@ const cours = await getCours();
   )}
 
   <!-- Modal créer/modifier -->
-  <div id="modal-cours" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4" style="background:rgba(0,0,0,0.5);">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 md:p-8">
-      <h3 id="modal-cours-titre" class="text-lg font-bold mb-6" style="color: #0b1f3a;">Nouveau cours</h3>
-      <form id="form-cours" class="flex flex-col gap-4">
-        <input type="hidden" id="cours-id" />
-        <div>
-          <label class="block text-xs font-medium text-gray-500 mb-1.5">Titre</label>
-          <input id="cours-titre" type="text" required
-            class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
-            style="border-color: #e5e7eb; focus-ring-color: #d4a762;"
-            placeholder="Titre du cours"
-          />
+  <div id="modal-cours" class="fixed inset-0 z-50 hidden overflow-y-auto py-6 px-4" style="background:rgba(0,0,0,0.5);">
+    <div class="flex min-h-full items-start justify-center">
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-xl my-4 flex flex-col max-h-[calc(100vh-3rem)]">
+        <div class="flex-shrink-0 px-6 md:px-8 pt-6 pb-4 border-b border-gray-100">
+          <h3 id="modal-cours-titre" class="text-lg font-bold" style="color: #0b1f3a;">Nouveau cours</h3>
+          <p class="text-xs text-gray-400 mt-1">Informations générales, compétences et certificat.</p>
         </div>
-        <div>
-          <label class="block text-xs font-medium text-gray-500 mb-1.5">Description</label>
-          <textarea id="cours-description" required rows="3"
-            class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 resize-none"
-            style="border-color: #e5e7eb;"
-            placeholder="Description du cours"
-          ></textarea>
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1.5">Durée</label>
-            <input id="cours-duree" type="text" required
-              class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none"
-              style="border-color: #e5e7eb;"
-              placeholder="ex: 6h"
-            />
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1.5">Niveau</label>
-            <select id="cours-niveau"
-              class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none"
-              style="border-color: #e5e7eb;"
-            >
-              <option value="Débutant">Débutant</option>
-              <option value="Intermédiaire">Intermédiaire</option>
-              <option value="Avancé">Avancé</option>
-            </select>
-          </div>
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-gray-500 mb-1.5">Statut</label>
-          <select id="cours-statut"
-            class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none"
-            style="border-color: #e5e7eb;"
-          >
-            <option value="Brouillon">Brouillon</option>
-            <option value="Publié">Publié</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-gray-500 mb-1.5">Compétences développées</label>
-          <textarea id="cours-competences" rows="3"
-            class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none resize-none"
-            style="border-color: #e5e7eb;"
-            placeholder="Une compétence par ligne (ex: Posture commerciale)"
-          ></textarea>
-          <p class="text-[11px] text-gray-400 mt-1">Apparaîtront dans le certificat délivré à l'adhérent.</p>
-        </div>
-        <div class="rounded-xl p-4" style="background:#f8f6f2;border:1px solid rgba(212,167,98,0.25);">
-          <div class="flex items-center justify-between gap-3 mb-2">
-            <p class="text-sm font-semibold" style="color:#0b1f3a;">Certificat</p>
-            <button type="button" id="btn-toggle-certificat"
-              class="text-xs px-3 py-1.5 rounded-lg font-semibold border"
-              style="border-color:#d4a762;color:#0b1f3a;background:white;"
-            >Personnaliser</button>
-          </div>
-          <p class="text-xs text-gray-500">Texte introductif libre (optionnel) et code court qui apparaîtra sur le numéro (ex: ME, VA, LS).</p>
-          <div id="certificat-config" class="hidden mt-3 space-y-3">
-            <div>
-              <label class="block text-xs font-medium text-gray-500 mb-1.5">Code certificat</label>
-              <input id="cours-certificat-code" type="text" maxlength="6"
-                class="w-full border rounded-lg px-3 py-2 text-sm uppercase focus:outline-none"
-                style="border-color: #e5e7eb;"
-                placeholder="ex: ME"
-              />
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-gray-500 mb-1.5">Texte additionnel (optionnel)</label>
-              <textarea id="cours-certificat-intro" rows="2"
-                class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none resize-none"
-                style="border-color: #e5e7eb;"
-                placeholder="Texte affiché en bas du certificat (optionnel)"
+        <form id="form-cours" class="flex flex-col flex-1 min-h-0">
+          <div class="overflow-y-auto flex-1 px-6 md:px-8 py-5 space-y-6">
+            <input type="hidden" id="cours-id" />
+
+            <!-- Section 1 : Informations -->
+            <section>
+              <p class="text-[11px] font-bold uppercase tracking-wider mb-3 flex items-center gap-2" style="color:#d4a762;">
+                <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] text-white" style="background:#0b1f3a;">1</span>
+                Informations générales
+              </p>
+              <div class="space-y-4 pl-1">
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Titre du cours</label>
+                  <input id="cours-titre" type="text" required
+                    class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#d4a762]/30"
+                    style="border-color: #e5e7eb;"
+                    placeholder="Ex : Mindset Professionnel"
+                  />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Description</label>
+                  <textarea id="cours-description" required rows="3"
+                    class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none resize-none"
+                    style="border-color: #e5e7eb;"
+                    placeholder="Résumé visible par les adhérents"
+                  ></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1.5">Durée</label>
+                    <input id="cours-duree" type="text" required
+                      class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none"
+                      style="border-color: #e5e7eb;"
+                      placeholder="6h"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1.5">Niveau</label>
+                    <select id="cours-niveau" class="w-full border rounded-lg px-3 py-2.5 text-sm" style="border-color: #e5e7eb;">
+                      <option value="Débutant">Débutant</option>
+                      <option value="Intermédiaire">Intermédiaire</option>
+                      <option value="Avancé">Avancé</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Statut de publication</label>
+                  <select id="cours-statut" class="w-full border rounded-lg px-3 py-2.5 text-sm" style="border-color: #e5e7eb;">
+                    <option value="Brouillon">Brouillon</option>
+                    <option value="Publié">Publié</option>
+                  </select>
+                </div>
+              </div>
+            </section>
+
+            <!-- Section 2 : Compétences -->
+            <section>
+              <p class="text-[11px] font-bold uppercase tracking-wider mb-3 flex items-center gap-2" style="color:#d4a762;">
+                <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] text-white" style="background:#0b1f3a;">2</span>
+                Compétences développées
+              </p>
+              <textarea id="cours-competences" rows="4"
+                class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none resize-none"
+                style="border-color: #e5e7eb; background:#fafafa;"
+                placeholder="Une compétence par ligne&#10;Ex : Posture commerciale&#10;Ex : Prise de décision stratégique"
               ></textarea>
-            </div>
+              <p class="text-[11px] text-gray-400 mt-1.5">Ces compétences apparaîtront sur le certificat PDF.</p>
+            </section>
+
+            <!-- Section 3 : Certificat -->
+            <section class="rounded-xl overflow-hidden" style="border:1px solid rgba(212,167,98,0.35);">
+              <div class="px-4 py-3 flex items-center justify-between gap-3" style="background:linear-gradient(135deg,#f8f6f2,#fff);">
+                <div>
+                  <p class="text-[11px] font-bold uppercase tracking-wider flex items-center gap-2" style="color:#d4a762;">
+                    <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] text-white" style="background:#0b1f3a;">3</span>
+                    Certificat
+                  </p>
+                  <p class="text-xs text-gray-500 mt-0.5">Code et texte optionnel sur le PDF.</p>
+                </div>
+                <button type="button" id="btn-toggle-certificat"
+                  class="text-xs px-3 py-1.5 rounded-lg font-semibold border shrink-0"
+                  style="border-color:#d4a762;color:#0b1f3a;background:white;"
+                >Options</button>
+              </div>
+              <div id="certificat-config" class="hidden px-4 pb-4 pt-2 space-y-3 border-t border-[rgba(212,167,98,0.2)]">
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Code certificat</label>
+                  <input id="cours-certificat-code" type="text" maxlength="6"
+                    class="w-32 border rounded-lg px-3 py-2 text-sm uppercase font-mono focus:outline-none"
+                    style="border-color: #e5e7eb;"
+                    placeholder="ME"
+                  />
+                  <p class="text-[10px] text-gray-400 mt-1">Numéro : JCBO-<strong>ME</strong>-XXXXXX</p>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Texte additionnel (optionnel)</label>
+                  <textarea id="cours-certificat-intro" rows="2"
+                    class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none resize-none"
+                    style="border-color: #e5e7eb;"
+                    placeholder="Phrase complémentaire en bas du certificat"
+                  ></textarea>
+                </div>
+              </div>
+            </section>
+
+            <p id="cours-erreur" class="text-xs text-red-500 hidden"></p>
           </div>
-        </div>
-        <p id="cours-erreur" class="text-xs text-red-500 hidden"></p>
-        <div class="flex gap-3 pt-2">
-          <button type="button" id="btn-annuler-cours"
-            class="flex-1 py-2.5 rounded-lg text-sm font-medium border transition hover:bg-gray-50"
-            style="border-color: #e5e7eb; color: #6b7280;"
-          >Annuler</button>
-          <button type="submit"
-            class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white transition hover:opacity-90"
-            style="background-color: #0b1f3a;"
-          >Enregistrer</button>
-        </div>
-      </form>
+          <div class="flex-shrink-0 flex gap-3 px-6 md:px-8 py-4 border-t border-gray-100 bg-gray-50/80 rounded-b-2xl">
+            <button type="button" id="btn-annuler-cours"
+              class="flex-1 py-2.5 rounded-lg text-sm font-medium border transition hover:bg-white"
+              style="border-color: #e5e7eb; color: #6b7280;"
+            >Annuler</button>
+            <button type="submit"
+              class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white transition hover:opacity-90"
+              style="background-color: #0b1f3a;"
+            >Enregistrer</button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
@@ -207,30 +232,31 @@ const cours = await getCours();
   </div>
 
   <!-- Modal gestion modules / fichiers / vidéos -->
-  <div id="modal-modules" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 overflow-y-auto" style="background:rgba(0,0,0,0.5);">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 md:p-8 my-8">
-      <h3 id="modal-modules-titre" class="text-lg font-bold mb-2" style="color: #0b1f3a;">Contenu du cours</h3>
-      <p class="text-xs text-gray-400 mb-6">
-        Chaque module peut contenir une vidéo, un PDF de cours et un quiz. Tous sont optionnels.
-      </p>
-      <div id="modules-list" class="flex flex-col gap-4 mb-6"></div>
-      <form id="form-add-module" class="border-t border-gray-100 pt-6 flex flex-col gap-3">
-        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Nouveau module</p>
-        <p class="text-xs text-gray-400 -mt-1">Chaque module peut contenir : une vidéo, un PDF de cours et un quiz.</p>
-        <div class="grid sm:grid-cols-3 gap-3">
-          <input id="new-module-titre" type="text" required placeholder="Titre du module"
-            class="border rounded-lg px-3 py-2 text-sm sm:col-span-2" />
-          <input id="new-module-duree" type="text" placeholder="Durée (ex: 45min)"
-            class="border rounded-lg px-3 py-2 text-sm" />
+  <div id="modal-modules" class="fixed inset-0 z-50 hidden overflow-y-auto py-6 px-4" style="background:rgba(0,0,0,0.5);">
+    <div class="flex min-h-full items-start justify-center">
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-3xl my-4 flex flex-col max-h-[calc(100vh-3rem)]">
+        <div class="flex-shrink-0 px-6 md:px-8 pt-6 pb-4 border-b border-gray-100">
+          <h3 id="modal-modules-titre" class="text-lg font-bold" style="color: #0b1f3a;">Contenu du cours</h3>
+          <p class="text-xs text-gray-400 mt-1">Chaque module : vidéo → PDF → quiz (tous optionnels).</p>
         </div>
-        <input id="new-module-type" type="hidden" value="Vidéo" />
-        <div class="flex gap-3 justify-end">
-          <button type="button" id="btn-annuler-modules"
-            class="px-4 py-2 rounded-lg text-sm text-gray-500 border border-gray-200 hover:bg-gray-50">Fermer</button>
-          <button type="submit" id="btn-add-module"
-            class="px-5 py-2 rounded-lg text-sm font-semibold text-white" style="background:#0b1f3a;">Ajouter module</button>
-        </div>
-      </form>
+        <div id="modules-list" class="overflow-y-auto flex-1 px-6 md:px-8 py-4 flex flex-col gap-4 min-h-0"></div>
+        <form id="form-add-module" class="flex-shrink-0 border-t border-gray-100 px-6 md:px-8 py-5 bg-gray-50/60 rounded-b-2xl">
+          <p class="text-[11px] font-bold uppercase tracking-wider mb-3" style="color:#d4a762;">+ Nouveau module</p>
+          <div class="grid sm:grid-cols-3 gap-3 mb-3">
+            <input id="new-module-titre" type="text" required placeholder="Titre du module"
+              class="border rounded-lg px-3 py-2.5 text-sm sm:col-span-2 focus:outline-none focus:ring-2 focus:ring-[#d4a762]/30" />
+            <input id="new-module-duree" type="text" placeholder="Durée (45 min)"
+              class="border rounded-lg px-3 py-2.5 text-sm focus:outline-none" />
+          </div>
+          <input id="new-module-type" type="hidden" value="Vidéo" />
+          <div class="flex gap-3 justify-end">
+            <button type="button" id="btn-annuler-modules"
+              class="px-4 py-2 rounded-lg text-sm text-gray-500 border border-gray-200 hover:bg-white">Fermer</button>
+            <button type="submit" id="btn-add-module"
+              class="px-5 py-2 rounded-lg text-sm font-semibold text-white" style="background:#0b1f3a;">Ajouter module</button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
