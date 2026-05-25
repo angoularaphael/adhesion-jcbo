@@ -3,14 +3,17 @@ import { uploadToCloudinary, type CloudinaryFolder } from "../../lib/cloudinary"
 import { SUPABASE_FILE_PREFIX } from "../../lib/module-fichier";
 import { uploadFile as uploadToSupabaseStorage, type StorageBucket } from "../../lib/storage";
 
-const ALLOWED_FOLDERS: CloudinaryFolder[] = [
+type UploadBucket = CloudinaryFolder | "ressources-vitrine";
+
+const ALLOWED_FOLDERS: UploadBucket[] = [
   "actualites",
   "profils",
   "cours-fichiers",
   "videos-formation",
+  "ressources-vitrine",
 ];
 
-const ALLOWED_MIME: Record<CloudinaryFolder, string[]> = {
+const ALLOWED_MIME: Record<UploadBucket, string[]> = {
   actualites: ["image/jpeg", "image/png", "image/webp", "image/gif"],
   profils: ["image/jpeg", "image/png", "image/webp"],
   "cours-fichiers": [
@@ -29,13 +32,22 @@ const ALLOWED_MIME: Record<CloudinaryFolder, string[]> = {
     "video/quicktime",
     "video/x-matroska",
   ],
+  "ressources-vitrine": [
+    "application/pdf",
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ],
 };
 
-const MAX_SIZE: Record<CloudinaryFolder, number> = {
+const MAX_SIZE: Record<UploadBucket, number> = {
   actualites: 8 * 1024 * 1024,
   profils: 4 * 1024 * 1024,
   "cours-fichiers": 25 * 1024 * 1024,
   "videos-formation": 100 * 1024 * 1024,
+  "ressources-vitrine": 25 * 1024 * 1024,
 };
 
 export const POST: APIRoute = async ({ request, locals }) => {
@@ -51,7 +63,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   const file = form.get("file");
-  const bucket = String(form.get("bucket") ?? "") as CloudinaryFolder;
+  const bucket = String(form.get("bucket") ?? "") as UploadBucket;
   const pathPrefix = String(form.get("path") ?? "upload");
 
   // Un adhérent ne peut envoyer que sa propre photo de profil ("profils").
@@ -82,14 +94,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  // PDF / documents de cours → Supabase Storage (privé), pas Cloudinary (401 sur les PDF)
-  if (bucket === "cours-fichiers") {
+  // PDF / documents → Supabase Storage (privé)
+  if (bucket === "cours-fichiers" || bucket === "ressources-vitrine") {
     const ext = file.name.includes(".") ? file.name.slice(file.name.lastIndexOf(".")) : "";
     const safeName = `${pathPrefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}${ext}`.replace(
       /[^a-zA-Z0-9_.-]/g,
       "_"
     );
-    const storageBucket: StorageBucket = "cours-fichiers";
+    const storageBucket: StorageBucket = bucket;
     const result = await uploadToSupabaseStorage(storageBucket, safeName, buffer, file.type);
     if ("error" in result) {
       return new Response(JSON.stringify({ error: result.error }), { status: 500 });
@@ -101,7 +113,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
     );
   }
 
-  const result = await uploadToCloudinary(buffer, file.type, bucket, pathPrefix, file.name);
+  const result = await uploadToCloudinary(
+    buffer,
+    file.type,
+    bucket as CloudinaryFolder,
+    pathPrefix,
+    file.name
+  );
 
   if (!result.ok) {
     return new Response(JSON.stringify({ error: result.error }), { status: 500 });

@@ -56,9 +56,23 @@ export async function withButtonLoading<T>(
   }
 }
 
+export async function parseJsonResponse<T>(res: Response): Promise<T> {
+  const text = await res.text();
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    const snippet = text.slice(0, 120).replace(/\s+/g, " ");
+    throw new Error(
+      res.status === 413
+        ? "Fichier trop volumineux pour le serveur. Réduisez la taille ou contactez le support."
+        : `Erreur serveur (${res.status}) : ${snippet || "réponse invalide"}`
+    );
+  }
+}
+
 export async function uploadFile(
   file: File,
-  bucket: "actualites" | "cours-fichiers" | "videos-formation" | "profils",
+  bucket: "actualites" | "cours-fichiers" | "videos-formation" | "profils" | "ressources-vitrine",
   pathPrefix: string
 ): Promise<{ url: string }> {
   const fd = new FormData();
@@ -66,7 +80,7 @@ export async function uploadFile(
   fd.append("bucket", bucket);
   fd.append("path", pathPrefix);
   const res = await fetch("/api/upload", { method: "POST", body: fd, credentials: "same-origin" });
-  const data = (await res.json()) as { url?: string; error?: string };
+  const data = await parseJsonResponse<{ url?: string; error?: string }>(res);
   if (!res.ok || !data.url) throw new Error(data.error || "Échec de l'upload");
   return { url: data.url };
 }

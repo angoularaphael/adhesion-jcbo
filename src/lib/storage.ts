@@ -1,6 +1,11 @@
 import { getSupabase } from "./supabase";
 
-export type StorageBucket = "actualites" | "profils" | "cours-fichiers" | "videos-formation";
+export type StorageBucket =
+  | "actualites"
+  | "profils"
+  | "cours-fichiers"
+  | "videos-formation"
+  | "ressources-vitrine";
 
 export async function uploadFile(
   bucket: StorageBucket,

@@ -51,7 +51,10 @@ export async function getRessourceFileAttachment(
   if (isSupabaseFileRef(fichier)) {
     const ref = parseSupabaseFileRef(fichier);
     if (!ref) return null;
-    const dl = await downloadStorageFile(ref.bucket as "cours-fichiers", ref.path);
+    const dl = await downloadStorageFile(
+      ref.bucket as "cours-fichiers" | "ressources-vitrine",
+      ref.path
+    );
     if ("error" in dl) return null;
     const buffer = Buffer.from(await dl.data.arrayBuffer());
     return { buffer, fileName };
