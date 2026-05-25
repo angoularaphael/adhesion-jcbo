@@ -28,6 +28,7 @@ export async function createPayment(params: {
   description: string;
   reference: string;
   callbackUrl: string;
+  metadata?: Record<string, string>;
   applicationFee?: number;
   destinationAccount?: string;
 }): Promise<{ authorization_url: string; reference: string } | null> {
@@ -45,6 +46,10 @@ export async function createPayment(params: {
     reference: params.reference,
     callback: params.callbackUrl,
   };
+
+  if (params.metadata && Object.keys(params.metadata).length > 0) {
+    body.metadata = params.metadata;
+  }
 
   // Split 80/20 avec NotchPay Sync
   if (params.applicationFee && params.destinationAccount) {

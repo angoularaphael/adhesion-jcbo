@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { getCours, getAdherentByEmail } from "../../../lib/store";
+import { getCours, getAdherentByEmail, saveCheckoutPending, addNotification } from "../../../lib/store";
 import { getNotchPayConfig, createPayment } from "../../../lib/notchpay";
 
 export const POST: APIRoute = async ({ request, locals }) => {
@@ -45,8 +45,32 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const amountXaf = Math.max(100, Math.round(amountEur * 655));
   const label = finalCours.length === 1 ? finalCours[0].titre : `${finalCours.length} formations JCBO`;
   const reference = `jcbo-${adherent.id}-${Date.now()}`;
+  const coursIdsStr = finalCours.map(c => c.id).join(",");
+  const coursTitres = finalCours.map(c => c.titre).join(" | ");
+  const metadata = {
+    adherentEmail: adherent.email,
+    type: "cours_multiple",
+    coursIds: coursIdsStr,
+    coursTitres,
+    montant: String(amountEur),
+  };
 
-  // 20% commission plateforme
+  await saveCheckoutPending({
+    reference,
+    adherentEmail: adherent.email,
+    coursIds: coursIdsStr,
+    coursTitres,
+    montant: amountEur,
+    provider: "notchpay",
+  });
+
+  await addNotification({
+    adherentEmail: adherent.email,
+    type: "paiement",
+    titre: "Paiement en cours",
+    message: `Finalisez votre paiement de ${amountEur} € pour « ${label} » sur la page sécurisée Mobile Money (NotchPay).`,
+  });
+
   const applicationFee = Math.round(amountXaf * 0.20);
 
   try {
@@ -57,7 +81,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
       name: `${adherent.prenom} ${adherent.nom}`,
       description: label,
       reference,
-      callbackUrl: `${origin}/api/notchpay/webhook`,
+      callbackUrl: `${origin}/paiement/succes?provider=notchpay`,
+      metadata,
       applicationFee,
       destinationAccount: config.connectedAccountId,
     });
@@ -67,17 +92,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     return new Response(
-      JSON.stringify({
-        url: payment.authorization_url,
-        reference: payment.reference,
-        meta: {
-          adherentEmail: adherent.email,
-          type: "cours_multiple",
-          coursIds: finalCours.map(c => c.id).join(","),
-          coursTitres: finalCours.map(c => c.titre).join(" | "),
-          montant: String(amountEur),
-        },
-      }),
+      JSON.stringify({ url: payment.authorization_url, reference: payment.reference }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (err) {

@@ -1,8 +1,8 @@
 import type { APIRoute } from "astro";
 import Stripe from "stripe";
 import {
-  setCoursAdherent, getAdherentByEmail, enregistrerPaiement,
-  addNotification, setAbonnement,
+  getAdherentByEmail, enregistrerPaiement,
+  addNotification, setAbonnement, fulfillCoursPayment,
 } from "../../../lib/store";
 import { notifyAdmin } from "../../../lib/store-admin";
 
@@ -109,50 +109,17 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response("Métadonnées manquantes", { status: 400 });
   }
 
-  const adherent = await getAdherentByEmail(adherentEmail);
   const idsToEnroll = coursIds ? coursIds.split(",").filter(Boolean) : (coursId ? [coursId] : []);
   const titres = coursTitres ?? coursTitre ?? "Formation JCBO";
 
-  if (adherent) {
-    const newIds = idsToEnroll.filter(id => !adherent.coursInscrits.includes(id));
-    if (newIds.length > 0) {
-      await setCoursAdherent(adherent.id, [...adherent.coursInscrits, ...newIds]);
-    }
-  }
-
-  const paiement = await enregistrerPaiement({
+  await fulfillCoursPayment({
     adherentEmail,
-    coursId: idsToEnroll[0] ?? "",
-    coursTitre: titres,
-    montant: Number(montant ?? 0),
+    coursIds: idsToEnroll,
+    coursTitres: titres,
+    montant: Number(montant ?? amountTotal),
+    provider: "stripe",
+    reference: session.id,
     stripeSessionId: session.id,
-  });
-
-  await addNotification({
-    adherentEmail,
-    type: "paiement",
-    titre: "Paiement confirmé",
-    message: `Votre paiement de ${paiement.montant} € pour "${titres}" a été validé. Accès activé automatiquement. Réf. ${paiement.numerTransaction}`,
-  });
-
-  await addNotification({
-    adherentEmail,
-    type: "inscription",
-    titre: "Inscription confirmée",
-    message: `Vous êtes inscrit. Rendez-vous dans "Mes cours" pour commencer.`,
-  });
-
-  await notifyAdmin({
-    type: "paiement_adherent",
-    titre: `Paiement adhérent — ${titres}`,
-    message: `${adherentEmail} a réglé ${paiement.montant} € pour « ${titres} ». Accès activé automatiquement.`,
-    metadata: {
-      adherentEmail,
-      formation: titres,
-      montant: `${paiement.montant} €`,
-      reference: paiement.numerTransaction,
-      stripeSessionId: session.id,
-    },
   });
 
   return new Response(JSON.stringify({ recu: true }), { status: 200 });

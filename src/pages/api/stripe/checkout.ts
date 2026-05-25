@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import Stripe from "stripe";
-import { getCours, getAdherentByEmail } from "../../../lib/store";
+import { getCours, getAdherentByEmail, addNotification } from "../../../lib/store";
 
 export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.session || locals.session.role !== "adherent") {
@@ -47,6 +47,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const finalCours = coursToCheckout.filter(c => !adherent.coursInscrits.includes(c.id));
   const totalMontant = finalCours.reduce((sum, c) => sum + ((c as typeof c & { prix?: number }).prix ?? 0), 0);
+  const titresLabel = finalCours.map(c => c.titre).join(" | ");
+
+  await addNotification({
+    adherentEmail: adherent.email,
+    type: "paiement",
+    titre: "Paiement en cours",
+    message: `Finalisez votre paiement de ${totalMontant} € pour « ${titresLabel || "vos formations"} » sur la page sécurisée Stripe.`,
+  });
 
   const line_items = finalCours.map(c => ({
     price_data: {

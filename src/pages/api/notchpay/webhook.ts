@@ -1,11 +1,5 @@
 import type { APIRoute } from "astro";
-import {
-  setCoursAdherent,
-  getAdherentByEmail,
-  enregistrerPaiement,
-  addNotification,
-} from "../../../lib/store";
-import { notifyAdmin } from "../../../lib/store-admin";
+import { getCheckoutPending, fulfillCoursPayment } from "../../../lib/store";
 import { verifyPayment } from "../../../lib/notchpay";
 
 export const POST: APIRoute = async ({ request }) => {
@@ -25,62 +19,35 @@ export const POST: APIRoute = async ({ request }) => {
   const reference = String(txData.reference ?? txData.trxref ?? "");
   if (!reference) return new Response("Référence manquante", { status: 400 });
 
-  // Vérifier le paiement côté NotchPay
   const verified = await verifyPayment(reference);
   if (!verified || verified.status !== "complete") {
     return new Response(JSON.stringify({ error: "Paiement non vérifié" }), { status: 400 });
   }
 
-  // Extraire les métadonnées depuis le payload
-  const meta = (txData.metadata ?? txData.custom_fields ?? {}) as Record<string, string>;
-  const adherentEmail = meta.adherentEmail ?? "";
-  const coursIdsStr = meta.coursIds ?? "";
-  const montantEur = Number(meta.montant ?? 0);
+  const meta = (verified.metadata ?? (txData.metadata ?? txData.custom_fields ?? {})) as Record<string, string>;
+  const pending = await getCheckoutPending(reference);
+
+  const adherentEmail = meta.adherentEmail ?? pending?.adherentEmail ?? "";
+  const coursIdsStr = meta.coursIds ?? pending?.coursIds ?? "";
+  const coursTitres = meta.coursTitres ?? pending?.coursTitres ?? "Formation JCBO";
+  const montantEur = Number(meta.montant ?? pending?.montant ?? 0);
 
   if (!adherentEmail || !coursIdsStr) {
     return new Response(JSON.stringify({ error: "Métadonnées manquantes" }), { status: 400 });
   }
 
-  const coursIds = coursIdsStr.split(",").filter(Boolean);
-  const adherent = await getAdherentByEmail(adherentEmail);
-
-  if (adherent) {
-    const newCours = coursIds.filter(id => !adherent.coursInscrits.includes(id));
-    if (newCours.length > 0) {
-      await setCoursAdherent(adherent.id, [...adherent.coursInscrits, ...newCours]);
-    }
-  }
-
-  const paiement = await enregistrerPaiement({
+  const paiement = await fulfillCoursPayment({
     adherentEmail,
-    coursId: coursIds[0] ?? "",
-    coursTitre: meta.coursTitres ?? "Formation JCBO",
+    coursIds: coursIdsStr.split(",").filter(Boolean),
+    coursTitres,
     montant: montantEur,
-    stripeSessionId: "",
     provider: "notchpay",
-    fapshiTransactionId: reference,
-    externalId: reference,
+    reference,
   });
 
-  await addNotification({
-    adherentEmail,
-    type: "paiement",
-    titre: "Paiement Mobile Money confirmé",
-    message: `Votre paiement de ${montantEur} € pour "${meta.coursTitres ?? "Formation"}" a été validé. Accès activé automatiquement.`,
-  });
-
-  await notifyAdmin({
-    type: "paiement_adherent",
-    titre: `Paiement NotchPay — ${meta.coursTitres ?? "Formation"}`,
-    message: `${adherentEmail} a réglé ${montantEur} € via Mobile Money pour « ${meta.coursTitres ?? "Formation"} ». Réf. ${reference}`,
-    metadata: {
-      adherentEmail,
-      formations: meta.coursTitres ?? "",
-      montant: `${montantEur} €`,
-      reference,
-      provider: "notchpay",
-    },
-  });
+  if (!paiement) {
+    return new Response(JSON.stringify({ error: "Traitement impossible" }), { status: 500 });
+  }
 
   return new Response(JSON.stringify({ recu: true }), { status: 200 });
 };

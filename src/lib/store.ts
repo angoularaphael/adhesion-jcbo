@@ -954,6 +954,120 @@ export async function getPaiementParFapshiId(fapshiId: string): Promise<Paiement
   return data ? toPaiement(data) : null;
 }
 
+export type CheckoutPending = {
+  reference: string;
+  adherentEmail: string;
+  coursIds: string;
+  coursTitres: string;
+  montant: number;
+  provider: string;
+};
+
+export async function saveCheckoutPending(data: CheckoutPending): Promise<void> {
+  await getSupabase().from("checkout_pending").upsert({
+    reference: data.reference,
+    adherent_email: data.adherentEmail.toLowerCase(),
+    cours_ids: data.coursIds,
+    cours_titres: data.coursTitres,
+    montant: data.montant,
+    provider: data.provider,
+  });
+}
+
+export async function getCheckoutPending(reference: string): Promise<CheckoutPending | null> {
+  const { data } = await getSupabase()
+    .from("checkout_pending")
+    .select("*")
+    .eq("reference", reference)
+    .maybeSingle();
+  if (!data) return null;
+  return {
+    reference: data.reference,
+    adherentEmail: data.adherent_email,
+    coursIds: data.cours_ids,
+    coursTitres: data.cours_titres ?? "",
+    montant: Number(data.montant ?? 0),
+    provider: data.provider ?? "notchpay",
+  };
+}
+
+export async function deleteCheckoutPending(reference: string): Promise<void> {
+  await getSupabase().from("checkout_pending").delete().eq("reference", reference);
+}
+
+/** Inscription + paiement + notifications après validation d'un achat marketplace. */
+export async function fulfillCoursPayment(params: {
+  adherentEmail: string;
+  coursIds: string[];
+  coursTitres: string;
+  montant: number;
+  provider: "stripe" | "notchpay";
+  reference: string;
+  stripeSessionId?: string;
+}): Promise<Paiement | null> {
+  if (params.provider === "notchpay") {
+    const existing = await getPaiementParFapshiId(params.reference);
+    if (existing) return existing;
+  } else if (params.stripeSessionId) {
+    const existing = await getPaiementParSession(params.stripeSessionId);
+    if (existing) return existing;
+  }
+
+  const adherent = await getAdherentByEmail(params.adherentEmail);
+  if (adherent) {
+    const newCours = params.coursIds.filter(id => !adherent.coursInscrits.includes(id));
+    if (newCours.length > 0) {
+      await setCoursAdherent(adherent.id, [...adherent.coursInscrits, ...newCours]);
+    }
+  }
+
+  const paiement = await enregistrerPaiement({
+    adherentEmail: params.adherentEmail,
+    coursId: params.coursIds[0] ?? "",
+    coursTitre: params.coursTitres,
+    montant: params.montant,
+    stripeSessionId: params.stripeSessionId ?? "",
+    provider: params.provider,
+    fapshiTransactionId: params.provider === "notchpay" ? params.reference : undefined,
+    externalId: params.reference,
+  });
+
+  const providerLabel = params.provider === "notchpay" ? "Mobile Money" : "carte bancaire";
+
+  await addNotification({
+    adherentEmail: params.adherentEmail,
+    type: "paiement",
+    titre: params.provider === "notchpay" ? "Paiement Mobile Money confirmé" : "Paiement confirmé",
+    message: `Votre paiement de ${paiement.montant} € pour « ${params.coursTitres} » a été validé (${providerLabel}). Accès activé. Réf. ${paiement.numerTransaction}`,
+  });
+
+  await addNotification({
+    adherentEmail: params.adherentEmail,
+    type: "inscription",
+    titre: "Inscription confirmée",
+    message: `Vous êtes inscrit à « ${params.coursTitres} ». Rendez-vous dans « Mes cours » pour commencer.`,
+  });
+
+  try {
+    const { notifyAdmin } = await import("./store-admin");
+    await notifyAdmin({
+      type: "paiement_adherent",
+      titre: `Paiement adhérent — ${params.coursTitres}`,
+      message: `${params.adherentEmail} a réglé ${paiement.montant} € via ${providerLabel} pour « ${params.coursTitres} ». Réf. ${paiement.numerTransaction}`,
+      metadata: {
+        adherentEmail: params.adherentEmail,
+        formation: params.coursTitres,
+        montant: `${paiement.montant} €`,
+        reference: paiement.numerTransaction,
+        provider: params.provider,
+      },
+    });
+  } catch { /* silencieux */ }
+
+  await deleteCheckoutPending(params.reference);
+  return paiement;
+}
+
 // ── Notifications ─────────────────────────────────────────────────────────────
 
 export async function getNotifications(adherentEmail: string): Promise<Notification[]> {

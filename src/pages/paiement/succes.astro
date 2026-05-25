@@ -3,19 +3,44 @@ import AdherentMemberLayout from "../../layouts/AdherentMemberLayout.astro";
 import LogoJCBO from "../../components/ui/LogoJCBO.astro";
 import Stripe from "stripe";
 import {
-  getPaiementParSession, getAdherentByEmail,
-  enregistrerPaiement, setCoursAdherent, addNotification
+  getPaiementParSession, getPaiementParFapshiId, getAdherentByEmail,
+  fulfillCoursPayment, getCheckoutPending,
 } from "../../lib/store";
+import { verifyPayment } from "../../lib/notchpay";
 
 const sessionId = Astro.url.searchParams.get("session_id") ?? "";
+const provider = Astro.url.searchParams.get("provider") ?? "";
+const notchRef = Astro.url.searchParams.get("reference") ?? Astro.url.searchParams.get("trxref") ?? "";
 const profil = await getAdherentByEmail(Astro.locals.session?.email ?? "");
 if (!profil) return Astro.redirect("/login");
 
-// Vérifie si le webhook a déjà enregistré ce paiement
 let recu = sessionId ? await getPaiementParSession(sessionId) : null;
 
-// Si le webhook n'a pas encore tourné (pas de Stripe CLI ou secret manquant),
-// on traite directement depuis la session Stripe
+if (!recu && provider === "notchpay" && notchRef) {
+  recu = await getPaiementParFapshiId(notchRef);
+  if (!recu) {
+    const verified = await verifyPayment(notchRef);
+    if (verified?.status === "complete") {
+      const meta = (verified.metadata ?? {}) as Record<string, string>;
+      const pending = await getCheckoutPending(notchRef);
+      const adherentEmail = meta.adherentEmail ?? pending?.adherentEmail ?? profil.email;
+      const coursIdsStr = meta.coursIds ?? pending?.coursIds ?? "";
+      const coursTitres = meta.coursTitres ?? pending?.coursTitres ?? "Formation JCBO";
+      const montant = Number(meta.montant ?? pending?.montant ?? 0);
+      if (coursIdsStr && adherentEmail.toLowerCase() === profil.email.toLowerCase()) {
+        recu = await fulfillCoursPayment({
+          adherentEmail,
+          coursIds: coursIdsStr.split(",").filter(Boolean),
+          coursTitres,
+          montant,
+          provider: "notchpay",
+          reference: notchRef,
+        });
+      }
+    }
+  }
+}
+
 if (!recu && sessionId) {
   const stripeKey = import.meta.env.STRIPE_SECRET_KEY;
   if (stripeKey && !stripeKey.includes("REMPLACER")) {
@@ -26,42 +51,22 @@ if (!recu && sessionId) {
         const { adherentEmail, coursId, coursIds, coursTitre, coursTitres, montant } = session.metadata;
         const email = (adherentEmail ?? profil.email).toLowerCase();
         const titres = coursTitres ?? coursTitre ?? "Formation JCBO";
-
-        // Inscrire l'adhérent aux cours
         const idsToEnroll = coursIds ? coursIds.split(",").filter(Boolean) : (coursId ? [coursId] : []);
-        const adherent = await getAdherentByEmail(email);
-        if (adherent && idsToEnroll.length > 0) {
-          const newIds = idsToEnroll.filter(id => !adherent.coursInscrits.includes(id));
-          if (newIds.length > 0) {
-            await setCoursAdherent(adherent.id, [...adherent.coursInscrits, ...newIds]);
-          }
-        }
-
-        recu = await enregistrerPaiement({
+        recu = await fulfillCoursPayment({
           adherentEmail: email,
-          coursId: idsToEnroll[0] ?? "",
-          coursTitre: titres,
+          coursIds: idsToEnroll,
+          coursTitres: titres,
           montant: Number(montant ?? 0),
+          provider: "stripe",
+          reference: sessionId,
           stripeSessionId: sessionId,
-        });
-
-        await addNotification({
-          adherentEmail: email,
-          type: "paiement",
-          titre: "Paiement confirmé",
-          message: `Votre paiement de ${recu.montant} € a été validé. Accès activé. Réf. ${recu.numerTransaction}`,
-        });
-        await addNotification({
-          adherentEmail: email,
-          type: "inscription",
-          titre: "Inscription confirmée",
-          message: `Vous êtes inscrit. Rendez-vous dans "Mes cours" pour commencer.`,
         });
       }
     } catch { /* session invalide ou clés manquantes */ }
   }
 }
 
+const refTransaction = recu?.stripeSessionId || recu?.fapshiTransactionId || sessionId || notchRef || "—";
 const dateFormatee = recu
   ? new Date(recu.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
   : new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
@@ -157,10 +162,10 @@ const dateFormatee = recu
         </div>
       </div>
 
-      <!-- Référence Stripe -->
+      <!-- Référence transaction -->
       <div class="mb-8">
         <p class="text-xs font-semibold uppercase tracking-widest mb-2" style="color: #0b1f3a;">Référence de transaction</p>
-        <p class="text-xs font-mono text-gray-500">{recu?.stripeSessionId ?? sessionId ?? "—"}</p>
+        <p class="text-xs font-mono text-gray-500">{refTransaction}</p>
       </div>
 
       <!-- Message -->
