@@ -720,6 +720,7 @@ export async function createCours(data: {
   competences?: string[];
   certificatIntro?: string;
   certificatCode?: string;
+  prix?: number | null;
 }) {
   const id = `COURS-${Date.now()}`;
   const row = {
@@ -733,15 +734,15 @@ export async function createCours(data: {
     certificat_intro: data.certificatIntro ?? null,
     certificat_code: data.certificatCode ?? null,
     date: new Date().toISOString().split("T")[0],
-    prix: null,
+    prix: data.prix ?? null,
   };
   await getSupabase().from("cours").insert(row);
-  return { id, ...data, date: row.date, modules: [] };
+  return { id, ...data, date: row.date, modules: [], prix: data.prix ?? undefined };
 }
 
 export async function updateCours(id: string, data: Partial<{
   titre: string; description: string; duree: string; niveau: string; statut: string;
-  competences: string[]; certificatIntro: string; certificatCode: string;
+  competences: string[]; certificatIntro: string; certificatCode: string; prix: number | null;
 }>) {
   const patch: Record<string, unknown> = {};
   if (data.titre !== undefined) patch.titre = data.titre;
@@ -752,6 +753,7 @@ export async function updateCours(id: string, data: Partial<{
   if (data.competences !== undefined) patch.competences = data.competences;
   if (data.certificatIntro !== undefined) patch.certificat_intro = data.certificatIntro;
   if (data.certificatCode !== undefined) patch.certificat_code = data.certificatCode;
+  if (data.prix !== undefined) patch.prix = data.prix;
 
   const { data: row } = await getSupabase().from("cours").update(patch).eq("id", id).select().single();
   return row ? toCours(row, []) : null;

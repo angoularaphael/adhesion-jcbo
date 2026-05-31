@@ -15,6 +15,10 @@ interface ImportMetaEnv {
   readonly STRIPE_SECRET_KEY?: string;
   readonly PUBLIC_STRIPE_KEY?: string;
   readonly STRIPE_WEBHOOK_SECRET?: string;
+  readonly STRIPE_CONNECTED_ACCOUNT_ID?: string;
+  readonly NOTCHPAY_PUBLIC_KEY?: string;
+  readonly NOTCHPAY_SECRET_KEY?: string;
+  readonly NOTCHPAY_CONNECTED_ACCOUNT_ID?: string;
   readonly FAPSHI_API_USER?: string;
   readonly FAPSHI_API_KEY?: string;
   readonly FAPSHI_WEBHOOK_SECRET?: string;

@@ -88,6 +88,12 @@ export const coursSchema = z.object({
   competences: z.array(z.string().max(200)).max(20).optional(),
   certificatIntro: z.string().max(2000).optional(),
   certificatCode: z.string().max(20).optional(),
+  prix: z
+    .number({ invalid_type_error: "Prix invalide" })
+    .min(0, "Le prix ne peut pas être négatif")
+    .max(99999, "Prix trop élevé")
+    .optional()
+    .nullable(),
 });
 
 export const progressionSchema = z.object({

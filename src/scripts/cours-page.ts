@@ -38,6 +38,7 @@ export function initCoursPage(): void {
     (document.getElementById("cours-duree") as HTMLInputElement).value = data?.duree ?? "";
     (document.getElementById("cours-niveau") as HTMLSelectElement).value = data?.niveau ?? "Débutant";
     (document.getElementById("cours-statut") as HTMLSelectElement).value = data?.statut ?? "Brouillon";
+    (document.getElementById("cours-prix") as HTMLInputElement).value = data?.prix ?? "";
 
     let competencesArr: string[] = [];
     if (data?.competences) {
@@ -538,6 +539,7 @@ export function initCoursPage(): void {
         competences: btn.dataset.competences ?? "[]",
         certificatCode: btn.dataset.certificatCode ?? "",
         certificatIntro: btn.dataset.certificatIntro ?? "",
+        prix: btn.dataset.prix ?? "",
       });
     });
   });
@@ -628,6 +630,16 @@ export function initCoursPage(): void {
       .filter((s) => s.length > 0);
     const certificatCode = (document.getElementById("cours-certificat-code") as HTMLInputElement | null)?.value.trim().toUpperCase() ?? "";
     const certificatIntro = (document.getElementById("cours-certificat-intro") as HTMLTextAreaElement | null)?.value.trim() ?? "";
+    const prixRaw = (document.getElementById("cours-prix") as HTMLInputElement).value.trim();
+    const prix = prixRaw === "" ? null : Number(prixRaw);
+    if (prix !== null && (Number.isNaN(prix) || prix < 0)) {
+      const errEl = document.getElementById("cours-erreur");
+      if (errEl) {
+        errEl.textContent = "Prix invalide.";
+        errEl.classList.remove("hidden");
+      }
+      return;
+    }
 
     const body = {
       titre: (document.getElementById("cours-titre") as HTMLInputElement).value.trim(),
@@ -638,6 +650,7 @@ export function initCoursPage(): void {
       competences,
       certificatCode,
       certificatIntro,
+      prix,
     };
     await withButtonLoading(submitBtn, async () => {
       const url = id ? "/api/cours/" + id : "/api/cours";

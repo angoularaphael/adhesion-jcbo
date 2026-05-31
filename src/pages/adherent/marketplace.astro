@@ -9,10 +9,10 @@ if (!profil) return Astro.redirect("/login");
 
 const tousLesCours = (await getCours()).filter(c => c.statut === "Publié");
 const catalogue = tousLesCours
-  .filter(c => !profil.coursInscrits.includes(c.id))
+  .filter(c => !profil.coursInscrits.includes(c.id) && c.prix != null && c.prix > 0)
   .map(c => ({
     ...c,
-    prix: (c as typeof c & { prix?: number }).prix ?? 0,
+    prix: c.prix!,
     totalModules: c.modules.length,
   }));
 ---

@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { getCours, getAdherentByEmail, saveCheckoutPending, addNotification } from "../../../lib/store";
 import { getNotchPayConfig, createPayment } from "../../../lib/notchpay";
+import { splitPaymentAmount } from "../../../lib/payment-split";
 
 export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.session || locals.session.role !== "adherent") {
@@ -41,7 +42,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return new Response(JSON.stringify({ error: "Vous êtes déjà inscrit à toutes ces formations" }), { status: 409 });
   }
 
-  const amountEur = finalCours.reduce((sum, c) => sum + ((c as typeof c & { prix?: number }).prix ?? 0), 0);
+  const coursSansPrix = finalCours.filter(c => !c.prix || c.prix <= 0);
+  if (coursSansPrix.length > 0) {
+    return new Response(
+      JSON.stringify({ error: "Certaines formations n'ont pas de prix défini. Contactez l'administration." }),
+      { status: 400 }
+    );
+  }
+
+  const amountEur = finalCours.reduce((sum, c) => sum + (c.prix ?? 0), 0);
   const amountXaf = Math.max(100, Math.round(amountEur * 655));
   const label = finalCours.length === 1 ? finalCours[0].titre : `${finalCours.length} formations JCBO`;
   const reference = `jcbo-${adherent.id}-${Date.now()}`;
@@ -71,7 +80,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     message: `Finalisez votre paiement de ${amountEur} € pour « ${label} » sur la page sécurisée Mobile Money (NotchPay).`,
   });
 
-  const applicationFee = Math.round(amountXaf * 0.20);
+  const { platformAmount: applicationFee, connectedAmount: destinationAmount } = splitPaymentAmount(amountXaf);
 
   try {
     const payment = await createPayment({
@@ -85,6 +94,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       metadata,
       applicationFee,
       destinationAccount: config.connectedAccountId,
+      destinationAmount,
     });
 
     if (!payment || !payment.authorization_url) {

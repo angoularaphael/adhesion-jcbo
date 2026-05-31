@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import Stripe from "stripe";
 import { getCours, getAdherentByEmail, addNotification } from "../../../lib/store";
+import { splitPaymentAmount } from "../../../lib/payment-split";
 
 export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.session || locals.session.role !== "adherent") {
@@ -46,7 +47,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   const finalCours = coursToCheckout.filter(c => !adherent.coursInscrits.includes(c.id));
-  const totalMontant = finalCours.reduce((sum, c) => sum + ((c as typeof c & { prix?: number }).prix ?? 0), 0);
+  const coursSansPrix = finalCours.filter(c => !c.prix || c.prix <= 0);
+  if (coursSansPrix.length > 0) {
+    return new Response(
+      JSON.stringify({ error: "Certaines formations n'ont pas de prix défini. Contactez l'administration." }),
+      { status: 400 }
+    );
+  }
+  const totalMontant = finalCours.reduce((sum, c) => sum + (c.prix ?? 0), 0);
   const titresLabel = finalCours.map(c => c.titre).join(" | ");
 
   await addNotification({
@@ -60,14 +68,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
     price_data: {
       currency: "eur" as const,
       product_data: { name: c.titre, description: c.description },
-      unit_amount: ((c as typeof c & { prix?: number }).prix ?? 0) * 100,
+      unit_amount: (c.prix ?? 0) * 100,
     },
     quantity: 1,
   }));
 
-  // Stripe Connect : 20% commission plateforme, 80% vers le compte connecté
+  // Stripe Connect : 80 % compte principal (plateforme), 20 % compte connecté secondaire
   const connectedAccountId = import.meta.env.STRIPE_CONNECTED_ACCOUNT_ID;
-  const platformFee = Math.round(totalMontant * 100 * 0.20); // 20% en centimes
+  const { platformAmount: platformFee } = splitPaymentAmount(Math.round(totalMontant * 100));
 
   const sessionParams: Stripe.Checkout.SessionCreateParams = {
     mode: "payment",
@@ -85,7 +93,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     cancel_url: `${origin}/adherent/marketplace`,
   };
 
-  // Si Stripe Connect est configuré, split automatique 80/20
+  // Si Stripe Connect est configuré : application_fee = 80 % plateforme, transfert = 20 % connecté
   if (connectedAccountId) {
     sessionParams.payment_intent_data = {
       application_fee_amount: platformFee,

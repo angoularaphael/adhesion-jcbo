@@ -41,6 +41,11 @@ const cours = await getCours();
                 {c.duree}
               </span>
               <span>{c.modules.length} module{c.modules.length > 1 ? "s" : ""}</span>
+              <span class="font-semibold" style="color: #0b1f3a;">
+                {(c as { prix?: number }).prix != null && (c as { prix?: number }).prix! > 0
+                  ? `${(c as { prix?: number }).prix} €`
+                  : "Prix non défini"}
+              </span>
             </div>
           </div>
           <div class="flex flex-col gap-2 flex-shrink-0">
@@ -62,6 +67,7 @@ const cours = await getCours();
               data-competences={JSON.stringify((c as { competences?: string[] }).competences ?? [])}
               data-certificat-code={(c as { certificatCode?: string }).certificatCode ?? ""}
               data-certificat-intro={(c as { certificatIntro?: string }).certificatIntro ?? ""}
+              data-prix={String((c as { prix?: number }).prix ?? "")}
             >Modifier</button>
             <button
               class="btn-delete-cours text-xs px-3 py-1.5 rounded-lg font-medium border transition hover:bg-red-50"
@@ -140,6 +146,15 @@ const cours = await getCours();
                     <option value="Brouillon">Brouillon</option>
                     <option value="Publié">Publié</option>
                   </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Prix marketplace (€)</label>
+                  <input id="cours-prix" type="number" min="0" step="1" required
+                    class="w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#d4a762]/30"
+                    style="border-color: #e5e7eb;"
+                    placeholder="Ex : 149"
+                  />
+                  <p class="text-[11px] text-gray-400 mt-1.5">Ce montant est affiché et facturé sur la marketplace adhérent (carte Stripe ou Mobile Money).</p>
                 </div>
               </div>
             </section>

@@ -31,6 +31,7 @@ export async function createPayment(params: {
   metadata?: Record<string, string>;
   applicationFee?: number;
   destinationAccount?: string;
+  destinationAmount?: number;
 }): Promise<{ authorization_url: string; reference: string } | null> {
   const config = getConfig();
   if (!config) return null;
@@ -51,12 +52,12 @@ export async function createPayment(params: {
     body.metadata = params.metadata;
   }
 
-  // Split 80/20 avec NotchPay Sync
-  if (params.applicationFee && params.destinationAccount) {
+  // Split 80 % plateforme (principal) / 20 % compte connecté (NotchPay Sync)
+  if (params.applicationFee != null && params.destinationAccount) {
     body.application_fee = params.applicationFee;
     body.destination = {
       account: params.destinationAccount,
-      amount: params.amount - params.applicationFee,
+      amount: params.destinationAmount ?? params.amount - params.applicationFee,
     };
   }
 
