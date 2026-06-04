@@ -146,13 +146,21 @@ const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? "";
   input.addEventListener("keydown", e => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   });
-  window.addEventListener("jcbo:new-message", () => location.reload());
+  let lastIncomingKey = "";
+  window.addEventListener("jcbo:new-message", (e) => {
+    const msg = e.detail;
+    if (!msg || msg.conversation_id !== convId || msg.de !== "admin") return;
+    const key = `${msg.de}:${msg.texte}:${msg.heure}`;
+    if (key === lastIncomingKey) return;
+    lastIncomingKey = key;
+    addBubble(msg.texte, "admin");
+  });
 })();
 </script>
 {supabaseUrl && supabaseAnonKey && (
   <>
-    <script is:inline define:vars={{ supabaseUrl, supabaseAnonKey }}>
-      window.__JCBO_REALTIME__ = { url: supabaseUrl, anonKey: supabaseAnonKey };
+    <script is:inline define:vars={{ supabaseUrl, supabaseAnonKey, convId: conv.id }}>
+      window.__JCBO_REALTIME__ = { url: supabaseUrl, anonKey: supabaseAnonKey, conversationId: convId };
     </script>
     <script src="/js/realtime-messaging.js" defer></script>
   </>

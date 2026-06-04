@@ -1,7 +1,22 @@
 import type { APIRoute } from "astro";
 import { messageSchema } from "../../lib/validation";
 import { checkRateLimit } from "../../lib/rateLimit";
-import { addMessage, markAsRead } from "../../lib/store";
+import { addMessage, markAsRead, getConversations } from "../../lib/store";
+
+export const GET: APIRoute = async ({ locals }) => {
+  if (!locals.session) {
+    return new Response(JSON.stringify({ error: "Non autorisé" }), { status: 401 });
+  }
+  if (locals.session.role !== "admin") {
+    return new Response(JSON.stringify({ error: "Non autorisé" }), { status: 403 });
+  }
+
+  const conversations = await getConversations();
+  return new Response(JSON.stringify(conversations), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+};
 
 export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.session) {

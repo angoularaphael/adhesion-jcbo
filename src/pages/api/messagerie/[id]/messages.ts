@@ -7,6 +7,27 @@ const schema = z.object({
   de: z.enum(["admin", "adherent"]).default("adherent"),
 });
 
+export const GET: APIRoute = async ({ params, locals }) => {
+  if (!locals.session) {
+    return new Response(JSON.stringify({ error: "Non autorisé" }), { status: 401 });
+  }
+
+  const { id } = params;
+  if (!id) return new Response(JSON.stringify({ error: "ID manquant" }), { status: 400 });
+
+  const conv = await getConversation(id);
+  if (!conv) return new Response(JSON.stringify({ error: "Conversation introuvable" }), { status: 404 });
+
+  if (locals.session.role === "adherent" && conv.email !== locals.session.email.toLowerCase()) {
+    return new Response(JSON.stringify({ error: "Non autorisé" }), { status: 403 });
+  }
+
+  return new Response(JSON.stringify(conv), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+};
+
 export const POST: APIRoute = async ({ params, request, locals }) => {
   if (!locals.session) {
     return new Response(JSON.stringify({ error: "Non autorisé" }), { status: 401 });

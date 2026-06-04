@@ -85,6 +85,19 @@ const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? "";
   <script is:inline define:vars={{ conversations }}>
     let activeId = conversations[0]?.id ?? null;
 
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function isDuplicateMessage(conv, msg) {
+      const last = conv.messages[conv.messages.length - 1];
+      return last && last.de === msg.de && last.texte === msg.texte && last.heure === msg.heure;
+    }
+
     function renderMessages(id) {
       const conv = conversations.find((c) => c.id === id);
       if (!conv) return;
@@ -102,7 +115,7 @@ const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? "";
               <div class="px-4 py-3 text-sm leading-relaxed shadow-sm ${
                 isAdmin ? "rounded-2xl rounded-br-sm text-white" : "rounded-2xl rounded-bl-sm bg-gray-100"
               }" style="${isAdmin ? "background-color: #0b1f3a;" : "color: #0b1f3a;"}">
-                ${m.texte}
+                ${escapeHtml(m.texte)}
               </div>
               <p class="text-xs mt-1 ${isAdmin ? "text-right" : ""} text-gray-400 px-1">${m.heure}</p>
             </div>
@@ -193,15 +206,72 @@ const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? "";
       if (e.key === "Enter") sendMessage();
     });
 
+    function updateSidebarItem(convId, texte, incrementUnread) {
+      const btn = document.querySelector(`.conv-item[data-id="${convId}"]`);
+      if (!btn) return;
+      const preview = btn.querySelector(".text-xs.text-gray-400.mt-1");
+      if (preview) preview.textContent = texte;
+      if (incrementUnread && convId !== activeId) {
+        let badge = btn.querySelector(".non-lu-badge");
+        if (!badge) {
+          badge = document.createElement("span");
+          badge.className = "non-lu-badge w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white";
+          badge.style.backgroundColor = "#d4a762";
+          badge.textContent = "1";
+          btn.querySelector(".flex.flex-col.items-end")?.appendChild(badge);
+        } else {
+          badge.textContent = String(parseInt(badge.textContent, 10) + 1);
+        }
+      }
+    }
+
+    function handleIncomingMessage(msg) {
+      const convId = msg.conversation_id;
+      let conv = conversations.find((c) => c.id === convId);
+      if (!conv) {
+        fetch("/api/messagerie")
+          .then((r) => r.ok ? r.json() : null)
+          .then((data) => {
+            if (!Array.isArray(data)) return;
+            conversations.length = 0;
+            data.forEach((c) => conversations.push(c));
+            location.reload();
+          });
+        return;
+      }
+      if (isDuplicateMessage(conv, msg)) return;
+
+      conv.messages.push({ de: msg.de, texte: msg.texte, heure: msg.heure });
+      conv.dernier_message = msg.texte;
+      if (msg.de === "adherent") conv.non_lu = convId === activeId ? 0 : (conv.non_lu ?? 0) + 1;
+
+      updateSidebarItem(convId, msg.texte, msg.de === "adherent" && convId !== activeId);
+
+      if (convId === activeId) {
+        renderMessages(activeId);
+        if (msg.de === "adherent") markAsRead(activeId);
+      }
+    }
+
+    window.addEventListener("jcbo:new-message", (e) => {
+      if (e.detail) handleIncomingMessage(e.detail);
+    });
+
+    window.addEventListener("jcbo:conversation-update", (e) => {
+      const row = e.detail;
+      if (!row?.id) return;
+      const conv = conversations.find((c) => c.id === row.id);
+      if (conv) {
+        conv.dernier_message = row.dernier_message ?? conv.dernier_message;
+        conv.non_lu = row.non_lu ?? conv.non_lu;
+      }
+      updateSidebarItem(row.id, row.dernier_message ?? "", false);
+    });
+
     if (window.innerWidth >= 1024 && activeId) {
       renderMessages(activeId);
       markAsRead(activeId);
     }
-
-    window.addEventListener("jcbo:new-message", async () => {
-      const res = await fetch("/api/messagerie");
-      if (res.ok) location.reload();
-    });
   </script>
   {supabaseUrl && supabaseAnonKey && (
     <>
