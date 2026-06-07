@@ -106,6 +106,22 @@ v=spf1 ip4:109.234.166.107 +a +mx include:spf.jabatus.fr include:mx.ovh.com ~all
 - Consultez **contact@jcbo-conseil.com** : chaque téléchargement vitrine envoie une **copie cachée (BCC)** à `NOTIFY_EMAIL` pour confirmer l’envoi côté serveur.
 - Dashboard admin → **Ressources** → tableau des téléchargements (e-mail + date enregistrés même si le client ne reçoit pas).
 
+### 4. Outlook reçoit, Gmail non → DKIM OVH manquant
+
+Si **Outlook** reçoit les e-mails mais **Gmail** non, l’envoi SMTP fonctionne. Gmail est plus strict sur l’**authentification DKIM**.
+
+Le DKIM `default._domainkey` dans o2switch sert à la **messagerie o2switch**, pas à **OVH Email Pro** (`no-reply@`). Il faut ajouter les CNAME DKIM fournis par OVH :
+
+1. Espace client **OVH** → **E-mail Pro** → domaine `jcbo-conseil.com` → onglet **DKIM**.
+2. OVH affiche 1 ou 2 enregistrements **CNAME** (ex. `ovhemp123456-selector1._domainkey`).
+3. Dans **o2switch** → Éditeur de zone DNS → **Ajouter un enregistrement** → type **CNAME** pour chaque sélecteur :
+   - **Nom** : `ovhemp123456-selector1._domainkey` (sans le domaine, o2switch l’ajoute)
+   - **Cible** : la valeur OVH (ex. `ovhemp123456-selector1._domainkey.1500.ab.dkim.mail.ovh.net.`)
+4. Retour OVH → **Activer** / valider DKIM (statut vert).
+5. Attendre 1 à 24 h, puis retester Gmail.
+
+**Côté Gmail (en attendant)** : chercher dans **Spam**, **Promotions**, **Tous les messages** ; marquer « Pas un spam » sur un e-mail de `no-reply@jcbo-conseil.com` pour améliorer la réputation.
+
 ---
 
 ## Stripe Connect — 80 % Jean-Christophe / 20 % développeur
