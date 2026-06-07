@@ -19,6 +19,45 @@ export function initCoursPage(): void {
   let currentCoursId: string | null = null;
   let modulesLoadSeq = 0;
 
+  function moduleExpandStorageKey(coursId: string): string {
+    return `jcbo-module-expand-${coursId}`;
+  }
+
+  function readModuleExpandState(coursId: string): Record<string, boolean> {
+    try {
+      const raw = localStorage.getItem(moduleExpandStorageKey(coursId));
+      return raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  function saveModuleExpandState(coursId: string, moduleId: string, expanded: boolean): void {
+    const state = readModuleExpandState(coursId);
+    state[moduleId] = expanded;
+    localStorage.setItem(moduleExpandStorageKey(coursId), JSON.stringify(state));
+  }
+
+  function isModuleExpanded(coursId: string, moduleId: string): boolean {
+    const state = readModuleExpandState(coursId);
+    if (Object.prototype.hasOwnProperty.call(state, moduleId)) {
+      return state[moduleId];
+    }
+    return true;
+  }
+
+  function applyModuleExpandState(coursId: string): void {
+    modulesList?.querySelectorAll<HTMLElement>(".module-item").forEach((item) => {
+      const moduleId = item.getAttribute("data-module-id");
+      if (!moduleId) return;
+      const expanded = isModuleExpanded(coursId, moduleId);
+      const wrap = item.querySelector(".module-body-wrap");
+      const btn = item.querySelector<HTMLButtonElement>(".btn-toggle-module");
+      if (wrap) wrap.classList.toggle("hidden", !expanded);
+      if (btn) btn.textContent = expanded ? "▼" : "▶";
+    });
+  }
+
   function openModulesModal() {
     modalModules?.classList.remove("hidden");
     document.body.style.overflow = "hidden";
@@ -349,6 +388,7 @@ export function initCoursPage(): void {
       modulesList.innerHTML = modules.map(renderModuleItem).join("");
     }
 
+    applyModuleExpandState(coursId);
     bindModuleEvents();
   }
 
@@ -406,10 +446,14 @@ export function initCoursPage(): void {
   function bindModuleEvents() {
     modulesList?.querySelectorAll<HTMLButtonElement>(".btn-toggle-module").forEach((btn) => {
       btn.addEventListener("click", () => {
-        const wrap = btn.closest(".module-item")?.querySelector(".module-body-wrap");
-        if (!wrap) return;
+        const item = btn.closest(".module-item");
+        const moduleId = item?.getAttribute("data-module-id");
+        const wrap = item?.querySelector(".module-body-wrap");
+        if (!wrap || !moduleId || !currentCoursId) return;
         const collapsed = wrap.classList.toggle("hidden");
-        btn.textContent = collapsed ? "▶" : "▼";
+        const expanded = !collapsed;
+        btn.textContent = expanded ? "▼" : "▶";
+        saveModuleExpandState(currentCoursId, moduleId, expanded);
       });
     });
 

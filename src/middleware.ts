@@ -1,9 +1,11 @@
 import { defineMiddleware } from "astro:middleware";
 import { verifySession, createSession } from "./lib/session";
 import { isSuperAdminEmail } from "./lib/admin-auth";
+import { getMaintenanceStatus } from "./lib/maintenance";
 
 const PUBLIC_PATHS = [
   "/login",
+  "/maintenance",
   // ⚠ NE PAS mettre tout "/api/auth/" : password.ts a besoin de la session.
   "/api/auth/login",
   "/api/auth/logout",
@@ -17,6 +19,17 @@ const PUBLIC_PATHS = [
   "/verification/",
 ];
 
+const ADHERENT_MAINTENANCE_ALLOW = [
+  "/login",
+  "/maintenance",
+  "/dashboard",
+  "/api/admin/maintenance",
+  "/api/auth/",
+  "/api/public/",
+  "/api/stripe/webhook",
+  "/api/notchpay/webhook",
+];
+
 // 24h en secondes — durée d'inactivité maximale autorisée
 const SESSION_MAX_AGE_S = 60 * 60 * 24;
 // On rafraîchit la session si elle a été émise il y a plus d'1h (pour limiter le coût)
@@ -24,6 +37,25 @@ const REFRESH_THRESHOLD_S = 60 * 60;
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const path = new URL(context.request.url).pathname;
+
+  const maintenance = await getMaintenanceStatus();
+  if (maintenance.adherent) {
+    const allowedDuringMaintenance = ADHERENT_MAINTENANCE_ALLOW.some((p) => path.startsWith(p));
+    if (!allowedDuringMaintenance) {
+      const token = context.cookies.get("session")?.value;
+      const session = token ? await verifySession(token) : null;
+      if (session?.role === "admin") {
+        // Les administrateurs conservent l'accès complet.
+      } else if (path.startsWith("/api/")) {
+        return new Response(JSON.stringify({ error: "Site en maintenance." }), {
+          status: 503,
+          headers: { "Content-Type": "application/json" },
+        });
+      } else {
+        return context.redirect("/maintenance");
+      }
+    }
+  }
 
   if (PUBLIC_PATHS.some(p => path.startsWith(p))) {
     return next();

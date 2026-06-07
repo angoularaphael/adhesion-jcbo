@@ -98,7 +98,7 @@ const statCards = [
         {conversations.map((c) => (
           <a href="/dashboard/messagerie" class="flex items-start gap-4 px-6 py-4 hover:bg-gray-50 transition-colors duration-150">
             <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style="background-color: #0b1f3a;">
-              {c.adherent.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+              {c.adherent.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
             </div>
             <div class="flex-1 min-w-0">
               <p class="text-sm font-medium" style="color: #0b1f3a;">{c.adherent}</p>
@@ -113,6 +113,47 @@ const statCards = [
     </div>
 
   </div>
+
+  <!-- Mode maintenance -->
+  <div class="mt-8 bg-white rounded-xl shadow-sm overflow-hidden" style="border: 1px solid #f1f3f5;">
+    <div class="px-6 py-4" style="border-bottom: 1px solid #f1f3f5;">
+      <h2 class="text-sm font-semibold" style="color: #0b1f3a;">Mode maintenance</h2>
+      <p class="text-xs text-gray-400 mt-1">Activez ou désactivez la maintenance pour chaque site à tout moment.</p>
+    </div>
+    <div class="divide-y divide-gray-50">
+      <div class="px-6 py-4 flex items-center justify-between gap-4">
+        <div>
+          <p class="text-sm font-medium" style="color: #0b1f3a;">Site adhérents</p>
+          <p class="text-xs text-gray-400 mt-0.5">Bloque l'accès aux adhérents (l'admin reste accessible).</p>
+        </div>
+        <div class="flex items-center gap-3 shrink-0">
+          <span id="badge-maintenance-adherent" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-green-100 text-green-800">Désactivé</span>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="toggle-maintenance-adherent" class="sr-only peer" />
+            <span class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-amber-500 transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5"></span>
+          </label>
+        </div>
+      </div>
+      <div class="px-6 py-4 flex items-center justify-between gap-4">
+        <div>
+          <p class="text-sm font-medium" style="color: #0b1f3a;">Site vitrine</p>
+          <p class="text-xs text-gray-400 mt-0.5">Affiche une page de maintenance sur jcbo-conseil.com.</p>
+        </div>
+        <div class="flex items-center gap-3 shrink-0">
+          <span id="badge-maintenance-vitrine" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-green-100 text-green-800">Désactivé</span>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="toggle-maintenance-vitrine" class="sr-only peer" />
+            <span class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-amber-500 transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    import { initMaintenancePage } from "../../scripts/maintenance-page";
+    initMaintenancePage();
+  </script>
 
 </AdherentLayout>
 

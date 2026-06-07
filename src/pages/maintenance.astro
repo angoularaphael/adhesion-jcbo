@@ -1,0 +1,26 @@
+---
+import "../styles/global.css";
+import LogoJCBO from "../components/ui/LogoJCBO.astro";
+---
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Maintenance — JCBO Conseil</title>
+    <link rel="icon" type="image/png" href="/images/logo.png" />
+  </head>
+  <body class="min-h-screen flex flex-col items-center justify-center px-6" style="background: linear-gradient(135deg, #0b1f3a 0%, #122b50 100%);">
+    <div class="max-w-md w-full text-center">
+      <LogoJCBO size={72} class="mx-auto mb-8" />
+      <h1 class="text-2xl font-bold text-white mb-3">Espace adhérents en maintenance</h1>
+      <p class="text-sm leading-relaxed mb-8" style="color: rgba(255,255,255,0.55);">
+        Nous effectuons une mise à jour de la plateforme. L'espace adhérents sera de nouveau accessible très prochainement.
+      </p>
+      <a href="/login" class="inline-flex items-center justify-center px-6 py-3 rounded-xl text-sm font-semibold transition hover:opacity-90" style="background:#d4a762;color:#0b1f3a;">
+        Connexion administrateur
+      </a>
+    </div>
+    <p class="absolute bottom-6 text-xs" style="color: rgba(255,255,255,0.25);">&copy; JCBO Conseil</p>
+  </body>
+</html>
