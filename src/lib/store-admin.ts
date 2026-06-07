@@ -695,15 +695,15 @@ export async function getNewsletterSubscribers(): Promise<string[]> {
   return (data ?? []).map((r) => String(r.email).toLowerCase());
 }
 
-/** Envoie la nouvelle actualité aux abonnés newsletter (hors adhérents déjà notifiés). */
-export async function notifyNewsletterActualitePublished(actualite: {
+/** Envoie un contenu publié aux abonnés newsletter (hors adhérents déjà notifiés). */
+export async function notifyNewsletterSubscribers(payload: {
   titre: string;
-  slug: string;
+  message: string;
+  ctaLabel: string;
+  ctaUrl: string;
 }): Promise<void> {
   const { sendAdherentContentEmail } = await import("./email");
   const { getAdherents } = await import("./store");
-  const vitrineUrl = import.meta.env.PUBLIC_VITRINE_URL ?? "https://www.jcbo-conseil.com";
-  const articleUrl = `${vitrineUrl}/actualites/${actualite.slug}`;
 
   const adherentEmails = new Set((await getAdherents()).map((a) => a.email.toLowerCase()));
   const subscribers = (await getNewsletterSubscribers()).filter((e) => !adherentEmails.has(e));
@@ -713,15 +713,29 @@ export async function notifyNewsletterActualitePublished(actualite: {
       await sendAdherentContentEmail({
         to: email,
         nom: "Abonné newsletter",
-        titre: "Nouvelle actualité JCBO Conseil",
-        message: `Une nouvelle actualité vient d'être publiée : « ${actualite.titre} ».`,
-        ctaLabel: "Lire l'article",
-        ctaUrl: articleUrl,
+        titre: payload.titre,
+        message: payload.message,
+        ctaLabel: payload.ctaLabel,
+        ctaUrl: payload.ctaUrl,
       });
     } catch (err) {
       console.error("[notifyNewsletter] email:", email, err);
     }
   }
+}
+
+/** Envoie la nouvelle actualité aux abonnés newsletter (hors adhérents déjà notifiés). */
+export async function notifyNewsletterActualitePublished(actualite: {
+  titre: string;
+  slug: string;
+}): Promise<void> {
+  const vitrineUrl = import.meta.env.PUBLIC_VITRINE_URL ?? "https://www.jcbo-conseil.com";
+  await notifyNewsletterSubscribers({
+    titre: "Nouvelle actualité JCBO Conseil",
+    message: `Une nouvelle actualité vient d'être publiée : « ${actualite.titre} ».`,
+    ctaLabel: "Lire l'article",
+    ctaUrl: `${vitrineUrl}/actualites/${actualite.slug}`,
+  });
 }
 
 /** Notifie adhérents actifs + abonnés newsletter lors d'une publication d'actualité. */
@@ -736,6 +750,29 @@ export async function notifyActualitePublished(actualite: {
     ctaPath: "/adherent/tableau-de-bord",
   });
   await notifyNewsletterActualitePublished(actualite);
+}
+
+/** Notifie adhérents actifs + abonnés newsletter lors d'une nouvelle ressource. */
+export async function notifyRessourcePublished(ressource: {
+  titre: string;
+  affiche_vitrine?: boolean;
+}): Promise<void> {
+  await notifyAdherentsPublishedContent({
+    type: "ressource",
+    titre: "Nouvelle ressource",
+    message: `Une nouvelle ressource est disponible : « ${ressource.titre} ».`,
+    ctaPath: "/adherent/ressources",
+  });
+
+  if (ressource.affiche_vitrine) {
+    const vitrineUrl = import.meta.env.PUBLIC_VITRINE_URL ?? "https://www.jcbo-conseil.com";
+    await notifyNewsletterSubscribers({
+      titre: "Nouvelle ressource JCBO Conseil",
+      message: `Une nouvelle ressource gratuite est disponible : « ${ressource.titre} ».`,
+      ctaLabel: "Voir les ressources",
+      ctaUrl: `${vitrineUrl}/ressources`,
+    });
+  }
 }
 
 // ── Actualités publiques ──────────────────────────────────────────────────────

@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 import { ressourceSchema } from "../../../lib/validation";
 import { checkRateLimit } from "../../../lib/rateLimit";
 import { getRessources, createRessource } from "../../../lib/store";
-import { notifyAdherentsPublishedContent } from "../../../lib/store-admin";
+import { notifyRessourcePublished } from "../../../lib/store-admin";
 
 export const GET: APIRoute = async ({ locals }) => {
   if (!locals.session) {
@@ -40,11 +40,9 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
   }
 
   const item = await createRessource(result.data);
-  void notifyAdherentsPublishedContent({
-    type: "ressource",
-    titre: "Nouvelle ressource",
-    message: `Une nouvelle ressource est disponible : « ${item.titre} ».`,
-    ctaPath: "/adherent/ressources",
+  void notifyRessourcePublished({
+    titre: item.titre,
+    affiche_vitrine: item.affiche_vitrine,
   });
   return new Response(JSON.stringify(item), {
     status: 201,
