@@ -1,5 +1,5 @@
 import { getContactEmail, getFromEmail, getNotifyEmail, getReplyToEmail } from "./email-config";
-import { createSmtpTransport, getSmtpUser, isSmtpConfigured } from "./smtp";
+import { createSmtpTransport, isSmtpConfigured } from "./smtp";
 
 const SITE_URL = import.meta.env.PUBLIC_ADHESION_URL ?? "https://adhesion-jcbo.vercel.app";
 
@@ -157,12 +157,14 @@ export async function sendResourceDownloadEmail({
   to,
   nom,
   resourceTitle,
+  downloadUrl,
   fileBuffer,
   fileName,
 }: {
   to: string;
   nom: string;
   resourceTitle: string;
+  downloadUrl?: string;
   fileBuffer?: Buffer;
   fileName?: string;
 }): Promise<{ ok: boolean; error?: string; messageId?: string }> {
@@ -172,28 +174,37 @@ export async function sendResourceDownloadEmail({
   const vitrineUrl = import.meta.env.PUBLIC_VITRINE_URL ?? "https://jcboyang-conseil.vercel.app";
   const contact = getContactEmail();
   const notify = getNotifyEmail();
-  const attachmentNote = fileBuffer
-    ? "Vous trouverez le document en pièce jointe de cet e-mail."
-    : "Document non joint : contactez-nous si besoin.";
+  const deliveryNote = downloadUrl
+    ? `Télécharger le document : ${downloadUrl}`
+    : fileBuffer
+      ? "Vous trouverez le document en pièce jointe de cet e-mail."
+      : "Document non joint : contactez-nous si besoin.";
   const text = [
     `Bonjour ${nom},`,
     "",
     "Merci pour votre intérêt pour JCBO Conseil.",
     `Ressource demandée : ${resourceTitle}`,
     "",
-    attachmentNote,
+    deliveryNote,
     "",
     `Réserver une séance : ${vitrineUrl}/reserver`,
     `Support : ${contact}`,
   ].join("\n");
 
+  const downloadBlock = downloadUrl
+    ? `<p style="margin:24px 0;"><a href="${downloadUrl}" style="background:#0b1f3a;color:#fff;padding:14px 28px;text-decoration:none;border-radius:8px;font-weight:bold;">Télécharger le document</a></p>
+       <p style="color:#9ca3af;font-size:12px;">Ce lien est valable 7 jours.</p>`
+    : fileBuffer
+      ? "<p>Vous trouverez le document en <strong>pièce jointe</strong> de cet e-mail.</p>"
+      : "<p><em>Document indisponible : contactez-nous à " + contact + ".</em></p>";
+
   const html = `<!DOCTYPE html><html lang="fr"><body style="font-family:Georgia,serif;padding:24px;color:#374151;">
     <p>Bonjour <strong>${nom}</strong>,</p>
     <p>Merci pour votre intérêt pour JCBO Conseil. Voici la ressource demandée :</p>
     <p style="background:#f8f6f2;padding:16px;border-radius:8px;border:1px solid rgba(212,167,98,0.3);"><strong>${resourceTitle}</strong></p>
-    ${fileBuffer ? '<p>Vous trouverez le document en <strong>pièce jointe</strong> de cet e-mail.</p>' : '<p><em>Document non joint : l’administrateur doit publier le fichier dans le dashboard (Ressources, même titre que sur la vitrine).</em></p>'}
+    ${downloadBlock}
     <p>Notre équipe vous contactera si vous souhaitez un accompagnement personnalisé.</p>
-    <p><a href="${vitrineUrl}/reserver" style="background:#0b1f3a;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;">Réserver une séance</a></p>
+    <p><a href="${vitrineUrl}/reserver" style="color:#0b1f3a;">Réserver une séance</a></p>
     <p style="color:#9ca3af;font-size:12px;">JCBO Conseil — ${contact}</p>
   </body></html>`;
 
@@ -201,7 +212,6 @@ export async function sendResourceDownloadEmail({
     ? [{ filename: fileName, content: fileBuffer }]
     : [];
 
-  const smtpUser = getSmtpUser();
   const bcc = notify && notify.toLowerCase() !== to.toLowerCase() ? notify : undefined;
 
   try {
@@ -213,7 +223,6 @@ export async function sendResourceDownloadEmail({
       text,
       html,
       attachments,
-      envelope: { from: smtpUser || undefined, to: bcc ? [to, bcc] : to },
     });
     return { ok: true, messageId: info.messageId };
   } catch (err) {

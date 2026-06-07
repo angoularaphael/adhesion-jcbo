@@ -4,8 +4,11 @@ import { subscribeNewsletter, enregistrerTelechargement } from "../../../../lib/
 import { getRessources } from "../../../../lib/store";
 import { findRessourceMatch, getRessourceFileAttachment } from "../../../../lib/ressource-fichier";
 import { sendResourceDownloadEmail } from "../../../../lib/email";
+import { createResourceDownloadToken } from "../../../../lib/resource-download-token";
 import { handleCorsPreflight, jsonCorsResponse } from "../../../../lib/cors";
 import { checkRateLimit } from "../../../../lib/rateLimit";
+
+const API_BASE = import.meta.env.PUBLIC_ADHESION_URL ?? "https://adhesion-jcbo.vercel.app";
 
 const schema = z.object({
   email: z.string().email(),
@@ -54,6 +57,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
   let fileBuffer: Buffer | undefined;
   let fileName: string | undefined;
+  let downloadUrl: string | undefined;
 
   try {
     const ressources = await getRessources();
@@ -66,18 +70,26 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       if (attachment) {
         fileBuffer = attachment.buffer;
         fileName = attachment.fileName;
+        if (match.id) {
+          const token = await createResourceDownloadToken({
+            resourceId: match.id,
+            email: parsed.data.email,
+          });
+          downloadUrl = `${API_BASE}/api/public/ressources/file?token=${encodeURIComponent(token)}`;
+        }
       }
     }
   } catch {
-    // envoi sans pièce jointe si erreur lecture fichier
+    // envoi sans lien ni pièce jointe si erreur lecture fichier
   }
 
   const emailResult = await sendResourceDownloadEmail({
     to: parsed.data.email,
     nom: `${parsed.data.prenom} ${parsed.data.nom}`,
     resourceTitle: parsed.data.resource,
-    fileBuffer,
-    fileName,
+    downloadUrl,
+    fileBuffer: downloadUrl ? undefined : fileBuffer,
+    fileName: downloadUrl ? undefined : fileName,
   });
 
   if (!emailResult.ok) {
@@ -86,7 +98,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
   const sentTo = parsed.data.email;
 
-  if (!fileBuffer) {
+  if (!downloadUrl && !fileBuffer) {
     return jsonCorsResponse(request, {
       success: true,
       emailSent: true,
@@ -95,5 +107,11 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     });
   }
 
-  return jsonCorsResponse(request, { success: true, emailSent: true, sentTo, attachment: true });
+  return jsonCorsResponse(request, {
+    success: true,
+    emailSent: true,
+    sentTo,
+    downloadUrl,
+    attachment: !!fileBuffer,
+  });
 };
