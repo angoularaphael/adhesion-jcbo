@@ -39,6 +39,18 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const path = new URL(context.request.url).pathname;
 
   const maintenance = await getMaintenanceStatus();
+
+  if (path.startsWith("/maintenance")) {
+    if (!maintenance.adherent) {
+      const token = context.cookies.get("session")?.value;
+      const session = token ? await verifySession(token) : null;
+      if (session?.role === "admin") return context.redirect("/dashboard");
+      if (session?.role === "adherent") return context.redirect("/adherent/tableau-de-bord");
+      return context.redirect("/login");
+    }
+    return next();
+  }
+
   if (maintenance.adherent) {
     const allowedDuringMaintenance = ADHERENT_MAINTENANCE_ALLOW.some((p) => path.startsWith(p));
     if (!allowedDuringMaintenance) {

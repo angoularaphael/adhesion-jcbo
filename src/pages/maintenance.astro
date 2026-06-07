@@ -22,5 +22,22 @@ import LogoJCBO from "../components/ui/LogoJCBO.astro";
       </a>
     </div>
     <p class="absolute bottom-6 text-xs" style="color: rgba(255,255,255,0.25);">&copy; JCBO Conseil</p>
+
+    <script>
+      async function checkAdherentMaintenance() {
+        try {
+          const res = await fetch("/api/public/maintenance", { cache: "no-store" });
+          const data = await res.json();
+          if (!data.adherent) {
+            window.location.replace("/login");
+          }
+        } catch {
+          /* réessayer au prochain intervalle */
+        }
+      }
+
+      checkAdherentMaintenance();
+      setInterval(checkAdherentMaintenance, 3000);
+    </script>
   </body>
 </html>

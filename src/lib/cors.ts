@@ -1,5 +1,7 @@
 const DEFAULT_ORIGINS = [
   "https://jcboyang-conseil.vercel.app",
+  "https://jcbo-conseil.com",
+  "https://www.jcbo-conseil.com",
   "https://adhesion-jcbo.vercel.app",
   "https://jcbo-conseil-diagnostic.vercel.app",
   "http://localhost:4321",

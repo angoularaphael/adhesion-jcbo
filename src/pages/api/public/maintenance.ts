@@ -10,5 +10,8 @@ export const GET: APIRoute = async ({ request }) => {
   if (preflight) return preflight;
 
   const status = await getMaintenanceStatus();
-  return jsonCorsResponse(request, status);
+  return jsonCorsResponse(request, status, 200, {
+    "Cache-Control": "no-store, no-cache, must-revalidate",
+    Pragma: "no-cache",
+  });
 };
