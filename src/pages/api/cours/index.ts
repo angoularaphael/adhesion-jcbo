@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { coursSchema } from "../../../lib/validation";
 import { checkRateLimit } from "../../../lib/rateLimit";
 import { getCours, createCours } from "../../../lib/store";
+import { notifyAdherentsPublishedContent } from "../../../lib/store-admin";
 
 export const GET: APIRoute = async ({ locals }) => {
   if (!locals.session) {
@@ -43,6 +44,14 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
   }
 
   const item = await createCours(result.data);
+  if (item.statut === "Publié") {
+    void notifyAdherentsPublishedContent({
+      type: "cours",
+      titre: "Nouveau cours",
+      message: `Un nouveau cours est disponible : « ${item.titre} ».`,
+      ctaPath: "/adherent/cours",
+    });
+  }
   return new Response(JSON.stringify(item), {
     status: 201,
     headers: { "Content-Type": "application/json" },

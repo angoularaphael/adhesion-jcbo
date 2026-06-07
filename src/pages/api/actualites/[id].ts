@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { actualiteSchema } from "../../../lib/validation";
-import { updateActualite, deleteActualite } from "../../../lib/store";
+import { getActualites, updateActualite, deleteActualite } from "../../../lib/store";
+import { notifyAdherentsPublishedContent } from "../../../lib/store-admin";
 
 export const PUT: APIRoute = async ({ request, locals, params }) => {
   if (!locals.session || locals.session.role !== "admin") {
@@ -27,9 +28,19 @@ export const PUT: APIRoute = async ({ request, locals, params }) => {
     );
   }
 
+  const before = (await getActualites()).find((a) => a.id === id);
   const updated = await updateActualite(id, result.data);
   if (!updated) {
     return new Response(JSON.stringify({ error: "Actualité introuvable" }), { status: 404 });
+  }
+
+  if (updated.statut === "Publié" && before?.statut !== "Publié") {
+    void notifyAdherentsPublishedContent({
+      type: "actualite",
+      titre: "Nouvelle actualité",
+      message: `Une nouvelle actualité est disponible : « ${updated.titre} ».`,
+      ctaPath: "/adherent/tableau-de-bord",
+    });
   }
 
   return new Response(JSON.stringify(updated), {

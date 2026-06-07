@@ -1,6 +1,11 @@
 import nodemailer from "nodemailer";
+import { getContactEmail, getFromEmail, getNotifyEmail, getReplyToEmail } from "./email-config";
 
 const SITE_URL = import.meta.env.PUBLIC_ADHESION_URL ?? "https://adhesion-jcbo.vercel.app";
+
+function mailBase() {
+  return { from: getFromEmail(), replyTo: getReplyToEmail() };
+}
 
 function createTransport() {
   const port = Number(import.meta.env.SMTP_PORT ?? 587);
@@ -38,7 +43,6 @@ export async function sendCredentialsEmail({
     return { ok: false, error: "Service email non configuré (SMTP)" };
   }
 
-  const from = import.meta.env.FROM_EMAIL ?? `JCBO Conseil <noreply@jcbo-conseil.fr>`;
   const subject = isReset
     ? "Réinitialisation de vos accès — JCBO Conseil"
     : "Vos identifiants d'accès — JCBO Conseil";
@@ -85,7 +89,7 @@ export async function sendCredentialsEmail({
       <tr><td style="padding:20px 40px;text-align:center;border-top:1px solid #f1f3f5;">
         <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:0.15em;color:#0b1f3a;text-transform:uppercase;">JCBO-CONSEIL</p>
         <p style="margin:4px 0 0;font-size:11px;color:#d4a762;">Stratégie · Mindset · Performance</p>
-        <p style="margin:6px 0 0;font-size:10px;color:#9ca3af;">contact@jcbo-conseil.fr</p>
+        <p style="margin:6px 0 0;font-size:10px;color:#9ca3af;">${getContactEmail()}</p>
       </td></tr>
     </table>
   </td></tr>
@@ -95,7 +99,7 @@ export async function sendCredentialsEmail({
 
   try {
     const transporter = createTransport();
-    await transporter.sendMail({ from, to, subject, html });
+    await transporter.sendMail({ ...mailBase(), to, subject, html });
     return { ok: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Erreur d'envoi";
@@ -117,7 +121,6 @@ export async function sendDiagnosticCredentialsEmail({
   if (!isSmtpConfigured()) {
     return { ok: false, error: "Service email non configuré (SMTP)" };
   }
-  const from = import.meta.env.FROM_EMAIL ?? `JCBO Conseil <noreply@jcbo-conseil.fr>`;
   const html = `<!DOCTYPE html><html lang="fr"><body style="font-family:Georgia,serif;padding:24px;">
     <p>Bonjour <strong>${nom}</strong>,</p>
     <p>Voici vos identifiants pour accéder au formulaire de diagnostic JCBO Conseil (usage unique, valables 7 jours) :</p>
@@ -127,7 +130,7 @@ export async function sendDiagnosticCredentialsEmail({
   </body></html>`;
   try {
     await createTransport().sendMail({
-      from,
+      ...mailBase(),
       to,
       subject: "Vos accès au diagnostic — JCBO Conseil",
       html,
@@ -150,12 +153,12 @@ export async function sendDiagnosticNotificationEmail({
   nom: string;
 }): Promise<{ ok: boolean; error?: string }> {
   if (!isSmtpConfigured()) return { ok: false, error: "SMTP non configuré" };
-  const from = import.meta.env.FROM_EMAIL ?? `JCBO Conseil <noreply@jcbo-conseil.fr>`;
   const dashUrl = `${SITE_URL}/dashboard/diagnostics`;
   try {
     await createTransport().sendMail({
-      from,
+      ...mailBase(),
       to: adminEmail,
+      replyTo: email,
       subject: `[JCBO] Nouveau diagnostic — ${nom}`,
       html: `<p>Un nouveau formulaire de diagnostic a été soumis.</p>
         <p><strong>Nom :</strong> ${nom}<br/><strong>E-mail :</strong> ${email}<br/><strong>Réf. :</strong> ${soumissionId}</p>
@@ -183,7 +186,6 @@ export async function sendResourceDownloadEmail({
   if (!isSmtpConfigured()) {
     return { ok: false, error: "Service email non configuré (SMTP)" };
   }
-  const from = import.meta.env.FROM_EMAIL ?? `JCBO Conseil <noreply@jcbo-conseil.fr>`;
   const vitrineUrl = import.meta.env.PUBLIC_VITRINE_URL ?? "https://jcboyang-conseil.vercel.app";
   const html = `<!DOCTYPE html><html lang="fr"><body style="font-family:Georgia,serif;padding:24px;color:#374151;">
     <p>Bonjour <strong>${nom}</strong>,</p>
@@ -192,7 +194,7 @@ export async function sendResourceDownloadEmail({
     ${fileBuffer ? '<p>Vous trouverez le document en <strong>pièce jointe</strong> de cet e-mail.</p>' : '<p><em>Document non joint : l’administrateur doit publier le fichier dans le dashboard (Ressources, même titre que sur la vitrine).</em></p>'}
     <p>Notre équipe vous contactera si vous souhaitez un accompagnement personnalisé.</p>
     <p><a href="${vitrineUrl}/reserver" style="background:#0b1f3a;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;">Réserver une séance</a></p>
-    <p style="color:#9ca3af;font-size:12px;">JCBO Conseil — contact@jcbo-conseil.fr</p>
+    <p style="color:#9ca3af;font-size:12px;">JCBO Conseil — ${getContactEmail()}</p>
   </body></html>`;
 
   const attachments = fileBuffer && fileName
@@ -201,7 +203,7 @@ export async function sendResourceDownloadEmail({
 
   try {
     await createTransport().sendMail({
-      from,
+      ...mailBase(),
       to,
       subject: `Votre ressource : ${resourceTitle}`,
       html,
@@ -215,7 +217,7 @@ export async function sendResourceDownloadEmail({
 
 /**
  * Envoie un email récap d'un événement aux administrateurs (paiement, cours terminé, certificat…).
- * Cible `ADMIN_EMAIL` (configurable via `.env`).
+ * Cible `NOTIFY_EMAIL` (contact@jcbo-conseil.com par défaut, pas jcboyang@).
  */
 export async function sendAdminEventEmail(payload: {
   type: string;
@@ -226,8 +228,7 @@ export async function sendAdminEventEmail(payload: {
   if (!isSmtpConfigured()) {
     return { ok: false, error: "Service email non configuré (SMTP)" };
   }
-  const from = import.meta.env.FROM_EMAIL ?? `JCBO Conseil <noreply@jcbo-conseil.fr>`;
-  const adminEmail = import.meta.env.ADMIN_EMAIL ?? "contact@jcbo-conseil.fr";
+  const adminEmail = getNotifyEmail();
 
   const meta = payload.metadata ?? {};
   const detailsRows = Object.entries(meta)
@@ -262,7 +263,7 @@ export async function sendAdminEventEmail(payload: {
 
   try {
     await createTransport().sendMail({
-      from,
+      ...mailBase(),
       to: adminEmail,
       subject: `[JCBO] ${payload.titre}`,
       html,
@@ -273,12 +274,60 @@ export async function sendAdminEventEmail(payload: {
   }
 }
 
-export async function sendNewsletterConfirmation(to: string): Promise<{ ok: boolean; error?: string }> {
+/** Alerte adhérents : nouvelle actualité, cours ou ressource. */
+export async function sendAdherentContentEmail({
+  to,
+  nom,
+  titre,
+  message,
+  ctaLabel,
+  ctaUrl,
+}: {
+  to: string;
+  nom: string;
+  titre: string;
+  message: string;
+  ctaLabel: string;
+  ctaUrl: string;
+}): Promise<{ ok: boolean; error?: string }> {
   if (!isSmtpConfigured()) return { ok: false, error: "SMTP non configuré" };
-  const from = import.meta.env.FROM_EMAIL ?? `JCBO Conseil <noreply@jcbo-conseil.fr>`;
+
+  const html = `<!DOCTYPE html><html lang="fr"><body style="margin:0;padding:0;background:#f8f6f2;font-family:Georgia,serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f6f2;padding:40px 20px;">
+<tr><td align="center">
+<table width="560" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;border:1px solid rgba(212,167,98,0.2);max-width:560px;">
+<tr><td style="background:linear-gradient(135deg,#0b1f3a,#162d4f);padding:28px 36px;text-align:center;">
+<p style="margin:0;font-size:11px;letter-spacing:0.2em;color:rgba(212,167,98,0.7);">JCBO CONSEIL</p>
+<h1 style="margin:8px 0 0;font-size:18px;color:#fff;">${titre}</h1>
+</td></tr>
+<tr><td style="padding:32px 36px;">
+<p style="margin:0 0 12px;font-size:15px;color:#374151;">Bonjour <strong>${nom}</strong>,</p>
+<p style="margin:0 0 24px;font-size:14px;color:#6b7280;line-height:1.7;">${message}</p>
+<a href="${ctaUrl}" style="display:inline-block;background:#0b1f3a;color:#fff;text-decoration:none;font-size:13px;font-weight:700;padding:12px 28px;border-radius:100px;">${ctaLabel}</a>
+</td></tr>
+<tr><td style="padding:16px 36px 24px;text-align:center;border-top:1px solid #f1f3f5;">
+<p style="margin:0;font-size:10px;color:#9ca3af;">Besoin d'aide ? ${getContactEmail()}</p>
+</td></tr>
+</table></td></tr></table></body></html>`;
+
   try {
     await createTransport().sendMail({
-      from,
+      ...mailBase(),
+      to,
+      subject: `[JCBO] ${titre}`,
+      html,
+    });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Erreur d'envoi" };
+  }
+}
+
+export async function sendNewsletterConfirmation(to: string): Promise<{ ok: boolean; error?: string }> {
+  if (!isSmtpConfigured()) return { ok: false, error: "SMTP non configuré" };
+  try {
+    await createTransport().sendMail({
+      ...mailBase(),
       to,
       subject: "Inscription newsletter — JCBO Conseil",
       html: `<p>Merci pour votre inscription à la newsletter JCBO Conseil.</p>`,

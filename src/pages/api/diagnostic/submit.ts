@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { z } from "zod";
 import { createDiagnosticSoumission } from "../../../lib/store-admin";
 import { getAdminEmail } from "../../../lib/store-admin";
+import { getNotifyEmail } from "../../../lib/email-config";
 import { verifySessionFromRequest } from "../../../lib/session";
 import { sendDiagnosticNotificationEmail } from "../../../lib/email";
 import { addNotification } from "../../../lib/store";
@@ -48,7 +49,7 @@ export const POST: APIRoute = async ({ request }) => {
   );
 
   await sendDiagnosticNotificationEmail({
-    adminEmail: getAdminEmail(),
+    adminEmail: getNotifyEmail(),
     soumissionId: soumission.id,
     email: session.email,
     nom,

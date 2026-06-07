@@ -547,6 +547,48 @@ export async function markAdminNotificationLue(id: string): Promise<void> {
  * Crée une notification admin (insertion DB) + envoie un email admin si SMTP configuré.
  * Tolérant : ne casse pas le flux appelant si la DB ou le SMTP échouent.
  */
+/** Notifie tous les adhérents actifs (cloche + e-mail no-reply) lors d'une nouvelle publication. */
+export async function notifyAdherentsPublishedContent(payload: {
+  type: "actualite" | "cours" | "ressource";
+  titre: string;
+  message: string;
+  ctaPath: string;
+}): Promise<void> {
+  const { getAdherents, addNotification } = await import("./store");
+  const { sendAdherentContentEmail } = await import("./email");
+  const siteUrl = import.meta.env.PUBLIC_ADHESION_URL ?? "https://adhesion-jcbo.vercel.app";
+  const ctaUrl = `${siteUrl}${payload.ctaPath}`;
+
+  const adherents = (await getAdherents()).filter((a) => a.statut === "Actif");
+
+  for (const a of adherents) {
+    const nom = `${a.prenom} ${a.nom}`.trim() || "Adhérent";
+    try {
+      await addNotification({
+        adherentEmail: a.email,
+        type: payload.type,
+        titre: payload.titre,
+        message: payload.message,
+      });
+    } catch (err) {
+      console.error("[notifyAdherents] notification DB:", a.email, err);
+    }
+
+    try {
+      await sendAdherentContentEmail({
+        to: a.email,
+        nom,
+        titre: payload.titre,
+        message: payload.message,
+        ctaLabel: "Voir dans mon espace",
+        ctaUrl,
+      });
+    } catch (err) {
+      console.error("[notifyAdherents] email:", a.email, err);
+    }
+  }
+}
+
 export async function notifyAdmin(payload: {
   type: string;
   titre: string;

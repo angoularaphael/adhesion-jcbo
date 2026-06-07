@@ -3,6 +3,9 @@
 interface ImportMetaEnv {
   readonly SESSION_SECRET?: string;
   readonly ADMIN_EMAIL?: string;
+  readonly CONTACT_EMAIL?: string;
+  readonly NOTIFY_EMAIL?: string;
+  readonly REPLY_TO_EMAIL?: string;
   readonly ADMIN_PASSWORD?: string;
   readonly SUPABASE_URL?: string;
   readonly SUPABASE_SERVICE_ROLE_KEY?: string;

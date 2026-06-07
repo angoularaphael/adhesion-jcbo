@@ -72,8 +72,8 @@ import Card from "../../components/ui/Card.astro";
             <span class="text-base mt-0.5">✉️</span>
             <div>
               <p class="text-xs text-gray-400 mb-0.5">E-mail</p>
-              <a href="mailto:contact@jcbo-conseil.fr" class="text-sm font-medium hover:underline" style="color: #0b1f3a;">
-                contact@jcbo-conseil.fr
+              <a href="mailto:contact@jcbo-conseil.com" class="text-sm font-medium hover:underline" style="color: #0b1f3a;">
+                contact@jcbo-conseil.com
               </a>
             </div>
           </div>
@@ -98,10 +98,12 @@ import Card from "../../components/ui/Card.astro";
   </div>
 
   <script>
-    document.getElementById("contact-form").addEventListener("submit", (e) => {
+    const contactForm = document.getElementById("contact-form");
+    const contactSuccess = document.getElementById("contact-success");
+    contactForm?.addEventListener("submit", (e) => {
       e.preventDefault();
-      document.getElementById("contact-form").classList.add("hidden");
-      document.getElementById("contact-success").classList.remove("hidden");
+      contactForm.classList.add("hidden");
+      contactSuccess?.classList.remove("hidden");
     });
   </script>
 

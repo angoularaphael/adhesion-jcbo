@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { coursSchema } from "../../../lib/validation";
-import { updateCours, deleteCours } from "../../../lib/store";
+import { getCoursById, updateCours, deleteCours } from "../../../lib/store";
+import { notifyAdherentsPublishedContent } from "../../../lib/store-admin";
 
 export const PUT: APIRoute = async ({ request, locals, params }) => {
   if (!locals.session || locals.session.role !== "admin") {
@@ -27,9 +28,19 @@ export const PUT: APIRoute = async ({ request, locals, params }) => {
     );
   }
 
+  const before = await getCoursById(id);
   const updated = await updateCours(id, result.data);
   if (!updated) {
     return new Response(JSON.stringify({ error: "Cours introuvable" }), { status: 404 });
+  }
+
+  if (updated.statut === "Publié" && before?.statut !== "Publié") {
+    void notifyAdherentsPublishedContent({
+      type: "cours",
+      titre: "Nouveau cours",
+      message: `Un nouveau cours est disponible : « ${updated.titre} ».`,
+      ctaPath: "/adherent/cours",
+    });
   }
 
   return new Response(JSON.stringify(updated), {

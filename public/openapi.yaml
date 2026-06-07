@@ -9,7 +9,7 @@ info:
     - Rôle `admin` : accès aux routes `/api/admin/*` et toutes les routes adhérent.
   version: "1.0.0"
   contact:
-    email: contact@jcbo-conseil.fr
+    email: contact@jcbo-conseil.com
 
 servers:
   - url: https://adhesion-jcbo.vercel.app
