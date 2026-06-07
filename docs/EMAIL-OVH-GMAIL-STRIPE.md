@@ -19,7 +19,7 @@ Les alertes admin (paiements, diagnostics…) vont vers **contact@** via `NOTIFY
 À configurer dans **Vercel → Settings → Environment Variables** (ne jamais commiter le mot de passe) :
 
 ```env
-SMTP_HOST=ssl0.ovh.net
+SMTP_HOST=pro2.mail.ovh.net
 SMTP_PORT=587
 SMTP_USER=no-reply@jcbo-conseil.com
 SMTP_PASS=<mot_de_passe_ovh>
@@ -48,12 +48,12 @@ Pour **contact@**, **jcboyang@** et éventuellement **no-reply@** (lecture seule
 4. Saisissez l’adresse (ex. `contact@jcbo-conseil.com`).
 5. Cochez **Importer les e-mails** (recommandé).
 6. Serveur entrant OVH :
-   - **IMAP** : `ssl0.ovh.net`
+   - **IMAP** : `pro2.mail.ovh.net` (vérifiez le numéro dans l'espace client OVH → Email Pro)
    - Port **993** — SSL/TLS
    - Identifiant : l’adresse complète
    - Mot de passe : celui de la boîte OVH
 7. Serveur sortant (si Gmail demande d’envoyer via OVH) :
-   - **SMTP** : `ssl0.ovh.net`
+   - **SMTP** : `pro2.mail.ovh.net`
    - Port **587** — STARTTLS
    - Identifiant : la même adresse
 8. Répétez pour `jcboyang@jcbo-conseil.com`.

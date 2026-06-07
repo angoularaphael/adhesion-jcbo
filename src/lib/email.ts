@@ -1,5 +1,5 @@
-import nodemailer from "nodemailer";
 import { getContactEmail, getFromEmail, getNotifyEmail, getReplyToEmail } from "./email-config";
+import { createSmtpTransport, isSmtpConfigured } from "./smtp";
 
 const SITE_URL = import.meta.env.PUBLIC_ADHESION_URL ?? "https://adhesion-jcbo.vercel.app";
 
@@ -8,24 +8,7 @@ function mailBase() {
 }
 
 function createTransport() {
-  const port = Number(import.meta.env.SMTP_PORT ?? 587);
-  return nodemailer.createTransport({
-    host: import.meta.env.SMTP_HOST,
-    port,
-    secure: port === 465,
-    auth: {
-      user: import.meta.env.SMTP_USER,
-      pass: import.meta.env.SMTP_PASS,
-    },
-  });
-}
-
-function isSmtpConfigured(): boolean {
-  return !!(
-    import.meta.env.SMTP_HOST &&
-    import.meta.env.SMTP_USER &&
-    import.meta.env.SMTP_PASS
-  );
+  return createSmtpTransport();
 }
 
 export async function sendCredentialsEmail({
