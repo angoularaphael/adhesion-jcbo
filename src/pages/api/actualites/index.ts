@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 import { actualiteSchema } from "../../../lib/validation";
 import { checkRateLimit } from "../../../lib/rateLimit";
 import { getActualites, createActualite } from "../../../lib/store";
-import { notifyAdherentsPublishedContent } from "../../../lib/store-admin";
+import { notifyActualitePublished } from "../../../lib/store-admin";
 
 export const GET: APIRoute = async ({ locals }) => {
   if (!locals.session || locals.session.role !== "admin") {
@@ -40,13 +40,8 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
   }
 
   const item = await createActualite(result.data);
-  if (item.statut === "Publié") {
-    void notifyAdherentsPublishedContent({
-      type: "actualite",
-      titre: "Nouvelle actualité",
-      message: `Une nouvelle actualité est disponible : « ${item.titre} ».`,
-      ctaPath: "/adherent/tableau-de-bord",
-    });
+  if (item.statut === "Publié" && item.slug) {
+    void notifyActualitePublished({ titre: item.titre, slug: item.slug });
   }
   return new Response(JSON.stringify(item), {
     status: 201,

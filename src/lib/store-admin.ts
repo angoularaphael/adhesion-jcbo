@@ -690,6 +690,54 @@ export async function subscribeNewsletter(email: string): Promise<void> {
   await getSupabase().from("newsletter_abonnes").upsert({ email: email.toLowerCase() });
 }
 
+export async function getNewsletterSubscribers(): Promise<string[]> {
+  const { data } = await getSupabase().from("newsletter_abonnes").select("email");
+  return (data ?? []).map((r) => String(r.email).toLowerCase());
+}
+
+/** Envoie la nouvelle actualité aux abonnés newsletter (hors adhérents déjà notifiés). */
+export async function notifyNewsletterActualitePublished(actualite: {
+  titre: string;
+  slug: string;
+}): Promise<void> {
+  const { sendAdherentContentEmail } = await import("./email");
+  const { getAdherents } = await import("./store");
+  const vitrineUrl = import.meta.env.PUBLIC_VITRINE_URL ?? "https://www.jcbo-conseil.com";
+  const articleUrl = `${vitrineUrl}/actualites/${actualite.slug}`;
+
+  const adherentEmails = new Set((await getAdherents()).map((a) => a.email.toLowerCase()));
+  const subscribers = (await getNewsletterSubscribers()).filter((e) => !adherentEmails.has(e));
+
+  for (const email of subscribers) {
+    try {
+      await sendAdherentContentEmail({
+        to: email,
+        nom: "Abonné newsletter",
+        titre: "Nouvelle actualité JCBO Conseil",
+        message: `Une nouvelle actualité vient d'être publiée : « ${actualite.titre} ».`,
+        ctaLabel: "Lire l'article",
+        ctaUrl: articleUrl,
+      });
+    } catch (err) {
+      console.error("[notifyNewsletter] email:", email, err);
+    }
+  }
+}
+
+/** Notifie adhérents actifs + abonnés newsletter lors d'une publication d'actualité. */
+export async function notifyActualitePublished(actualite: {
+  titre: string;
+  slug: string;
+}): Promise<void> {
+  await notifyAdherentsPublishedContent({
+    type: "actualite",
+    titre: "Nouvelle actualité",
+    message: `Une nouvelle actualité est disponible : « ${actualite.titre} ».`,
+    ctaPath: "/adherent/tableau-de-bord",
+  });
+  await notifyNewsletterActualitePublished(actualite);
+}
+
 // ── Actualités publiques ──────────────────────────────────────────────────────
 
 export async function getActualitesPubliees() {

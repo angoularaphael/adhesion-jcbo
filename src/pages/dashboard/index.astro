@@ -18,7 +18,7 @@ const nonLuTotal = conversations.reduce((acc, c) => acc + c.non_lu, 0);
 const statCards = [
   { label: "Total adhérents", value: stats.totalAdherents, note: "Tous statuts confondus",
     icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path stroke-linecap="round" stroke-linejoin="round" d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>` },
-  { label: "Adhérents actifs", value: stats.adherentsActifs, note: `${Math.round((stats.adherentsActifs / stats.totalAdherents) * 100)}% du total`,
+  { label: "Adhérents actifs", value: stats.adherentsActifs, note: stats.totalAdherents > 0 ? `${Math.round((stats.adherentsActifs / stats.totalAdherents) * 100)}% du total` : "Aucun adhérent inscrit",
     icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>` },
   { label: "Nouveaux ce mois", value: `+${stats.nouveauxCeMois}`, note: "Depuis le 1er mai", gold: true,
     icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>` },

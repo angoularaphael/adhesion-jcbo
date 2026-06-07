@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import { actualiteSchema } from "../../../lib/validation";
 import { getActualites, updateActualite, deleteActualite } from "../../../lib/store";
-import { notifyAdherentsPublishedContent } from "../../../lib/store-admin";
+import { notifyActualitePublished } from "../../../lib/store-admin";
 
 export const PUT: APIRoute = async ({ request, locals, params }) => {
   if (!locals.session || locals.session.role !== "admin") {
@@ -34,13 +34,8 @@ export const PUT: APIRoute = async ({ request, locals, params }) => {
     return new Response(JSON.stringify({ error: "Actualité introuvable" }), { status: 404 });
   }
 
-  if (updated.statut === "Publié" && before?.statut !== "Publié") {
-    void notifyAdherentsPublishedContent({
-      type: "actualite",
-      titre: "Nouvelle actualité",
-      message: `Une nouvelle actualité est disponible : « ${updated.titre} ».`,
-      ctaPath: "/adherent/tableau-de-bord",
-    });
+  if (updated.statut === "Publié" && before?.statut !== "Publié" && updated.slug) {
+    void notifyActualitePublished({ titre: updated.titre, slug: updated.slug });
   }
 
   return new Response(JSON.stringify(updated), {
