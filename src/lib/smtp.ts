@@ -34,3 +34,8 @@ export function isSmtpConfigured(): boolean {
     cleanEnv(import.meta.env.SMTP_PASS)
   );
 }
+
+/** Adresse SMTP authentifiée (doit correspondre à l'enveloppe d'envoi). */
+export function getSmtpUser(): string {
+  return cleanEnv(import.meta.env.SMTP_USER);
+}

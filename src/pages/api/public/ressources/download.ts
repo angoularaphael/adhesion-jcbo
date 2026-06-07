@@ -84,13 +84,16 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     return jsonCorsResponse(request, { error: emailResult.error ?? "Échec envoi e-mail" }, 502);
   }
 
+  const sentTo = parsed.data.email;
+
   if (!fileBuffer) {
     return jsonCorsResponse(request, {
       success: true,
       emailSent: true,
+      sentTo,
       warning: "Email envoyé sans pièce jointe : vérifiez que la ressource existe dans l'admin avec le même titre et un fichier uploadé.",
     });
   }
 
-  return jsonCorsResponse(request, { success: true, emailSent: true, attachment: true });
+  return jsonCorsResponse(request, { success: true, emailSent: true, sentTo, attachment: true });
 };

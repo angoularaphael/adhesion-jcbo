@@ -64,7 +64,7 @@ Si vous voulez répondre manuellement depuis Gmail avec la bonne identité :
 
 1. **Comptes et importation** → **Ajouter une autre adresse e-mail** (section Envoyer).
 2. Adresse : `no-reply@jcbo-conseil.com`
-3. SMTP OVH : `ssl0.ovh.net:587`, identifiant = no-reply@, mot de passe OVH.
+3. SMTP OVH : `pro2.mail.ovh.net:587`, identifiant = no-reply@, mot de passe OVH.
 
 > L’application JCBO envoie déjà via SMTP OVH (`no-reply@`) : cette étape n’est utile que pour des envois manuels depuis Gmail.
 
@@ -74,6 +74,37 @@ Pour que Jean-Christophe ne reçoive pas les alertes système sur sa boîte pers
 
 - Les envois automatiques ne ciblent **jamais** jcboyang@ (config `NOTIFY_EMAIL=contact@`).
 - Si des messages arrivent encore sur jcboyang@, créez un filtre Gmail : expéditeur contient `no-reply@jcbo-conseil.com` → libellé « Automatique » ou transfert vers contact@.
+
+---
+
+## Délivrabilité — SPF et DKIM (si Gmail ne reçoit rien)
+
+L’API peut répondre **succès** (SMTP OVH accepte l’envoi) alors que Gmail **filtre** le message (spams / Promotions / rejet silencieux). Cause fréquente : le **SPF** du domaine n’autorise pas les serveurs OVH Email Pro.
+
+### 1. Corriger le SPF (zone DNS OVH)
+
+1. Espace client OVH → **Noms de domaine** → `jcbo-conseil.com` → **Zone DNS**.
+2. Modifiez l’enregistrement **TXT** existant qui commence par `v=spf1` (un seul SPF par domaine).
+3. Ajoutez **`include:mx.ovh.com`** sans supprimer le reste.
+
+Exemple (à adapter à votre enregistrement actuel) :
+
+```
+v=spf1 ip4:109.234.166.107 +a +mx include:spf.jabatus.fr include:mx.ovh.com ~all
+```
+
+4. Attendez 15 min à 24 h (propagation DNS).
+
+### 2. Activer DKIM (Email Pro OVH)
+
+1. OVH → **E-mail Pro** → domaine `jcbo-conseil.com` → **DKIM**.
+2. Activez la signature DKIM et validez l’enregistrement DNS proposé par OVH.
+
+### 3. Vérifier
+
+- [mail-tester.com](https://www.mail-tester.com) : envoyez un test depuis l’admin ou l’API, visez une note ≥ 8/10.
+- Consultez **contact@jcbo-conseil.com** : chaque téléchargement vitrine envoie une **copie cachée (BCC)** à `NOTIFY_EMAIL` pour confirmer l’envoi côté serveur.
+- Dashboard admin → **Ressources** → tableau des téléchargements (e-mail + date enregistrés même si le client ne reçoit pas).
 
 ---
 

@@ -1,5 +1,5 @@
 import { getContactEmail, getFromEmail, getNotifyEmail, getReplyToEmail } from "./email-config";
-import { createSmtpTransport, isSmtpConfigured } from "./smtp";
+import { createSmtpTransport, getSmtpUser, isSmtpConfigured } from "./smtp";
 
 const SITE_URL = import.meta.env.PUBLIC_ADHESION_URL ?? "https://adhesion-jcbo.vercel.app";
 
@@ -165,11 +165,28 @@ export async function sendResourceDownloadEmail({
   resourceTitle: string;
   fileBuffer?: Buffer;
   fileName?: string;
-}): Promise<{ ok: boolean; error?: string }> {
+}): Promise<{ ok: boolean; error?: string; messageId?: string }> {
   if (!isSmtpConfigured()) {
     return { ok: false, error: "Service email non configuré (SMTP)" };
   }
   const vitrineUrl = import.meta.env.PUBLIC_VITRINE_URL ?? "https://jcboyang-conseil.vercel.app";
+  const contact = getContactEmail();
+  const notify = getNotifyEmail();
+  const attachmentNote = fileBuffer
+    ? "Vous trouverez le document en pièce jointe de cet e-mail."
+    : "Document non joint : contactez-nous si besoin.";
+  const text = [
+    `Bonjour ${nom},`,
+    "",
+    "Merci pour votre intérêt pour JCBO Conseil.",
+    `Ressource demandée : ${resourceTitle}`,
+    "",
+    attachmentNote,
+    "",
+    `Réserver une séance : ${vitrineUrl}/reserver`,
+    `Support : ${contact}`,
+  ].join("\n");
+
   const html = `<!DOCTYPE html><html lang="fr"><body style="font-family:Georgia,serif;padding:24px;color:#374151;">
     <p>Bonjour <strong>${nom}</strong>,</p>
     <p>Merci pour votre intérêt pour JCBO Conseil. Voici la ressource demandée :</p>
@@ -177,22 +194,28 @@ export async function sendResourceDownloadEmail({
     ${fileBuffer ? '<p>Vous trouverez le document en <strong>pièce jointe</strong> de cet e-mail.</p>' : '<p><em>Document non joint : l’administrateur doit publier le fichier dans le dashboard (Ressources, même titre que sur la vitrine).</em></p>'}
     <p>Notre équipe vous contactera si vous souhaitez un accompagnement personnalisé.</p>
     <p><a href="${vitrineUrl}/reserver" style="background:#0b1f3a;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;">Réserver une séance</a></p>
-    <p style="color:#9ca3af;font-size:12px;">JCBO Conseil — ${getContactEmail()}</p>
+    <p style="color:#9ca3af;font-size:12px;">JCBO Conseil — ${contact}</p>
   </body></html>`;
 
   const attachments = fileBuffer && fileName
     ? [{ filename: fileName, content: fileBuffer }]
     : [];
 
+  const smtpUser = getSmtpUser();
+  const bcc = notify && notify.toLowerCase() !== to.toLowerCase() ? notify : undefined;
+
   try {
-    await createTransport().sendMail({
+    const info = await createTransport().sendMail({
       ...mailBase(),
       to,
+      bcc,
       subject: `Votre ressource : ${resourceTitle}`,
+      text,
       html,
       attachments,
+      envelope: { from: smtpUser || undefined, to: bcc ? [to, bcc] : to },
     });
-    return { ok: true };
+    return { ok: true, messageId: info.messageId };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Erreur d'envoi" };
   }
