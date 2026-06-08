@@ -75,6 +75,18 @@ Pour que Jean-Christophe ne reçoive pas les alertes système sur sa boîte pers
 - Les envois automatiques ne ciblent **jamais** jcboyang@ (config `NOTIFY_EMAIL=contact@`).
 - Si des messages arrivent encore sur jcboyang@, créez un filtre Gmail : expéditeur contient `no-reply@jcbo-conseil.com` → libellé « Automatique » ou transfert vers contact@.
 
+### Étape 4 — Envoi depuis jcboyang@ sans spam
+
+Si les e-mails **écrits depuis** `jcboyang@jcbo-conseil.com` arrivent en spam :
+
+1. Gmail → **Paramètres** → **Comptes et importation** → **Envoyer en tant que** → l’adresse doit utiliser **SMTP OVH** (`pro2.mail.ovh.net:587`), pas les serveurs Gmail.
+2. Vérifier **SPF** : `include:mx.ovh.com` dans l’enregistrement TXT du domaine.
+3. Activer **DKIM** OVH Email Pro (CNAME verts dans la zone DNS).
+4. Ajouter **DMARC** : `v=DMARC1; p=none; rua=mailto:contact@jcbo-conseil.com` sur `_dmarc.jcbo-conseil.com`.
+5. Tester sur [mail-tester.com](https://www.mail-tester.com) depuis jcboyang@ (objectif ≥ 8/10).
+
+Guide détaillé Gmail PC : `connection.md` (méthode 3).
+
 ---
 
 ## Délivrabilité — SPF et DKIM (si Gmail ne reçoit rien)
