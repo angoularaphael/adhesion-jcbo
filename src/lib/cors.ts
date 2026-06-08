@@ -3,6 +3,8 @@ const DEFAULT_ORIGINS = [
   "https://jcbo-conseil.com",
   "https://www.jcbo-conseil.com",
   "https://adhesion-jcbo.vercel.app",
+  "https://adhesion-jcbo-conseil.com",
+  "https://www.adhesion-jcbo-conseil.com",
   "https://jcbo-conseil-diagnostic.vercel.app",
   "http://localhost:4321",
   "http://localhost:4322",
