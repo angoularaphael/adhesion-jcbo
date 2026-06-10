@@ -131,9 +131,6 @@ const catalogue = tousLesCours
         <button id="btn-payer-panier" class="w-full py-3 rounded-xl text-sm font-bold text-white transition hover:opacity-90" style="background-color: #0b1f3a;">
           Payer par carte bancaire
         </button>
-        <button id="btn-payer-panier-notchpay" class="w-full py-3 rounded-xl text-sm font-bold border transition hover:opacity-90" style="border-color:#0b1f3a; color:#0b1f3a;">
-          Payer par OM / MoMo (Mobile Money)
-        </button>
       </div>
       <p id="panier-erreur" class="text-xs text-red-500 text-center mt-3 hidden"></p>
     </div>
@@ -237,17 +234,17 @@ const catalogue = tousLesCours
     if (e.target === e.currentTarget) closePanier();
   });
 
-  async function payerPanier(methode: "stripe" | "notchpay") {
+  async function payerPanier() {
     if (panier.length === 0) return;
     const erreur = document.getElementById("panier-erreur")!;
-    const btn = document.getElementById(methode === "notchpay" ? "btn-payer-panier-notchpay" : "btn-payer-panier") as HTMLButtonElement;
+    const btn = document.getElementById("btn-payer-panier") as HTMLButtonElement;
     btn.disabled = true;
     erreur.classList.add("hidden");
 
     const coursIds = panier.map(i => i.id);
 
     try {
-      const res = await fetch(methode === "notchpay" ? "/api/notchpay/checkout" : "/api/stripe/checkout", {
+      const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ coursIds }),
@@ -268,6 +265,5 @@ const catalogue = tousLesCours
     }
   }
 
-  document.getElementById("btn-payer-panier")?.addEventListener("click", () => payerPanier("stripe"));
-  document.getElementById("btn-payer-panier-notchpay")?.addEventListener("click", () => payerPanier("notchpay"));
+  document.getElementById("btn-payer-panier")?.addEventListener("click", () => payerPanier());
 </script>
